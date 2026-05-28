@@ -56,8 +56,8 @@ services:
 
   ops-api:
     build:
-      context: ./ops-api
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./ops-api/Dockerfile
     container_name: ops-api
     env_file:
       - .env
