@@ -34,8 +34,8 @@ services:
 
   ai-service:
     build:
-      context: ./ai-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./ai-service/Dockerfile
     container_name: ai-service
     env_file:
       - .env
