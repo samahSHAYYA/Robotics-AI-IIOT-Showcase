@@ -1,0 +1,167 @@
+{
+  "measures": [
+    {
+      "name": "Temperature",
+      "siUnit": "K",
+      "defaultUnit": "degC",
+      "units": [
+        {
+          "name": "Kelvin",
+          "symbol": "K",
+          "toSI": "x",
+          "fromSI": "x"
+        },
+        {
+          "name": "DegCelsius",
+          "symbol": "degC",
+          "toSI": "(x + 273.15)",
+          "fromSI": "(x - 273.15)"
+        },
+        {
+          "name": "DegFahrenheit",
+          "symbol": "degF",
+          "toSI": "((x + 459.67) * 5.0 / 9.0)",
+          "fromSI": "((x * 9.0 / 5.0) - 459.67)"
+        }
+      ]
+    },
+    {
+      "name": "Distance",
+      "siUnit": "m",
+      "defaultUnit": "m",
+      "units": [
+        {
+          "name": "Meter",
+          "symbol": "m",
+          "toSI": "x",
+          "fromSI": "x"
+        },
+        {
+          "name": "Centimeter",
+          "symbol": "cm",
+          "toSI": "(x * 0.01)",
+          "fromSI": "(x * 100.0)"
+        },
+        {
+          "name": "Millimeter",
+          "symbol": "mm",
+          "toSI": "(x * 0.001)",
+          "fromSI": "(x * 1000.0)"
+        },
+        {
+          "name": "Kilometer",
+          "symbol": "km",
+          "toSI": "(x * 1000.0)",
+          "fromSI": "(x * 0.001)"
+        },
+        {
+          "name": "Mile",
+          "symbol": "mi",
+          "toSI": "(x * 1609.344)",
+          "fromSI": "(x / 1609.344)"
+        }
+      ]
+    },
+    {
+      "name": "ElectricCurrent",
+      "siUnit": "A",
+      "defaultUnit": "A",
+      "units": [
+        {
+          "name": "Ampere",
+          "symbol": "A",
+          "toSI": "x",
+          "fromSI": "x"
+        },
+        {
+          "name": "Milliampere",
+          "symbol": "mA",
+          "toSI": "(x * 0.001)",
+          "fromSI": "(x * 1000.0)"
+        }
+      ]
+    },
+    {
+      "name": "Pressure",
+      "siUnit": "Pa",
+      "defaultUnit": "bar",
+      "units": [
+        {
+          "name": "Pascal",
+          "symbol": "Pa",
+          "toSI": "x",
+          "fromSI": "x"
+        },
+        {
+          "name": "Bar",
+          "symbol": "bar",
+          "toSI": "(x * 100000.0)",
+          "fromSI": "(x * 1e-5)"
+        },
+        {
+          "name": "Psi",
+          "symbol": "psi",
+          "toSI": "(x * 6894.7572932)",
+          "fromSI": "(x / 6894.7572932)"
+        }
+      ]
+    },
+    {
+      "name": "Torque",
+      "siUnit": "N*m",
+      "defaultUnit": "N*m",
+      "units": [
+        {
+          "name": "NewtonMeter",
+          "symbol": "N*m",
+          "toSI": "x",
+          "fromSI": "x"
+        },
+        {
+          "name": "PoundFoot",
+          "symbol": "lb*ft",
+          "toSI": "(x * 1.3558179483)",
+          "fromSI": "(x / 1.3558179483)"
+        }
+      ]
+    },
+    {
+      "name": "Humidity",
+      "siUnit": "ratio",
+      "defaultUnit": "%RH",
+      "units": [
+        {
+          "name": "Ratio",
+          "symbol": "ratio",
+          "toSI": "x",
+          "fromSI": "x"
+        },
+        {
+          "name": "Percent",
+          "symbol": "%RH",
+          "toSI": "(x * 0.01)",
+          "fromSI": "(x * 100.0)"
+        }
+      ]
+    },
+    {
+      "name": "Velocity",
+      "siUnit": "m/s",
+      "defaultUnit": "m/s",
+      "units": [
+        {
+          "name": "MeterPerSecond",
+          "symbol": "m/s",
+          "toSI": "x",
+          "fromSI": "x"
+        },
+        {
+          "name": "MillimeterPerSecond",
+          "symbol": "mm/s",
+          "toSI": "(x * 0.001)",
+          "fromSI": "(x * 1000.0)"
+        }
+      ]
+    }
+  ]
+}

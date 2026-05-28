@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="980" viewBox="0 0 1600 980">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#081A2C"/>
+      <stop offset="100%" stop-color="#123550"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#163A59"/>
+      <stop offset="100%" stop-color="#102D46"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#62B6F4"/>
+    </marker>
+  </defs>
+
+  <rect width="1600" height="980" fill="url(#bg)"/>
+  <text x="800" y="56" text-anchor="middle" fill="#EAF3FF" font-size="35" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Industrial Smart Factory Reference Architecture</text>
+  <text x="800" y="90" text-anchor="middle" fill="#A9C1D8" font-size="20" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Robotics control, IIoT platform, AI and ML intelligence</text>
+  <text x="800" y="116" text-anchor="middle" fill="#A9C1D8" font-size="20" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Secure software engineering and product operations</text>
+
+  <g transform="translate(40,132)">
+    <rect x="0" y="0" width="360" height="342" rx="16" fill="url(#panel)" stroke="#4D7EA8"/>
+    <text x="24" y="42" fill="#DDEEFF" font-size="23" font-family="Segoe UI, Arial, sans-serif" font-weight="700">1. Robotics Edge</text>
+    <text x="24" y="80" fill="#A9C8E4" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">ROS2 nodes and safe actuator control</text>
+    <text x="24" y="112" fill="#A9C8E4" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Sensor fusion: vision, IMU, vib, thermal</text>
+    <text x="24" y="144" fill="#A9C8E4" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Modes: simulation, production, fail-safe</text>
+    <rect x="24" y="182" width="312" height="50" rx="8" fill="#1A4469"/>
+    <text x="40" y="214" fill="#E3F1FF" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Humanoid autonomy + manual override</text>
+    <rect x="24" y="248" width="312" height="70" rx="8" fill="#1A4469"/>
+    <text x="40" y="280" fill="#22C55E" font-size="16" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Safety state: healthy</text>
+    <text x="40" y="306" fill="#A9C8E4" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Emergency stop path below 100 ms</text>
+  </g>
+
+  <g transform="translate(430,132)">
+    <rect x="0" y="0" width="360" height="342" rx="16" fill="url(#panel)" stroke="#4D7EA8"/>
+    <text x="24" y="42" fill="#DDEEFF" font-size="23" font-family="Segoe UI, Arial, sans-serif" font-weight="700">2. IIoT Data Fabric</text>
+    <text x="24" y="80" fill="#A9C8E4" font-size="14" font-family="Segoe UI, Arial, sans-serif" font-weight="600">MQTT, WebSocket, REST integration</text>
+    <text x="24" y="112" fill="#A9C8E4" font-size="14" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Streaming transforms and routing</text>
+    <text x="24" y="144" fill="#A9C8E4" font-size="14" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Digital twin snapshots and time-series</text>
+    <rect x="24" y="182" width="312" height="50" rx="8" fill="#1A4469"/>
+    <text x="40" y="214" fill="#E3F1FF" font-size="16" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Quality telemetry from workstations</text>
+    <rect x="24" y="248" width="312" height="70" rx="8" fill="#1A4469"/>
+    <text x="40" y="280" fill="#F5A623" font-size="16" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Warning channel: queue pressure</text>
+    <text x="40" y="306" fill="#A9C8E4" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Backpressure guard with degraded mode</text>
+  </g>
+
+  <g transform="translate(820,132)">
+    <rect x="0" y="0" width="360" height="342" rx="16" fill="url(#panel)" stroke="#4D7EA8"/>
+    <text x="24" y="42" fill="#DDEEFF" font-size="23" font-family="Segoe UI, Arial, sans-serif" font-weight="700">3. AI and ML Stack</text>
+    <text x="24" y="80" fill="#A9C8E4" font-size="14" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Computer vision defect detection</text>
+    <text x="24" y="112" fill="#A9C8E4" font-size="14" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Predictive maintenance scoring</text>
+    <text x="24" y="144" fill="#A9C8E4" font-size="14" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Model registry, canary, rollback</text>
+    <rect x="24" y="182" width="312" height="50" rx="8" fill="#1A4469"/>
+    <text x="40" y="214" fill="#E3F1FF" font-size="16" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Edge inference with confidence gates</text>
+    <rect x="24" y="248" width="312" height="70" rx="8" fill="#1A4469"/>
+    <text x="40" y="280" fill="#22C55E" font-size="16" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Drift monitor: stable</text>
+    <text x="40" y="306" fill="#A9C8E4" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Auto alert and safe fallback policy</text>
+  </g>
+
+  <g transform="translate(1210,132)">
+    <rect x="0" y="0" width="350" height="342" rx="16" fill="url(#panel)" stroke="#4D7EA8"/>
+    <text x="24" y="42" fill="#DDEEFF" font-size="23" font-family="Segoe UI, Arial, sans-serif" font-weight="700">4. Product Platform</text>
+    <text x="24" y="80" fill="#A9C8E4" font-size="14" font-family="Segoe UI, Arial, sans-serif" font-weight="600">FastAPI services and async workers</text>
+    <text x="24" y="112" fill="#A9C8E4" font-size="14" font-family="Segoe UI, Arial, sans-serif" font-weight="600">React cockpit and controls</text>
+    <text x="24" y="144" fill="#A9C8E4" font-size="14" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Docker Compose reproducibility</text>
+    <rect x="24" y="182" width="302" height="50" rx="8" fill="#1A4469"/>
+    <text x="40" y="214" fill="#E3F1FF" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">API, dashboard, bus, scheduler</text>
+    <rect x="24" y="248" width="302" height="70" rx="8" fill="#1A4469"/>
+    <text x="40" y="280" fill="#22C55E" font-size="16" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Release status: green</text>
+    <text x="40" y="306" fill="#A9C8E4" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">CI checks and deterministic images</text>
+  </g>
+
+  <g fill="none" stroke="#62B6F4" stroke-width="3" marker-end="url(#arrow)">
+    <line x1="400" y1="302" x2="430" y2="302"/>
+    <line x1="790" y1="295" x2="820" y2="295"/>
+    <line x1="1180" y1="302" x2="1210" y2="302"/>
+  </g>
+  <text x="415" y="282" text-anchor="middle" fill="#90CAE0" font-size="11" font-family="Segoe UI, Arial, sans-serif">sensor / camera / safety events</text>
+  <text x="805" y="275" text-anchor="middle" fill="#90CAE0" font-size="11" font-family="Segoe UI, Arial, sans-serif">telemetry → inspection triggers</text>
+  <text x="1195" y="282" text-anchor="middle" fill="#90CAE0" font-size="11" font-family="Segoe UI, Arial, sans-serif">predictions / anomalies / alerts</text>
+
+  <g transform="translate(40,516)">
+    <rect x="0" y="0" width="1520" height="404" rx="16" fill="#102B44" stroke="#4D7EA8"/>
+    <text x="24" y="46" fill="#EAF3FF" font-size="28" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Cross-Domain Engineering Excellence</text>
+
+    <rect x="24" y="72" width="362" height="304" rx="12" fill="#173E60"/>
+    <text x="44" y="110" fill="#EAF3FF" font-size="20" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Security Engineering</text>
+    <text x="44" y="148" fill="#B7D0E6" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">mTLS identity and encrypted channels</text>
+    <text x="44" y="178" fill="#B7D0E6" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Policy-based endpoint authorization</text>
+    <text x="44" y="208" fill="#B7D0E6" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Vault-managed secret lifecycle</text>
+    <text x="44" y="238" fill="#B7D0E6" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Signed audit logs with traceability</text>
+    <text x="44" y="280" fill="#22C55E" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Current risk: low</text>
+
+    <rect x="410" y="72" width="362" height="304" rx="12" fill="#173E60"/>
+    <text x="430" y="110" fill="#EAF3FF" font-size="20" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Software Engineering</text>
+    <text x="430" y="148" fill="#B7D0E6" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Domain-driven module boundaries</text>
+    <text x="430" y="178" fill="#B7D0E6" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Strict contracts and schema validation</text>
+    <text x="430" y="208" fill="#B7D0E6" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Test suites for safety behavior</text>
+    <text x="430" y="238" fill="#B7D0E6" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Observability for logs, metrics, traces</text>
+    <text x="430" y="280" fill="#22C55E" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Current quality gate: pass</text>
+
+    <rect x="796" y="72" width="362" height="304" rx="12" fill="#173E60"/>
+    <text x="816" y="110" fill="#EAF3FF" font-size="20" font-family="Segoe UI, Arial, sans-serif" font-weight="700">MLOps and Reliability</text>
+    <text x="816" y="148" fill="#B7D0E6" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Versioned data and model artifacts</text>
+    <text x="816" y="178" fill="#B7D0E6" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Offline and online evaluation gates</text>
+    <text x="816" y="208" fill="#B7D0E6" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Drift, bias, and confidence safeguards</text>
+    <text x="816" y="238" fill="#B7D0E6" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Canary rollout and automatic rollback</text>
+    <text x="816" y="280" fill="#F5A623" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Watchpoint: monitor domain shift</text>
+
+    <rect x="1182" y="72" width="314" height="304" rx="12" fill="#173E60"/>
+    <text x="1202" y="110" fill="#EAF3FF" font-size="20" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Delivery and Ops</text>
+    <text x="1202" y="148" fill="#B7D0E6" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Compose profiles for staged runtime</text>
+    <text x="1202" y="178" fill="#B7D0E6" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Pinned dependencies and image signing</text>
+    <text x="1202" y="208" fill="#B7D0E6" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">SLOs, incident routing, runbooks</text>
+    <text x="1202" y="238" fill="#B7D0E6" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Cloud migration-ready boundaries</text>
+    <text x="1202" y="280" fill="#22C55E" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Availability target: met</text>
+  </g>
+</svg>

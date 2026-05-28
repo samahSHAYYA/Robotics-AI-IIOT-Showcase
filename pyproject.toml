@@ -1,0 +1,6 @@
+[dependency-groups]
+docs = [
+    "mkdocs",
+    "mkdocs-material",
+    "watchdog",
+]

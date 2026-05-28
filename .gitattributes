@@ -1,0 +1,67 @@
+# ==================================
+# Default Text Normalization (Cross-OS)
+# ==================================
+* text=auto
+
+# =============================
+# Enforce LF for source and docs
+# =============================
+*.py text eol=lf
+*.cpp text eol=lf
+*.cc text eol=lf
+*.c text eol=lf
+*.h text eol=lf
+*.hpp text eol=lf
+*.cmake text eol=lf
+CMakeLists.txt text eol=lf
+
+*.js text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.css text eol=lf
+*.scss text eol=lf
+*.html text eol=lf
+
+*.md text eol=lf
+*.txt text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.toml text eol=lf
+*.xml text eol=lf
+*.svg text eol=lf
+*.env text eol=lf
+*.dockerignore text eol=lf
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.dockerfile text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
+Doxyfile text eol=lf
+
+# ===================================
+# Keep Windows scripts as CRLF where needed
+# ===================================
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# =================
+# Binary File Types
+# =================
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.tar binary
+*.gz binary
+*.7z binary
+*.exe binary
+*.dll binary
+*.so binary
+*.dylib binary

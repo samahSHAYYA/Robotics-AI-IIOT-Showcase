@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="840" viewBox="0 0 1400 840">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0A1C2D"/>
+      <stop offset="100%" stop-color="#133A57"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#184161"/>
+      <stop offset="100%" stop-color="#13324D"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#65B9F6"/>
+    </marker>
+  </defs>
+
+  <rect width="1400" height="840" fill="url(#bg)"/>
+  <text x="700" y="58" text-anchor="middle" fill="#EAF3FF" font-size="30" font-family="Segoe UI, Arial, sans-serif" font-weight="700">AI and ML Lifecycle for Robotics Reliability</text>
+
+  <g transform="translate(60,118)">
+    <rect x="0" y="0" width="250" height="154" rx="12" fill="url(#card)" stroke="#4D7EA8"/>
+    <text x="20" y="42" fill="#EAF3FF" font-size="22" font-family="Segoe UI, Arial, sans-serif" font-weight="700">1. Data Capture</text>
+    <text x="20" y="78" fill="#B7D0E6" font-size="14" font-family="Segoe UI, Arial, sans-serif" font-weight="600">camera streams and QA imagery</text>
+    <text x="20" y="102" fill="#B7D0E6" font-size="14" font-family="Segoe UI, Arial, sans-serif" font-weight="600">motor and thermal telemetry</text>
+    <text x="20" y="126" fill="#B7D0E6" font-size="14" font-family="Segoe UI, Arial, sans-serif" font-weight="600">sensor context signals</text>
+
+    <rect x="300" y="0" width="250" height="154" rx="12" fill="url(#card)" stroke="#4D7EA8"/>
+    <text x="320" y="42" fill="#EAF3FF" font-size="22" font-family="Segoe UI, Arial, sans-serif" font-weight="700">2. Data Prep</text>
+    <text x="320" y="78" fill="#B7D0E6" font-size="14" font-family="Segoe UI, Arial, sans-serif" font-weight="600">curation, labeling, denoising</text>
+    <text x="320" y="102" fill="#B7D0E6" font-size="14" font-family="Segoe UI, Arial, sans-serif" font-weight="600">feature engineering pipelines</text>
+    <text x="320" y="126" fill="#B7D0E6" font-size="14" font-family="Segoe UI, Arial, sans-serif" font-weight="600">train and validation split</text>
+
+    <rect x="600" y="0" width="250" height="154" rx="12" fill="url(#card)" stroke="#4D7EA8"/>
+    <text x="620" y="42" fill="#EAF3FF" font-size="22" font-family="Segoe UI, Arial, sans-serif" font-weight="700">3. Training</text>
+    <text x="620" y="78" fill="#B7D0E6" font-size="14" font-family="Segoe UI, Arial, sans-serif" font-weight="600">vision model optimization</text>
+    <text x="620" y="102" fill="#B7D0E6" font-size="14" font-family="Segoe UI, Arial, sans-serif" font-weight="600">predictive maintenance models</text>
+    <text x="620" y="126" fill="#B7D0E6" font-size="14" font-family="Segoe UI, Arial, sans-serif" font-weight="600">hyperparameter search campaigns</text>
+
+    <rect x="900" y="0" width="250" height="154" rx="12" fill="url(#card)" stroke="#4D7EA8"/>
+    <text x="920" y="42" fill="#EAF3FF" font-size="22" font-family="Segoe UI, Arial, sans-serif" font-weight="700">4. Evaluation</text>
+    <text x="920" y="78" fill="#B7D0E6" font-size="14" font-family="Segoe UI, Arial, sans-serif" font-weight="600">precision recall and latency</text>
+    <text x="920" y="102" fill="#B7D0E6" font-size="14" font-family="Segoe UI, Arial, sans-serif" font-weight="600">drift and robustness checks</text>
+    <text x="920" y="126" fill="#B7D0E6" font-size="14" font-family="Segoe UI, Arial, sans-serif" font-weight="600">threshold and fallback tuning</text>
+
+    <line x1="250" y1="78" x2="300" y2="78" stroke="#65B9F6" stroke-width="3" marker-end="url(#arrow)"/>
+    <line x1="550" y1="78" x2="600" y2="78" stroke="#65B9F6" stroke-width="3" marker-end="url(#arrow)"/>
+    <line x1="850" y1="78" x2="900" y2="78" stroke="#65B9F6" stroke-width="3" marker-end="url(#arrow)"/>
+  </g>
+
+  <g transform="translate(60,320)">
+    <rect x="0" y="0" width="548" height="430" rx="14" fill="#12314C" stroke="#4D7EA8"/>
+    <text x="24" y="42" fill="#EAF3FF" font-size="24" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Experiment Registry</text>
+
+    <rect x="24" y="62" width="500" height="70" rx="10" fill="#1A4568"/>
+    <text x="42" y="92" fill="#EAF3FF" font-size="14" font-family="Consolas, monospace" font-weight="600">run_2217 | cv_resnet50 | f1=0.941</text>
+    <text x="42" y="116" fill="#B7D0E6" font-size="13" font-family="Consolas, monospace" font-weight="600">latency=27ms | dataset=v3.4 | adamw</text>
+
+    <rect x="24" y="146" width="500" height="70" rx="10" fill="#1A4568"/>
+    <text x="42" y="176" fill="#EAF3FF" font-size="14" font-family="Consolas, monospace" font-weight="600">run_2218 | tcn_forecast | mae=0.082</text>
+    <text x="42" y="200" fill="#B7D0E6" font-size="13" font-family="Consolas, monospace" font-weight="600">drift=low | win=256 | horizon=48</text>
+
+    <rect x="24" y="236" width="500" height="170" rx="10" fill="#0F2940" stroke="#3B6C95"/>
+    <text x="42" y="266" fill="#D7E9FA" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Champion acceptance gates</text>
+    <text x="42" y="294" fill="#22C55E" font-size="14" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Recall &gt;= 0.93</text>
+    <text x="42" y="322" fill="#22C55E" font-size="14" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Inference latency &lt;= 35ms</text>
+    <text x="42" y="350" fill="#F5A623" font-size="14" font-family="Segoe UI, Arial, sans-serif" font-weight="700">False positives within QA tolerance</text>
+    <text x="42" y="378" fill="#FF4D4F" font-size="14" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Fallback on confidence drop</text>
+  </g>
+
+  <g transform="translate(642,320)">
+    <rect x="0" y="0" width="698" height="430" rx="14" fill="#12314C" stroke="#4D7EA8"/>
+    <text x="24" y="42" fill="#EAF3FF" font-size="22" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Production Inference and Monitoring</text>
+
+    <rect x="24" y="62" width="650" height="156" rx="10" fill="#1A4568"/>
+    <text x="42" y="94" fill="#EAF3FF" font-size="16" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Online performance last 15 min</text>
+    <polyline points="42,184 106,164 170,170 234,150 298,154 362,138 426,144 490,130 554,134 618,120" fill="none" stroke="#3AA7FF" stroke-width="4"/>
+    <polyline points="42,198 106,186 170,188 234,176 298,178 362,166 426,170 490,160 554,164 618,156" fill="none" stroke="#22C55E" stroke-width="3"/>
+
+    <rect x="24" y="234" width="310" height="172" rx="10" fill="#0F2940" stroke="#3B6C95"/>
+    <text x="42" y="266" fill="#EAF3FF" font-size="17" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Model Registry</text>
+    <text x="42" y="296" fill="#B7D0E6" font-size="14" font-family="Segoe UI, Arial, sans-serif" font-weight="600">cv_inspector_v12 active</text>
+    <text x="42" y="324" fill="#B7D0E6" font-size="14" font-family="Segoe UI, Arial, sans-serif" font-weight="600">tcn_motor_health_v7 active</text>
+    <text x="42" y="352" fill="#B7D0E6" font-size="14" font-family="Segoe UI, Arial, sans-serif" font-weight="600">rollback candidates retained</text>
+
+    <rect x="364" y="234" width="310" height="172" rx="10" fill="#0F2940" stroke="#3B6C95"/>
+    <text x="382" y="266" fill="#EAF3FF" font-size="17" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Operational Guarantees</text>
+    <text x="382" y="296" fill="#22C55E" font-size="14" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Canary rollout with KPI guardrails</text>
+    <text x="382" y="324" fill="#F5A623" font-size="14" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Drift alarms and escalation</text>
+    <text x="382" y="352" fill="#22C55E" font-size="14" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Repro metadata enforced</text>
+  </g>
+</svg>

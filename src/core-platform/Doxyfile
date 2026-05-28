@@ -1,0 +1,23 @@
+# Doxyfile 1.12+ — Core Platform C++ API
+# Minimal config using only overrides from defaults.
+# Paths are relative to this Doxyfile's directory.
+
+PROJECT_NAME           = "Core Platform"
+PROJECT_BRIEF          = "Robotics simulation and factory orchestration core"
+PROJECT_NUMBER         = 0.1.0
+OUTPUT_DIRECTORY       = ../../docs/doxygen
+INPUT                  = cpp/include cpp/src
+RECURSIVE              = YES
+FILE_PATTERNS          = *.hpp *.cpp *.h
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = YES
+SORT_MEMBER_DOCS       = YES
+GENERATE_LATEX         = NO
+GENERATE_HTML          = YES
+GENERATE_TREEVIEW      = YES
+DISABLE_INDEX          = NO
+HAVE_DOT               = NO
+MACRO_EXPANSION        = YES
+QUIET                  = YES
+WARNINGS               = YES

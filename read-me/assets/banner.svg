@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="520" viewBox="0 0 1600 520">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#091A2A"/>
+      <stop offset="100%" stop-color="#12324D"/>
+    </linearGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0F2B42"/>
+      <stop offset="100%" stop-color="#0A1E30"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#3AA7FF"/>
+      <stop offset="50%" stop-color="#44E0D0"/>
+      <stop offset="100%" stop-color="#F5A623"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="520" fill="url(#bg)"/>
+  <rect y="356" width="1600" height="164" fill="url(#floor)"/>
+
+  <g opacity="0.16" stroke="#5FAEE8" stroke-width="1">
+    <line x1="0" y1="372" x2="1600" y2="372"/>
+    <line x1="0" y1="404" x2="1600" y2="404"/>
+    <line x1="0" y1="436" x2="1600" y2="436"/>
+    <line x1="0" y1="468" x2="1600" y2="468"/>
+  </g>
+
+  <g transform="translate(60,126)">
+    <ellipse cx="140" cy="220" rx="152" ry="24" fill="#061321" opacity="0.8"/>
+    <circle cx="140" cy="56" r="42" fill="#D6ECFF"/>
+    <circle cx="124" cy="52" r="7" fill="#10293E"/>
+    <circle cx="156" cy="52" r="7" fill="#10293E"/>
+    <rect x="100" y="86" width="80" height="94" rx="20" fill="#E7F3FF"/>
+    <rect x="116" y="108" width="48" height="26" rx="8" fill="#44E0D0"/>
+    <rect x="66" y="102" width="32" height="78" rx="14" fill="#B9DBF5"/>
+    <rect x="182" y="102" width="32" height="78" rx="14" fill="#B9DBF5"/>
+    <rect x="104" y="180" width="28" height="80" rx="12" fill="#B9DBF5"/>
+    <rect x="148" y="180" width="28" height="80" rx="12" fill="#B9DBF5"/>
+    <circle cx="64" cy="140" r="6" fill="#22C55E"/>
+    <circle cx="216" cy="140" r="6" fill="#3AA7FF"/>
+  </g>
+
+  <g transform="translate(380,94)">
+    <text x="0" y="74" fill="#EAF3FF" font-size="46" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Industrial Humanoid Robotics</text>
+    <text x="0" y="128" fill="#BED8EE" font-size="40" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Smart Factory Supervisor</text>
+    <rect x="0" y="160" width="720" height="5" fill="url(#accent)"/>
+    <text x="0" y="206" fill="#B8CCE0" font-size="21" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Robotics | AI and ML | IIoT | Secure software engineering</text>
+    <text x="0" y="240" fill="#94AEC6" font-size="18" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Local-first architecture for reliable production operations</text>
+  </g>
+
+  <g transform="translate(1200,82)" filter="url(#shadow)">
+    <rect x="0" y="0" width="334" height="236" rx="16" fill="#0F2C44" stroke="#3F77A6"/>
+    <rect x="18" y="18" width="298" height="46" rx="8" fill="#173A5A"/>
+    <text x="34" y="48" fill="#E2F1FF" font-size="18" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Live Plant Metrics</text>
+
+    <rect x="22" y="84" width="138" height="94" rx="10" fill="#183C5D"/>
+    <rect x="174" y="84" width="138" height="94" rx="10" fill="#183C5D"/>
+    <text x="34" y="108" fill="#A4C7E5" font-size="13" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Defect trend</text>
+    <text x="186" y="108" fill="#A4C7E5" font-size="13" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Motor health</text>
+    <polyline points="30,156 58,138 82,146 108,122 146,132" fill="none" stroke="#22C55E" stroke-width="3"/>
+    <polyline points="182,160 208,134 234,140 262,122 298,126" fill="none" stroke="#3AA7FF" stroke-width="3"/>
+
+    <rect x="96" y="190" width="146" height="34" rx="8" fill="#22C55E" stroke="#159C4A"/>
+    <text x="128" y="212" fill="#062614" font-size="14" font-family="Segoe UI, Arial, sans-serif" font-weight="700">SAFE MODE</text>
+  </g>
+</svg>

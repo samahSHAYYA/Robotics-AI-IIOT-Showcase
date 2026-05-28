@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="840" viewBox="0 0 1400 840">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0A1B2C"/>
+      <stop offset="100%" stop-color="#13344F"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#184160"/>
+      <stop offset="100%" stop-color="#12314C"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1400" height="840" fill="url(#bg)"/>
+  <text x="700" y="58" text-anchor="middle" fill="#EAF3FF" font-size="34" font-family="Segoe UI, Arial, sans-serif" font-weight="700">IIoT Security and Reliability Command Center</text>
+
+  <g transform="translate(56,110)">
+    <rect x="0" y="0" width="430" height="670" rx="14" fill="url(#card)" stroke="#4D7EA8"/>
+    <text x="24" y="42" fill="#EAF3FF" font-size="24" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Identity and Access</text>
+
+    <rect x="24" y="62" width="382" height="120" rx="10" fill="#1A4568"/>
+    <text x="42" y="96" fill="#EAF3FF" font-size="17" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Mutual TLS Mesh</text>
+    <text x="42" y="124" fill="#B7D0E6" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Service certificates rotated every 30 days</text>
+    <text x="42" y="148" fill="#B7D0E6" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Edge robot identity validated per session</text>
+
+    <rect x="24" y="194" width="382" height="132" rx="10" fill="#1A4568"/>
+    <text x="42" y="228" fill="#EAF3FF" font-size="17" font-family="Segoe UI, Arial, sans-serif" font-weight="700">RBAC Policy Matrix</text>
+    <text x="42" y="256" fill="#B7D0E6" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">operator: telemetry and safe commands</text>
+    <text x="42" y="282" fill="#B7D0E6" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">ml_engineer: release and rollback</text>
+    <text x="42" y="308" fill="#B7D0E6" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">admin: cert lifecycle and incident override</text>
+
+    <rect x="24" y="338" width="382" height="146" rx="10" fill="#1A4568"/>
+    <text x="42" y="372" fill="#EAF3FF" font-size="17" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Secrets and Vault</text>
+    <text x="42" y="400" fill="#B7D0E6" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Encrypted credentials at rest</text>
+    <text x="42" y="426" fill="#B7D0E6" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Short-lived runtime token leasing</text>
+    <text x="42" y="452" fill="#B7D0E6" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Revocation workflow tied to alerts</text>
+
+    <rect x="24" y="496" width="382" height="150" rx="10" fill="#1A4568"/>
+    <text x="42" y="530" fill="#EAF3FF" font-size="17" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Auditability</text>
+    <text x="42" y="558" fill="#B7D0E6" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Signed operational event logs</text>
+    <text x="42" y="584" fill="#B7D0E6" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Command source and actor traceability</text>
+    <text x="42" y="610" fill="#B7D0E6" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Incident timeline reconstruction support</text>
+  </g>
+
+  <g transform="translate(510,110)">
+    <rect x="0" y="0" width="834" height="320" rx="14" fill="url(#card)" stroke="#4D7EA8"/>
+    <text x="24" y="42" fill="#EAF3FF" font-size="24" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Live IIoT Security Telemetry</text>
+
+    <rect x="24" y="62" width="250" height="110" rx="10" fill="#1A4568"/>
+    <text x="42" y="96" fill="#EAF3FF" font-size="17" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Connected Devices</text>
+    <text x="42" y="138" fill="#22C55E" font-size="42" font-family="Segoe UI, Arial, sans-serif" font-weight="700">148</text>
+
+    <rect x="294" y="62" width="250" height="110" rx="10" fill="#1A4568"/>
+    <text x="312" y="96" fill="#F5A623" font-size="17" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Policy Violations</text>
+    <text x="312" y="138" fill="#F5A623" font-size="42" font-family="Segoe UI, Arial, sans-serif" font-weight="700">3</text>
+
+    <rect x="564" y="62" width="246" height="110" rx="10" fill="#1A4568"/>
+    <text x="582" y="96" fill="#EAF3FF" font-size="17" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Service Health</text>
+    <text x="582" y="138" fill="#22C55E" font-size="42" font-family="Segoe UI, Arial, sans-serif" font-weight="700">99.97%</text>
+
+    <rect x="24" y="186" width="786" height="112" rx="10" fill="#102C46" stroke="#3B6C95"/>
+    <text x="42" y="218" fill="#D7E9FA" font-size="16" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Threat trend and resilience posture</text>
+    <polyline points="42,270 120,248 198,252 276,230 354,234 432,214 510,222 588,208 666,214 744,202" fill="none" stroke="#F5A623" stroke-width="4"/>
+    <polyline points="42,280 120,272 198,274 276,262 354,264 432,250 510,254 588,244 666,250 744,242" fill="none" stroke="#3AA7FF" stroke-width="3"/>
+  </g>
+
+  <g transform="translate(510,454)">
+    <rect x="0" y="0" width="834" height="326" rx="14" fill="url(#card)" stroke="#4D7EA8"/>
+    <text x="24" y="42" fill="#EAF3FF" font-size="24" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Resilience Automation</text>
+
+    <rect x="24" y="62" width="380" height="238" rx="10" fill="#1A4568"/>
+    <text x="42" y="96" fill="#EAF3FF" font-size="17" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Automated Response Playbooks</text>
+    <text x="42" y="128" fill="#B7D0E6" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Quarantine anomalous edge node</text>
+    <text x="42" y="154" fill="#B7D0E6" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Force certificate re-issue</text>
+    <text x="42" y="180" fill="#B7D0E6" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Shift robot to reduced-risk mode</text>
+    <text x="42" y="206" fill="#B7D0E6" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Notify operator and open incident channel</text>
+    <text x="42" y="232" fill="#B7D0E6" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Capture evidence artifacts</text>
+
+    <rect x="424" y="62" width="386" height="238" rx="10" fill="#1A4568"/>
+    <text x="442" y="96" fill="#EAF3FF" font-size="17" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Reliability SLOs</text>
+    <text x="442" y="128" fill="#22C55E" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="700">API uptime >= 99.9%</text>
+    <text x="442" y="154" fill="#22C55E" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Control jitter &lt; 20ms p95</text>
+    <text x="442" y="180" fill="#22C55E" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Command success >= 99.5%</text>
+    <text x="442" y="206" fill="#F5A623" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Detection latency &lt; 2s</text>
+    <text x="442" y="232" fill="#22C55E" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Mean recovery time &lt; 60s</text>
+  </g>
+</svg>

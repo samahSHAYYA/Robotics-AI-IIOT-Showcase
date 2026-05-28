@@ -1,0 +1,77 @@
+site_name: Smart Factory Supervisor
+site_description: Portfolio-grade industrial humanoid robotics showcase
+repo_url: ""
+edit_uri: ""
+use_directory_urls: true
+docs_dir: docs
+
+# Exclude generated and tool directories from MkDocs scanning.
+exclude_docs: |
+  /doxygen/
+
+theme:
+  name: material
+  palette:
+    scheme: slate
+    primary: indigo
+    accent: cyan
+  font:
+    text: Segoe UI
+    code: Consolas
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - toc.follow
+    - content.code.copy
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.details
+  - admonition
+  - toc:
+      permalink: true
+  - tables
+
+extra:
+  generator: false
+
+nav:
+  - Home: read-me/ReadMe.md
+  - Architecture:
+      - Overview: read-me/ReadMe.md#3-architecture-visuals
+      - UI-UX Design: read-me/UI-UX-Guidelines.md
+  - Services:
+      - Overview: src/ReadMe.md
+      - Core Platform: src/core-platform/ReadMe.md
+      - AI Service: src/ai-service/ReadMe.md
+      - Ops API: src/ops-api/ReadMe.md
+      - Ops Frontend: src/ops-frontend/ReadMe.md
+      - Shared: src/shared/ReadMe.md
+  - C++ API Reference: doxygen-api.md
+  - Knowledge Base:
+      - Architecture: agent/knowledge/architecture.md
+      - Domain: agent/knowledge/domain.md
+      - Decisions: agent/knowledge/decisions.md
+      - Glossary: agent/knowledge/glossary.md
+  - Conventions:
+      - Communication: agent/general/communication.md
+      - Coding: agent/general/coding.md
+      - UI-UX: agent/local/ui-ux.md
+      - Logging: agent/local/logging.md
+      - File Access: agent/local/file-access.md
+      - Error Handling: agent/general/error-handling.md
+      - Deployment: agent/local/deployment.md
+  - Agent Roles:
+      - Orchestrator: agent/roles/orchestrator.md
+      - Developer: agent/roles/developer.md
+      - Reviewer: agent/roles/reviewer.md
+      - QA: agent/roles/qa.md
+      - Workflow: agent/workflow.md

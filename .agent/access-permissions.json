@@ -1,0 +1,40 @@
+{
+  "never_touch": [
+    "secrets/**",
+    "src/.env",
+    "src/envs/**/.env",
+    "**/*.pem",
+    "**/*.key",
+    "**/*.crt"
+  ],
+
+  "read_only": [
+    "data/**",
+    "logs/**",
+    "**/.env.template",
+    "**/.env.example",
+    ".agent/knowledge/**"
+  ],
+
+  "require_approval": [
+    "src/docker-compose.yaml",
+    ".gitignore",
+    ".gitattributes",
+    ".agent/access-permissions.json",
+    "**/Dockerfile"
+  ],
+  
+  "writable": [
+    "src/**/*.cpp",
+    "src/**/*.hpp",
+    "src/**/*.h",
+    "src/**/*.py",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "**/*.md",
+    "**/*.svg",
+    ".agent/**",
+    "**/CMakeLists.txt",
+    "**/.dockerignore"
+  ]
+}

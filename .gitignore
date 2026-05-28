@@ -1,0 +1,125 @@
+# =========================================
+# Global Local/Generated Folders (Anywhere)
+# =========================================
+**/build/
+**/dist/
+**/out/
+**/bin/
+**/logs/
+**/log/
+**/data/
+**/cache/
+**/tmp/
+**/temp/
+
+# =====================
+# Environment Variables
+# =====================
+.env
+.env.*
+**/.env
+**/.env.*
+!**/.env.template
+!**/.env.example
+
+# =================
+# Language: Python
+# =================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.python-version
+.venv/
+venv/
+ENV/
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+
+# ============================
+# Language: JavaScript/TypeScript
+# ============================
+node_modules/
+.npm/
+.pnpm-store/
+.yarn/
+.next/
+.nuxt/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# ===============
+# Language: C/C++
+# ===============
+*.o
+*.obj
+*.a
+*.lib
+*.dll
+*.dylib
+*.exe
+*.out
+CMakeFiles/
+CMakeCache.txt
+compile_commands.json
+
+# ======================
+# ROS2 / colcon / CMake
+# ======================
+build/
+install/
+log/
+colcon_build/
+colcon_install/
+colcon_log/
+
+# ============
+# Secrets
+# ============
+secrets/
+
+# =================
+# Generated Docs
+# =================
+site/
+doc-site/
+docs/doxygen/
+docs/doxygen-api.md
+docs/read-me/
+docs/src/
+
+# =================
+# Docker Artifacts
+# =================
+.docker/
+
+# =====================
+# IDE / Editor Artifacts
+# =====================
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.swp
+*.swo
+*~
+
+# ==================
+# OS-Specific Files
+# ==================
+.DS_Store
+Thumbs.db
+desktop.ini

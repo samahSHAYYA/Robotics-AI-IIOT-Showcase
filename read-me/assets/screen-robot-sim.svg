@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="840" viewBox="0 0 1400 840">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#081A2C"/>
+      <stop offset="100%" stop-color="#123550"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#173E60"/>
+      <stop offset="100%" stop-color="#12324D"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1400" height="840" fill="url(#bg)"/>
+  <rect x="24" y="22" width="1352" height="796" rx="20" fill="#0F2B42" stroke="#4D7EA8"/>
+  <rect x="24" y="22" width="1352" height="64" rx="20" fill="#173A59"/>
+  <text x="700" y="63" text-anchor="middle" fill="#EAF3FF" font-size="25" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Robot Simulation and Safety Control Console</text>
+
+  <g transform="translate(48,108)">
+    <rect x="0" y="0" width="930" height="684" rx="14" fill="#12314C" stroke="#4D7EA8"/>
+    <rect x="20" y="20" width="890" height="486" rx="12" fill="#0E263B"/>
+
+    <g opacity="0.3">
+      <rect x="74" y="292" width="120" height="112" fill="#1B476B"/>
+      <rect x="206" y="248" width="120" height="156" fill="#1B476B"/>
+      <rect x="338" y="270" width="120" height="134" fill="#1B476B"/>
+      <rect x="470" y="230" width="120" height="174" fill="#1B476B"/>
+      <rect x="602" y="278" width="120" height="126" fill="#1B476B"/>
+      <rect x="734" y="246" width="120" height="158" fill="#1B476B"/>
+    </g>
+
+    <g transform="translate(432,138)">
+      <ellipse cx="72" cy="292" rx="96" ry="18" fill="#051521" opacity="0.8"/>
+      <circle cx="72" cy="56" r="40" fill="#D6ECFF"/>
+      <circle cx="58" cy="52" r="7" fill="#10293E"/>
+      <circle cx="86" cy="52" r="7" fill="#10293E"/>
+      <rect x="36" y="86" width="72" height="92" rx="20" fill="#E7F3FF"/>
+      <rect x="50" y="110" width="44" height="26" rx="8" fill="#44E0D0"/>
+      <rect x="8" y="102" width="28" height="78" rx="14" fill="#B9DBF5"/>
+      <rect x="108" y="102" width="28" height="78" rx="14" fill="#B9DBF5"/>
+      <rect x="40" y="178" width="22" height="108" rx="10" fill="#B9DBF5"/>
+      <rect x="82" y="178" width="22" height="108" rx="10" fill="#B9DBF5"/>
+    </g>
+
+    <g transform="translate(20,526)">
+      <rect x="0" y="0" width="434" height="138" rx="10" fill="url(#panel)"/>
+      <text x="18" y="34" fill="#D8EAFB" font-size="17" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Kinematics</text>
+      <text x="18" y="62" fill="#EAF3FF" font-size="15" font-family="Consolas, monospace" font-weight="600">joint_hip_pitch:  +12.4 deg</text>
+      <text x="18" y="86" fill="#EAF3FF" font-size="15" font-family="Consolas, monospace" font-weight="600">joint_knee_left: -08.1 deg</text>
+      <text x="18" y="110" fill="#EAF3FF" font-size="15" font-family="Consolas, monospace" font-weight="600">joint_shoulder_r: +17.8 deg</text>
+
+      <rect x="456" y="0" width="434" height="138" rx="10" fill="url(#panel)"/>
+      <text x="474" y="34" fill="#D8EAFB" font-size="17" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Sensor Streams</text>
+      <polyline points="474,104 528,96 582,102 636,84 690,90 744,80 798,88 852,76" fill="none" stroke="#3AA7FF" stroke-width="3"/>
+      <polyline points="474,118 528,110 582,114 636,102 690,106 744,94 798,100 852,92" fill="none" stroke="#22C55E" stroke-width="2.5"/>
+    </g>
+  </g>
+
+  <g transform="translate(996,108)">
+    <rect x="0" y="0" width="356" height="684" rx="14" fill="#12314C" stroke="#4D7EA8"/>
+    <text x="24" y="40" fill="#D8EAFB" font-size="20" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Safety and Command</text>
+
+    <rect x="24" y="60" width="308" height="110" rx="10" fill="#173E60"/>
+    <text x="42" y="94" fill="#EAF3FF" font-size="16" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Emergency Status</text>
+    <rect x="42" y="108" width="120" height="36" rx="8" fill="#22C55E"/>
+    <text x="82" y="131" fill="#052614" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="700">ARMED</text>
+    <text x="184" y="131" fill="#BED5EB" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">No active faults</text>
+
+    <rect x="24" y="190" width="308" height="176" rx="10" fill="#173E60"/>
+    <text x="42" y="224" fill="#EAF3FF" font-size="16" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Motion Profile</text>
+    <rect x="42" y="242" width="272" height="22" rx="6" fill="#21577F"/>
+    <rect x="42" y="242" width="188" height="22" rx="6" fill="#44E0D0"/>
+    <text x="42" y="287" fill="#BED5EB" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Speed: 68%</text>
+    <text x="42" y="314" fill="#BED5EB" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Torque cap: 72%</text>
+    <text x="42" y="341" fill="#BED5EB" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Collision guard: ON</text>
+
+    <rect x="24" y="386" width="308" height="274" rx="10" fill="#173E60"/>
+    <text x="42" y="420" fill="#EAF3FF" font-size="16" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Command Log</text>
+    <text x="42" y="452" fill="#DCEAF8" font-size="14" font-family="Consolas, monospace" font-weight="600">[10:14:02] move_to waypoint_A3</text>
+    <text x="42" y="478" fill="#DCEAF8" font-size="14" font-family="Consolas, monospace" font-weight="600">[10:14:15] vision_scan panel_17</text>
+    <text x="42" y="504" fill="#DCEAF8" font-size="14" font-family="Consolas, monospace" font-weight="600">[10:14:30] safe_grip part_441</text>
+    <text x="42" y="530" fill="#DCEAF8" font-size="14" font-family="Consolas, monospace" font-weight="600">[10:15:02] rotate_base 14deg</text>
+    <text x="42" y="556" fill="#DCEAF8" font-size="14" font-family="Consolas, monospace" font-weight="600">[10:15:29] handoff conveyor_2</text>
+
+    <rect x="42" y="598" width="118" height="38" rx="8" fill="#FF4D4F"/>
+    <text x="73" y="622" fill="#2E0200" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="700">STOP</text>
+    <rect x="178" y="598" width="136" height="38" rx="8" fill="#22C55E"/>
+    <text x="212" y="622" fill="#052614" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="700">RESUME</text>
+  </g>
+</svg>
