@@ -433,8 +433,6 @@ export default function DigitalTwinMap({
 
       // Draw future trajectory ahead for each robot
       for (const r of interp) {
-        const cx = scale(r.x)
-        const cy = scale(r.y)
         const color = statusColor(r.status)
         renderTrajectoryAhead(ctx, r.x, r.y, r.robot_id, scale, color)
       }

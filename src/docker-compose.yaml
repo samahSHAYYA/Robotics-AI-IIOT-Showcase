@@ -94,10 +94,10 @@ services:
         condition: service_healthy
     networks:
       - showcase_net
-    profiles: ["dev"]
     volumes:
       - ./ops-api/app:/app/ops-api/app
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8003 --reload
+    # Dev: remove the command override below to use production CMD from Dockerfile
+    command: uv run uvicorn app.main:app --host 0.0.0.0 --port 8003 --reload
 
   ai-agent:
     build:
@@ -117,10 +117,9 @@ services:
       - ops-api
     networks:
       - showcase_net
-    profiles: ["dev"]
     volumes:
       - ./ai-agent/app:/app/ai-agent/app
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8004 --reload
+    command: uv run uvicorn app.main:app --host 0.0.0.0 --port 8004 --reload
 
   ops-frontend:
     build:
