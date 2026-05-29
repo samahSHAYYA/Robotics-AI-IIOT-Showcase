@@ -11,7 +11,7 @@ import logging
 import uuid
 
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from typing import Any
 
 import redis.asyncio as aioredis
 
@@ -41,7 +41,7 @@ async def ensure_group(r: aioredis.Redis):
         pass
 
 
-async def process_message(msg_data: Dict[str, str]) -> Optional[Dict[str, Any]]:
+async def process_message(msg_data: dict[str, str]) -> dict[str, Any] | None:
     """
     Runs mock inference on a single sensor event.
 
@@ -57,7 +57,7 @@ async def process_message(msg_data: Dict[str, str]) -> Optional[Dict[str, Any]]:
 
     logger.info('Inferring from event type=%s', event_type)
 
-    prediction: Dict[str, Any] = run_mock_inference(msg_data)
+    prediction: dict[str, Any] = run_mock_inference(msg_data)
 
     prediction['trace_id'] = msg_data.get('trace_id', str(uuid.uuid4()))
     prediction['timestamp'] = datetime.now(timezone.utc).isoformat()

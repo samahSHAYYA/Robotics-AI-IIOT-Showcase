@@ -13,7 +13,7 @@ import logging
 import os
 
 from contextlib import asynccontextmanager
-from typing import Any, Dict, List
+from typing import Any
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -37,7 +37,7 @@ logging.basicConfig(
 logger: logging.Logger = logging.getLogger(__name__)
 
 _consumer_task: asyncio.Task | None = None
-_ws_connections: List[WebSocket] = []
+_ws_connections: list[WebSocket] = []
 
 
 async def _broadcast_snapshot():
@@ -49,12 +49,12 @@ async def _broadcast_snapshot():
     while True:
         await asyncio.sleep(2)
 
-        snapshot: Dict[str, Any] = store.get_snapshot()
+        snapshot: dict[str, Any] = store.get_snapshot()
         payload: str = json.dumps(
             {'type': 'snapshot', 'data': snapshot},
             default = str,
         )
-        stale: List[WebSocket] = []
+        stale: list[WebSocket] = []
 
         for ws in _ws_connections:
             try:
@@ -111,6 +111,9 @@ async def lifespan(app: FastAPI):
     _consumer_task = asyncio.create_task(run_consumer(REDIS_URL))
 
     broadcast_task: asyncio.Task = asyncio.create_task(_broadcast_snapshot())
+    movement_task: asyncio.Task = store.start_movement_simulation()
+
+    logger.info('Robot movement simulation started.')
 
     yield
 
@@ -118,10 +121,12 @@ async def lifespan(app: FastAPI):
         _consumer_task.cancel()
 
     broadcast_task.cancel()
+    movement_task.cancel()
 
     try:
         await _consumer_task
         await broadcast_task
+        await movement_task
     except asyncio.CancelledError:
         pass
 

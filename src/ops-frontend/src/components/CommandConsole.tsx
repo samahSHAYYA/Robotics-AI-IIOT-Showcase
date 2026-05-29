@@ -1,50 +1,70 @@
 import { useState } from 'react'
-import type { CommandPayload } from '../types/telemetry'
 
 interface CommandConsoleProps {
-  onSendCommand: (cmd: CommandPayload) => void
+  onStartRobot: (id: string) => void
+  onStopRobot: (id: string) => void
+  onAssignTask: (id: string, task: string) => void
 }
 
-const COMMANDS = [
-  { value: 'start_task', label: 'Start Task' },
-  { value: 'stop_task', label: 'Stop Task' },
-  { value: 'emergency_stop', label: 'Emergency Stop' },
-  { value: 'return_to_base', label: 'Return to Base' },
-  { value: 'pause', label: 'Pause' },
-  { value: 'resume', label: 'Resume' },
+const ROBOTS = [
+  { value: 'C3', label: 'C3 Humanoid' },
+  { value: 'W2', label: 'W2 Welder Arm' },
+  { value: 'Q1', label: 'Q1 Inspector' },
 ]
 
-export default function CommandConsole({ onSendCommand }: CommandConsoleProps) {
-  const [robotId, setRobotId] = useState('robot-01')
-  const [command, setCommand] = useState(COMMANDS[0].value)
+export default function CommandConsole({
+  onStartRobot,
+  onStopRobot,
+  onAssignTask,
+}: CommandConsoleProps) {
+  const [robotId, setRobotId] = useState('C3')
+  const [task, setTask] = useState('')
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleStart = (e: React.MouseEvent) => {
     e.preventDefault()
-    onSendCommand({ command, robot_id: robotId, parameters: {} })
+    onStartRobot(robotId)
+  }
+
+  const handleStop = (e: React.MouseEvent) => {
+    e.preventDefault()
+    onStopRobot(robotId)
+  }
+
+  const handleTask = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (task.trim()) {
+      onAssignTask(robotId, task.trim())
+      setTask('')
+    }
   }
 
   return (
-    <form className="command-console" onSubmit={handleSubmit}>
+    <div className="command-console">
       <h3>Command Console</h3>
       <div className="command-row">
         <label>
           Robot
           <select value={robotId} onChange={(e) => setRobotId(e.target.value)}>
-            <option value="robot-01">robot-01</option>
-            <option value="robot-02">robot-02</option>
-            <option value="robot-03">robot-03</option>
-          </select>
-        </label>
-        <label>
-          Command
-          <select value={command} onChange={(e) => setCommand(e.target.value)}>
-            {COMMANDS.map((c) => (
-              <option key={c.value} value={c.value}>{c.label}</option>
+            {ROBOTS.map((r) => (
+              <option key={r.value} value={r.value}>{r.label}</option>
             ))}
           </select>
         </label>
-        <button type="submit" className="btn-send">Send</button>
+        <button className="btn-start" onClick={handleStart}>Start</button>
+        <button className="btn-stop" onClick={handleStop}>Stop</button>
       </div>
-    </form>
+      <form className="task-row" onSubmit={handleTask}>
+        <label>
+          Assign Task
+          <input
+            type="text"
+            value={task}
+            onChange={(e) => setTask(e.target.value)}
+            placeholder="e.g. Assembly Line B"
+          />
+        </label>
+        <button type="submit" className="btn-send">Assign</button>
+      </form>
+    </div>
   )
 }

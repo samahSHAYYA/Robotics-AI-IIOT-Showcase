@@ -8,7 +8,7 @@
 
 import logging
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -39,7 +39,7 @@ async def get_current_user(
     """
 
     token: str = credentials.credentials
-    payload: Optional[Dict[str, Any]] = decode_access_token(token)
+    payload: dict[str, Any] | None = decode_access_token(token)
 
     if payload is None:
         raise HTTPException(
@@ -47,7 +47,7 @@ async def get_current_user(
             detail = 'Invalid or expired token',
         )
 
-    username: Optional[str] = payload.get('sub')
+    username: str | None = payload.get('sub')
 
     if username is None:
         raise HTTPException(

@@ -1,7 +1,9 @@
-FROM ghcr.io/astral-sh/uv:latest AS uv
+FROM ghcr.io/astral-sh/uv:0.5.29 AS uv
 
 FROM python:3.12-slim AS builder
 COPY --from=uv /uv /uvx /bin/
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 RUN apt-get update && apt-get install -y --no-install-recommends \
     cmake \
     g++ \
@@ -14,6 +16,8 @@ RUN cmake -S /app/cpp -B /app/build -DCMAKE_BUILD_TYPE=Release \
 
 FROM python:3.12-slim
 COPY --from=uv /uv /uvx /bin/
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 RUN uv pip install --system --no-cache redis
 WORKDIR /app
 COPY --from=builder /app/build/core_platform_sim .

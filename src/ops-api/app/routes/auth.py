@@ -9,7 +9,7 @@ validates credentials against PostgreSQL and returns a JWT.
 import logging
 
 from datetime import timedelta
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel

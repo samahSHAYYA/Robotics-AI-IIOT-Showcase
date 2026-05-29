@@ -94,6 +94,7 @@ services:
         condition: service_healthy
     networks:
       - showcase_net
+    profiles: ["dev"]
     volumes:
       - ./ops-api/app:/app/ops-api/app
     command: uvicorn app.main:app --host 0.0.0.0 --port 8003 --reload
@@ -106,12 +107,17 @@ services:
     env_file:
       - .env
       - ./envs/ai-agent/.env
+    environment:
+      - OLLAMA_URL=http://host.docker.internal:11434
+      - OPS_API_URL=http://ops-api:8003
+      - LLM_MODEL=qwen3:14b
     ports:
       - "${AI_AGENT_PORT:-8004}:8004"
     depends_on:
       - ops-api
     networks:
       - showcase_net
+    profiles: ["dev"]
     volumes:
       - ./ai-agent/app:/app/ai-agent/app
     command: uvicorn app.main:app --host 0.0.0.0 --port 8004 --reload
@@ -132,6 +138,7 @@ services:
       - showcase_net
 
   ops-frontend-dev:
+    profiles: ["dev"]
     image: node:22-alpine
     container_name: ops-frontend-dev
     working_dir: /app

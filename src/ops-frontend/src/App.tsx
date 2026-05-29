@@ -7,7 +7,7 @@ import CommandConsole from './components/CommandConsole'
 import DigitalTwinMap from './components/DigitalTwinMap'
 import ChatPanel from './components/ChatPanel'
 import LoginPage from './components/LoginPage'
-import type { TelemetrySnapshot, RobotStatus, Alert, Event, CommandPayload } from './types/telemetry'
+import type { TelemetrySnapshot, RobotStatus, Alert, Event } from './types/telemetry'
 import './App.css'
 
 const WS_URL = import.meta.env.VITE_WS_URL ?? `${window.location.hostname}:8003/ws`
@@ -67,21 +67,26 @@ export default function App() {
     }
   }, [status])
 
-  const handleSendCommand = useCallback(async (cmd: CommandPayload) => {
+  const handleRobotStart = useCallback(async (id: string) => {
     try {
-      const token = localStorage.getItem('sf_session')
-      const resp = await fetch('/api/v1/robot/command', {
+      await fetch(`/api/v1/robot/${id}/start`, { method: 'POST' })
+    } catch (err) { console.error(err) }
+  }, [])
+
+  const handleRobotStop = useCallback(async (id: string) => {
+    try {
+      await fetch(`/api/v1/robot/${id}/stop`, { method: 'POST' })
+    } catch (err) { console.error(err) }
+  }, [])
+
+  const handleAssignTask = useCallback(async (id: string, task: string) => {
+    try {
+      await fetch(`/api/v1/robot/${id}/task`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(cmd),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task }),
       })
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
-    } catch (err) {
-      console.error('Command failed:', err)
-    }
+    } catch (err) { console.error(err) }
   }, [])
 
   const handleLogout = () => {
@@ -135,13 +140,22 @@ export default function App() {
             <RobotFleet robots={robots} error={error} />
           </div>
           <div className="panel panel-map">
-            <DigitalTwinMap robots={robots} error={error} />
+            <DigitalTwinMap
+              robots={robots}
+              error={error}
+              onRobotStart={handleRobotStart}
+              onRobotStop={handleRobotStop}
+            />
           </div>
           <div className="panel panel-alerts">
             <AlertBoard alerts={alerts} events={events} error={error} />
           </div>
           <div className="panel panel-console">
-            <CommandConsole onSendCommand={handleSendCommand} />
+            <CommandConsole
+              onStartRobot={handleRobotStart}
+              onStopRobot={handleRobotStop}
+              onAssignTask={handleAssignTask}
+            />
           </div>
           <div className="panel panel-agent">
             <ChatPanel />

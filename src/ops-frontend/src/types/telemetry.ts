@@ -7,7 +7,7 @@ export interface RobotPose {
 export interface RobotStatus {
   robot_id: string
   name: string
-  status: 'idle' | 'active' | 'maintenance' | 'error' | 'offline'
+  status: 'idle' | 'active' | 'moving' | 'maintenance' | 'error' | 'offline'
   uptime_pct: number
   current_task: string | null
   pose: RobotPose

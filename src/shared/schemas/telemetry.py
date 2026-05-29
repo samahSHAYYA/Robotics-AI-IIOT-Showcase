@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -9,8 +9,8 @@ class RobotStatus(BaseModel):
     name: str = Field(..., description = 'Human-readable name')
     status: str = Field(..., description = 'active, maintenance, idle, error')
     uptime_pct: float = Field(..., ge = 0.0, le = 100.0)
-    current_task: Optional[str] = None
-    joint_angles: Dict[str, float] = Field(default_factory = dict)
+    current_task: str | None = None
+    joint_angles: dict[str, float] = Field(default_factory = dict)
 
 
 class TelemetrySnapshot(BaseModel):
@@ -18,5 +18,5 @@ class TelemetrySnapshot(BaseModel):
     throughput: int = Field(default = 0, description = 'Units processed per hour')
     defect_rate_pct: float = Field(default = 0.0, ge = 0.0, le = 100.0)
     robot_uptime_pct: float = Field(default = 0.0, ge = 0.0, le = 100.0)
-    robots: List[RobotStatus] = Field(default_factory = list)
-    alerts: List[Dict] = Field(default_factory = list)
+    robots: list[RobotStatus] = Field(default_factory = list)
+    alerts: list[dict[str, Any]] = Field(default_factory = list)

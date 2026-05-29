@@ -25,8 +25,6 @@ import subprocess
 import sys
 import time
 
-from typing import List
-
 PROJECT_ROOT: str = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOCS_DIR: str = os.path.join(PROJECT_ROOT, 'docs')
 DOXYFILE: str = os.path.join(PROJECT_ROOT, 'src', 'core-platform', 'Doxyfile')
@@ -34,11 +32,11 @@ DOXYGEN_OUT: str = os.path.join(PROJECT_ROOT, 'docs', 'doxygen')
 SITE_OUT: str = os.path.join(PROJECT_ROOT, 'doc-site')
 MKDOCS_CONFIG: str = os.path.join(PROJECT_ROOT, 'mkdocs.yml')
 
-CPP_WATCH_DIRS: List[str] = [
+CPP_WATCH_DIRS: list[str] = [
     os.path.join(PROJECT_ROOT, 'src', 'core-platform', 'cpp'),
 ]
 
-DOCS_SOURCE_DIRS: List[str] = [
+DOCS_SOURCE_DIRS: list[str] = [
     'read-me',
     'src',
     '.agent',

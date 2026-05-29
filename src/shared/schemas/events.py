@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -17,7 +17,7 @@ class SensorEvent(BaseModel):
     trace_id: str = Field(..., description = 'Propagated trace identifier')
     timestamp: datetime = Field(default_factory = lambda: datetime.now(timezone.utc))
     source: str = Field('core-platform', description = 'Originating service')
-    readings: List[SensorReading] = Field(default_factory = list)
+    readings: list[SensorReading] = Field(default_factory = list)
 
 
 class SafetyEvent(BaseModel):
@@ -26,7 +26,7 @@ class SafetyEvent(BaseModel):
     timestamp: datetime = Field(default_factory = lambda: datetime.now(timezone.utc))
     source: str = Field('core-platform', description = 'Originating service')
     safe_state: str = Field(..., description = 'healthy, warning, critical')
-    details: Optional[str] = None
+    details: str | None = None
 
 
 class CameraEvent(BaseModel):
@@ -49,8 +49,8 @@ class MLPrediction(BaseModel):
     model_name: str = Field(..., description = 'Model identifier (cv_inspector_v12, ...)')
     prediction_type: str = Field(..., description = 'defect_detection, maintenance_forecast, ...')
     confidence: float = Field(..., ge = 0.0, le = 1.0)
-    result: Dict[str, Any] = Field(default_factory = dict)
-    triggered_alert: Optional[str] = None
+    result: dict[str, Any] = Field(default_factory = dict)
+    triggered_alert: str | None = None
 
 
 class CommandEvent(BaseModel):
@@ -60,4 +60,4 @@ class CommandEvent(BaseModel):
     source: str = Field('ops-api', description = 'Originating service')
     command: str = Field(..., description = 'Command identifier (safe-stop, resume, inspect, ...)')
     target: str = Field(..., description = 'Target robot or station')
-    params: Dict[str, Any] = Field(default_factory = dict)
+    params: dict[str, Any] = Field(default_factory = dict)

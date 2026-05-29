@@ -8,6 +8,7 @@ interface RobotFleetProps {
 const statusColors: Record<string, string> = {
   idle: '#6b7280',
   active: '#22c55e',
+  moving: '#22c55e',
   maintenance: '#eab308',
   error: '#ef4444',
   offline: '#9ca3af',

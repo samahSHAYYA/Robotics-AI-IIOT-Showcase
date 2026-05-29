@@ -5,6 +5,8 @@
 @description: Factory agent with PydanticAI real-LLM and mock fallback modes.
 """
 
+import os
+
 from pathlib import Path
 from typing import Any
 
@@ -29,9 +31,11 @@ def _build_agent(llm_url: str) -> Agent | None:
     @return agent: Configured Agent or None if setup fails.
     """
 
+    model_name: str = os.getenv('LLM_MODEL', 'qwen3:14b')
+
     try:
         model = OpenAIChatModel(
-            'qwen3:14b',
+            model_name,
             base_url = llm_url.rstrip('/') + '/v1',
         )
         agent = Agent(

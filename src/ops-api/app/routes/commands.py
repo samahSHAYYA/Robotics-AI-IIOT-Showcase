@@ -10,10 +10,12 @@ import os
 import uuid
 
 from datetime import datetime, timezone
-from typing import Any, Dict
+from typing import Any
 
 import redis.asyncio as aioredis
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
+
+from app.store import store
 
 router: APIRouter = APIRouter(prefix = '/api/v1')
 
@@ -23,47 +25,45 @@ COMMAND_STREAM: str = 'events:commands'
 logger: logging.Logger = logging.getLogger(__name__)
 
 
-@router.post('/robot/command')
-async def post_command(payload: Dict[str, Any]):
-    """
-    Issues a command to a robot.
+@router.post('/robot/{robot_id}/start')
+async def start_robot(robot_id: str):
+    """Starts robot movement."""
+    ok = store.start_robot(robot_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail='Robot not found')
+    return {'status': 'started', 'robot_id': robot_id}
 
-    Writes a CommandEvent to the Redis commands stream. Expected payload:
-    {
-        "command": "safe-stop | resume | move | grip",
-        "target": "C3 | W2 | Q1",
-        "params": { ... }
-    }
 
-    @param payload: Command payload from the request body.
+@router.post('/robot/{robot_id}/stop')
+async def stop_robot(robot_id: str):
+    """Stops robot movement."""
+    ok = store.stop_robot(robot_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail='Robot not found')
+    return {'status': 'stopped', 'robot_id': robot_id}
 
-    @return result: Dict with status and trace_id.
-    """
 
-    trace_id: str = str(uuid.uuid4())
+@router.post('/robot/{robot_id}/task')
+async def assign_task(robot_id: str, body: dict[str, Any]):
+    """Assigns a task to a robot."""
+    task = body.get('task', '')
+    ok = store.assign_task(robot_id, task)
+    if not ok:
+        raise HTTPException(status_code=404, detail='Robot not found')
+    return {'status': 'task_assigned', 'robot_id': robot_id, 'task': task}
 
-    event: Dict[str, Any] = {
-        'event_type': 'command.issue',
-        'trace_id': trace_id,
-        'timestamp': datetime.now(timezone.utc).isoformat(),
-        'source': 'ops-api',
-        'command': payload.get('command', 'unknown'),
-        'target': payload.get('target', 'unknown'),
-        'params': payload.get('params', {}),
-    }
 
-    r: aioredis.Redis = aioredis.from_url(REDIS_URL, decode_responses = True)
-
-    try:
-        await r.xadd(COMMAND_STREAM, event, maxlen = 100)
-    except Exception:
-        logger.exception('Failed to publish command to Redis')
-
-    return {'status': 'acknowledged', 'trace_id': trace_id}
+@router.get('/robot/{robot_id}')
+async def get_robot(robot_id: str):
+    """Returns detailed info for a single robot."""
+    info = store.get_robot_info(robot_id)
+    if not info:
+        raise HTTPException(status_code=404, detail='Robot not found')
+    return info
 
 
 @router.post('/inspect')
-async def trigger_inspect(payload: Dict[str, Any]):
+async def trigger_inspect(payload: dict[str, Any]):
     """
     Triggers a mock visual inspection.
 
@@ -77,7 +77,7 @@ async def trigger_inspect(payload: Dict[str, Any]):
 
     trace_id: str = str(uuid.uuid4())
 
-    event: Dict[str, Any] = {
+    event: dict[str, Any] = {
         'event_type': 'camera.frame',
         'trace_id': trace_id,
         'timestamp': datetime.now(timezone.utc).isoformat(),

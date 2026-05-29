@@ -8,10 +8,10 @@ Produces canned predictions for sensor and camera events.
 
 import random
 
-from typing import Any, Dict
+from typing import Any
 
 
-def _mock_defect_detection() -> Dict[str, Any]:
+def _mock_defect_detection() -> dict[str, Any]:
     """
     Simulates a computer vision defect detection result.
 
@@ -25,7 +25,7 @@ def _mock_defect_detection() -> Dict[str, Any]:
     }
 
 
-def _mock_maintenance_forecast() -> Dict[str, Any]:
+def _mock_maintenance_forecast() -> dict[str, Any]:
     """
     Simulates a predictive maintenance score for a motor or bearing.
 
@@ -41,12 +41,12 @@ def _mock_maintenance_forecast() -> Dict[str, Any]:
     }
 
 
-PREDICTION_TYPE_MAP: Dict[str, str] = {
+PREDICTION_TYPE_MAP: dict[str, str] = {
     'camera.frame': 'defect_detection',
     'sensor.reading': 'maintenance_forecast',
 }
 
-MODEL_NAME_MAP: Dict[str, str] = {
+MODEL_NAME_MAP: dict[str, str] = {
     'defect_detection': 'cv_inspector_v12',
     'maintenance_forecast': 'tcn_motor_health_v7',
 }
@@ -57,7 +57,7 @@ INFERENCE_FN_MAP = {
 }
 
 
-def run_mock_inference(event_data: Dict[str, Any]) -> Dict[str, Any]:
+def run_mock_inference(event_data: dict[str, Any]) -> dict[str, Any]:
     """
     Runs mock inference on a single event payload.
 
@@ -71,7 +71,7 @@ def run_mock_inference(event_data: Dict[str, Any]) -> Dict[str, Any]:
     model_name: str = MODEL_NAME_MAP.get(prediction_type, 'default-model')
     infer_fn = INFERENCE_FN_MAP.get(prediction_type, _mock_maintenance_forecast)
 
-    result: Dict[str, Any] = infer_fn()
+    result: dict[str, Any] = infer_fn()
     confidence: float = result.get('confidence', round(random.uniform(0.7, 0.99), 3))
 
     triggered_alert: str | None = None

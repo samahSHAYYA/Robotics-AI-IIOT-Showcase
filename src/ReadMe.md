@@ -29,6 +29,24 @@ each `src/<service>` must be directly runnable on its own.
 `src/shared/` (not a standalone service) Shared contracts/schemas and small
   reusable Python/C++ utilities used across services.
 
+## Quickstart Demo
+
+```bash
+# Build and start all services (with dev profile for hot-reload)
+docker compose --profile dev build
+docker compose --profile dev up -d
+
+# Open browser to http://localhost:3000
+# Login: admin / admin
+# Robots move on the factory floor automatically
+# Use the Command Console or click on robots to start/stop them
+```
+
+To run only the core infrastructure (no hot-reload):
+```bash
+docker compose up -d
+```
+
 ## Notes
 
 Keep `src/` root clean.

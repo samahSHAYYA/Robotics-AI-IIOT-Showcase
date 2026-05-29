@@ -10,13 +10,11 @@ telemetry store.
 import asyncio
 import logging
 
-from typing import Dict, List
-
 import redis.asyncio as aioredis
 
 from app.store import store
 
-STREAMS: List[str] = ['events:core-platform', 'events:ai-service']
+STREAMS: list[str] = ['events:core-platform', 'events:ai-service']
 GROUP_NAME: str = 'ops-api-group'
 CONSUMER_NAME: str = 'ops-api-1'
 POLL_BLOCK_MS: int = 5000
@@ -39,7 +37,7 @@ async def ensure_groups(r: aioredis.Redis):
             pass
 
 
-async def process_message(msg_data: Dict[str, str]):
+async def process_message(msg_data: dict[str, str]):
     """
     Routes a stream message to the appropriate store update logic.
 
@@ -71,7 +69,7 @@ async def run_consumer(redis_url: str):
 
     while True:
         try:
-            stream_map: Dict[str, str] = {s: '>' for s in STREAMS}
+            stream_map: dict[str, str] = {s: '>' for s in STREAMS}
 
             results = await r.xreadgroup(
                 GROUP_NAME,
