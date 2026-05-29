@@ -83,7 +83,7 @@ function blinkAlpha(status: string, timeMs: number): number {
   }
 }
 
-/** Draw a more detailed robot arrow shape */
+/** Draw robot as circular base + direction arrow */
 function renderRobotShape(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -93,16 +93,15 @@ function renderRobotShape(
   alpha: number,
   collisionGlow: boolean,
 ) {
-  const size = 10
+  const radius = 8
   ctx.save()
   ctx.globalAlpha = alpha
   ctx.translate(x, y)
-  ctx.rotate(theta)
 
   // Collision glow ring
   if (collisionGlow) {
     ctx.beginPath()
-    ctx.arc(0, 0, size * 1.8, 0, Math.PI * 2)
+    ctx.arc(0, 0, radius * 2.2, 0, Math.PI * 2)
     ctx.strokeStyle = '#ef4444'
     ctx.lineWidth = 2
     ctx.setLineDash([4, 4])
@@ -110,27 +109,36 @@ function renderRobotShape(
     ctx.setLineDash([])
   }
 
-  // Main body arrow
+  // Circular base with subtle gradient
+  const grad = ctx.createRadialGradient(-2, -2, 0, 0, 0, radius)
+  grad.addColorStop(0, '#ffffff')
+  grad.addColorStop(0.3, color)
+  grad.addColorStop(1, '#000000')
   ctx.beginPath()
-  ctx.moveTo(size, 0)
-  ctx.lineTo(-size * 0.7, -size * 0.6)
-  ctx.lineTo(-size * 0.3, 0)
-  ctx.lineTo(-size * 0.7, size * 0.6)
-  ctx.closePath()
-  ctx.fillStyle = color
+  ctx.arc(0, 0, radius, 0, Math.PI * 2)
+  ctx.fillStyle = grad
   ctx.fill()
-  ctx.strokeStyle = 'rgba(255,255,255,0.3)'
-  ctx.lineWidth = 0.5
+  ctx.strokeStyle = 'rgba(255,255,255,0.4)'
+  ctx.lineWidth = 1
   ctx.stroke()
 
-  // Head sensor circle at front
+  // Direction arrow (pointing toward theta, from center outward)
+  ctx.save()
+  ctx.rotate(theta)
   ctx.beginPath()
-  ctx.arc(size * 0.3, 0, 2.5, 0, Math.PI * 2)
+  ctx.moveTo(radius + 4, 0)
+  ctx.lineTo(radius - 2, -4)
+  ctx.lineTo(radius - 2, 4)
+  ctx.closePath()
   ctx.fillStyle = '#ffffff'
   ctx.fill()
-  ctx.strokeStyle = color
-  ctx.lineWidth = 1.5
-  ctx.stroke()
+  ctx.restore()
+
+  // Center dot
+  ctx.beginPath()
+  ctx.arc(0, 0, 2, 0, Math.PI * 2)
+  ctx.fillStyle = '#ffffff'
+  ctx.fill()
 
   ctx.restore()
 }
@@ -342,6 +350,14 @@ export default function DigitalTwinMap({
         }
       }
 
+      // Clamp positions to visible floor bounds
+      const CLAMP_MIN = 0.5
+      const CLAMP_MAX = 9.5
+      for (const r of interp) {
+        r.x = Math.max(CLAMP_MIN, Math.min(CLAMP_MAX, r.x))
+        r.y = Math.max(CLAMP_MIN, Math.min(CLAMP_MAX, r.y))
+      }
+
       // Remove robots no longer in target
       const targetIds = new Set(target.map((t) => t.robot_id))
       for (let i = interp.length - 1; i >= 0; i--) {
@@ -421,6 +437,20 @@ export default function DigitalTwinMap({
       for (let i = 0; i < 3; i++) {
         ctx.fillText(zones[i], (w / 6) + (w / 3) * i, h - 8)
       }
+
+      // Visible floor boundary (0.5-9.5 mapped)
+      ctx.strokeStyle = 'rgba(59,130,246,0.12)'
+      ctx.lineWidth = 1
+      ctx.setLineDash([4, 6])
+      ctx.strokeRect(scale(0.5), scale(0.5), scale(9), scale(9))
+      ctx.setLineDash([])
+      // Note: the above computes the boundary rectangle correctly.
+      // Simpler approach:
+      ctx.strokeStyle = 'rgba(59,130,246,0.12)'
+      ctx.lineWidth = 1
+      ctx.setLineDash([4, 6])
+      ctx.strokeRect(scale(0.5), scale(0.5), scale(9), scale(9))
+      ctx.setLineDash([])
 
       // Draw trails first (behind robots)
       for (const r of interp) {
