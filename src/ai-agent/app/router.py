@@ -1,15 +1,14 @@
 """
 @author: Samah SHAYYA
-@date: 28-May-2026
+@date: 29-May-2026
 
-@description: Chat endpoint for AI Agent.
+@description: Chat endpoint for AI Agent using PydanticAI.
 """
 
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
-from app.telemetry import build_context
 
-router = APIRouter(prefix="/api/v1/agent")
+router = APIRouter(prefix = '/api/v1/agent')
 
 
 class ChatRequest(BaseModel):
@@ -21,14 +20,15 @@ class ChatResponse(BaseModel):
     chart: dict | None = None
 
 
-@router.post("/chat", response_model=ChatResponse)
+@router.post('/chat', response_model = ChatResponse)
 async def chat(req: Request, body: ChatRequest):
-    ops_api_url = req.app.state.ops_api_url
-    llm = req.app.state.llm
+    """
+    Processes a chat message through the factory agent.
+    """
 
-    context = build_context(ops_api_url)
-    result = llm.chat(body.message, context)
-    reply = result.get("reply", "No response.")
-    chart = result.get("chart")
-
-    return ChatResponse(reply=reply, chart=chart)
+    agent = req.app.state.agent
+    result = await agent.chat(body.message)
+    return ChatResponse(
+        reply = result.get('reply', 'No response.'),
+        chart = result.get('chart'),
+    )

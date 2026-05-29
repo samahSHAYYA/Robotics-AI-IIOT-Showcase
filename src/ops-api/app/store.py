@@ -31,11 +31,14 @@ class TelemetryStore:
             'robot_uptime_pct': 99.2,
             'robots': [
                 {'robot_id': 'C3', 'name': 'C3 Humanoid', 'status': 'active',
-                 'uptime_pct': 99.5, 'current_task': 'Assembly Line A'},
+                 'uptime_pct': 99.5, 'current_task': 'Assembly Line A',
+                 'pose': {'x': 3.2, 'y': 2.1, 'theta': 0.5}},
                 {'robot_id': 'W2', 'name': 'W2 Welder Arm', 'status': 'maintenance',
-                 'uptime_pct': 94.1, 'current_task': None},
+                 'uptime_pct': 94.1, 'current_task': None,
+                 'pose': {'x': 7.5, 'y': 1.8, 'theta': -0.3}},
                 {'robot_id': 'Q1', 'name': 'Q1 Inspector', 'status': 'active',
-                 'uptime_pct': 98.7, 'current_task': 'Vision QA Line C'},
+                 'uptime_pct': 98.7, 'current_task': 'Vision QA Line C',
+                 'pose': {'x': 5.0, 'y': 5.5, 'theta': 1.2}},
             ],
             'alerts': [
                 {'severity': 'healthy', 'message': 'Safety gate pass',
@@ -50,9 +53,9 @@ class TelemetryStore:
             'last_update': datetime.now(timezone.utc).isoformat(),
         }
         self._robot_fleet: Dict[str, Dict[str, Any]] = {
-            'C3': {'status': 'active', 'uptime_pct': 99.5},
-            'W2': {'status': 'maintenance', 'uptime_pct': 94.1},
-            'Q1': {'status': 'active', 'uptime_pct': 98.7},
+            'C3': {'status': 'active', 'uptime_pct': 99.5, 'pose': {'x': 3.2, 'y': 2.1, 'theta': 0.5}},
+            'W2': {'status': 'maintenance', 'uptime_pct': 94.1, 'pose': {'x': 7.5, 'y': 1.8, 'theta': -0.3}},
+            'Q1': {'status': 'active', 'uptime_pct': 98.7, 'pose': {'x': 5.0, 'y': 5.5, 'theta': 1.2}},
         }
 
     def update_from_sensor_event(self, event: Dict[str, Any]):

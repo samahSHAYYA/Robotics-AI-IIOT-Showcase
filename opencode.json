@@ -1,0 +1,56 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "ollama-local": {
+      "name": "Ollama-Local",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "http://localhost:11434/v1"
+      },
+      "models": {
+        "Qwen3:14b": {
+          "name": "Qwen3:14b (Local)",
+          "tools": true
+        }
+      }
+    }
+  },
+  "model": "opencode/big-pickle",
+  "agent": {
+    "Orchestrator": {
+      "description": "Main supervisor that plans, coordinates, and delegates tasks.",
+      "mode": "primary",
+      "temperature": 0,
+      "prompt": "{file:./.agent/roles/orchestrator.md}",
+      "permission": {
+        "bash": "allow",
+        "edit": {
+          "*": "deny",
+          ".agent/tasks.json": "allow"
+        }
+      }
+    },
+    "Developer": {
+      "description": "Writes, updates, and refactors application source code.",
+      "mode": "subagent",
+      "temperature": 0,
+      "prompt": "{file:./.agent/roles/developer.md}",
+      "permission": {
+        "edit": "allow",
+        "bash": "allow"
+      }
+    },
+    "QA": {
+      "description": "Reviews code, runs test suites, and checks edge cases.",
+      "mode": "subagent",
+      "temperature": 0,
+      "prompt": "{file:./.agent/roles/qa.md}",
+      "permission": {
+        "edit": "deny",
+        "bash": {
+          "*": "allow"
+        }
+      }
+    }
+  }
+}

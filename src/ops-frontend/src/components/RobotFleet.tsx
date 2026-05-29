@@ -21,7 +21,7 @@ export default function RobotFleet({ robots }: RobotFleetProps) {
         {robots.map((r) => (
           <div key={r.robot_id} class="robot-card">
             <div class="robot-header">
-              <span class="robot-name">{r.robot_id}</span>
+              <span class="robot-name">{r.name}</span>
               <span class="robot-status" style={{ backgroundColor: statusColors[r.status] ?? '#6b7280' }}>
                 {r.status}
               </span>
@@ -30,7 +30,7 @@ export default function RobotFleet({ robots }: RobotFleetProps) {
               ({r.pose.x.toFixed(1)}, {r.pose.y.toFixed(1)}, {r.pose.theta.toFixed(1)}°)
             </div>
             <div class="robot-task">Task: {r.current_task ?? 'none'}</div>
-            <div class="robot-uptime">Uptime: {Math.floor(r.uptime_seconds / 60)}m</div>
+            <div class="robot-uptime">Uptime: {r.uptime_pct.toFixed(1)}%</div>
           </div>
         ))}
       </div>

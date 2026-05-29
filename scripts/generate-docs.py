@@ -22,6 +22,7 @@ import argparse
 import os
 import shutil
 import subprocess
+import sys
 import time
 
 from typing import List
@@ -40,6 +41,7 @@ CPP_WATCH_DIRS: List[str] = [
 DOCS_SOURCE_DIRS: List[str] = [
     'read-me',
     'src',
+    '.agent',
 ]
 
 
@@ -72,6 +74,7 @@ def _sync_source_docs():
         if os.path.isdir(src):
             shutil.copytree(src, dst, ignore = shutil.ignore_patterns(
                 '__pycache__', '*.pyc', '*.pyo', '.gitkeep', '*.env',
+                'node_modules', '.venv', 'dist', 'build',
             ))
 
     # Write a stub page that links to the Doxygen output.
@@ -147,7 +150,7 @@ def build_mkdocs() -> bool:
 
     result = subprocess.run(
         [
-            'mkdocs', 'build',
+            sys.executable, '-m', 'mkdocs', 'build',
             '--config-file', MKDOCS_CONFIG,
             '--site-dir', SITE_OUT,
         ],
@@ -177,7 +180,7 @@ def serve_mkdocs():
     print('[docs] Starting MkDocs dev server at: http://127.0.0.1:8000 ...')
 
     subprocess.run(
-        ['mkdocs', 'serve', '--config-file', MKDOCS_CONFIG],
+        [sys.executable, '-m', 'mkdocs', 'serve', '--config-file', MKDOCS_CONFIG],
         cwd = PROJECT_ROOT,
     )
 

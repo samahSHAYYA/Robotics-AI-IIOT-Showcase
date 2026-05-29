@@ -49,7 +49,10 @@ async def _broadcast_snapshot():
         await asyncio.sleep(2)
 
         snapshot: Dict[str, Any] = store.get_snapshot()
-        payload: str = json.dumps(snapshot, default = str)
+        payload: str = json.dumps(
+            {'type': 'snapshot', 'data': snapshot},
+            default = str,
+        )
         stale: List[WebSocket] = []
 
         for ws in _ws_connections:

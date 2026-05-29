@@ -98,6 +98,7 @@ docs/doxygen/
 docs/doxygen-api.md
 docs/read-me/
 docs/src/
+docs/agent/
 
 # =================
 # Docker Artifacts

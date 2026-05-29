@@ -1,30 +1,35 @@
 """
 @author: Samah SHAYYA
-@date: 28-May-2026
+@date: 29-May-2026
 
-@description: AI Agent microservice — chat interface to factory telemetry.
-Reads current state from ops-api (readonly) and optionally uses
-Ollama LLM for natural-language analysis. Falls back to rule-based mock.
+@description: AI Agent microservice — PydanticAI-powered chat interface to
+factory telemetry. Reads current state from ops-api (read-only). Uses
+OpenAI-compatible LLM (e.g. Ollama) when available; falls back to mock.
 """
 
 import os
 
-from fastapi import FastAPI, APIRouter
-from app.router import router
-from app.llm import LLMClient
+from fastapi import FastAPI
 
-app = FastAPI(title="AI Agent")
+from app.agent import FactoryAgent
+from app.router import router
+
+app = FastAPI(title = 'AI Agent')
 app.include_router(router)
 
 
-@app.on_event("startup")
+@app.on_event('startup')
 async def startup():
-    llm_url = os.getenv("OLLAMA_URL", "")
-    app.state.llm = LLMClient(base_url=llm_url)
-    app.state.ops_api_url = os.getenv("OPS_API_URL", "http://ops-api:8003")
+    llm_url: str = os.getenv('OLLAMA_URL', '')
+    ops_api_url: str = os.getenv('OPS_API_URL', 'http://ops-api:8003')
+    app.state.agent = FactoryAgent(llm_url = llm_url, ops_api_url = ops_api_url)
 
 
-@app.get("/health")
+@app.get('/health')
 async def health():
-    llm_ok = app.state.llm.ready if hasattr(app.state, "llm") else False
-    return {"status": "ok", "llm_connected": llm_ok}
+    agent_ready = (
+        app.state.agent.ready
+        if hasattr(app.state, 'agent')
+        else False
+    )
+    return {'status': 'ok', 'llm_connected': agent_ready}

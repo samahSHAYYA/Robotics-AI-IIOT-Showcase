@@ -1,19 +1,33 @@
+export interface RobotPose {
+  x: number
+  y: number
+  theta: number
+}
+
 export interface RobotStatus {
   robot_id: string
+  name: string
   status: 'idle' | 'active' | 'maintenance' | 'error' | 'offline'
-  pose: { x: number; y: number; theta: number }
-  joint_angles: number[]
+  uptime_pct: number
   current_task: string | null
-  uptime_seconds: number
+  pose: RobotPose
+}
+
+export interface Alert {
+  severity: 'healthy' | 'info' | 'warning' | 'critical'
+  message: string
+  timestamp: string
 }
 
 export interface TelemetrySnapshot {
-  robot_id: string
-  timestamp: string
-  cpu_temp_c: number
-  battery_pct: number
-  motor_load_pct: number
-  network_latency_ms: number
+  throughput: number
+  defect_rate_pct: number
+  robot_uptime_pct: number
+  robots: RobotStatus[]
+  alerts: Alert[]
+  events_consumed: number
+  predictions_consumed: number
+  last_update: string
 }
 
 export interface Event {

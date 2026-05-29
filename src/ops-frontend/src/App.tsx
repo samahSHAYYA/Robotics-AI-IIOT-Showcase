@@ -7,7 +7,7 @@ import CommandConsole from './components/CommandConsole'
 import DigitalTwinMap from './components/DigitalTwinMap'
 import ChatPanel from './components/ChatPanel'
 import LoginPage from './components/LoginPage'
-import type { TelemetrySnapshot, RobotStatus, Event, CommandPayload } from './types/telemetry'
+import type { TelemetrySnapshot, RobotStatus, Alert, Event, CommandPayload } from './types/telemetry'
 import './App.css'
 
 const WS_URL = import.meta.env.VITE_WS_URL ?? `${window.location.hostname}:8003/ws`
@@ -15,7 +15,8 @@ const WS_URL = import.meta.env.VITE_WS_URL ?? `${window.location.hostname}:8003/
 export default function App() {
   const [authed, setAuthed] = useState(() => !!localStorage.getItem('sf_session'))
   const [telemetry, setTelemetry] = useState<TelemetrySnapshot | undefined>()
-  const [robots] = useState<RobotStatus[]>([])
+  const [robots, setRobots] = useState<RobotStatus[]>([])
+  const [alerts, setAlerts] = useState<Alert[]>([])
   const [events, setEvents] = useState<Event[]>([])
   const [clock, setClock] = useState(new Date())
 
@@ -28,18 +29,20 @@ export default function App() {
     const msg = data as { type: string; data: unknown }
     if (!msg?.type) return
     switch (msg.type) {
-      case 'snapshot':
-        setTelemetry(msg.data as TelemetrySnapshot)
+      case 'snapshot': {
+        const snapshot = msg.data as TelemetrySnapshot
+        setTelemetry(snapshot)
+        setRobots(snapshot.robots ?? [])
+        setAlerts(snapshot.alerts ?? [])
         break
-      case 'telemetry':
-        setTelemetry(msg.data as TelemetrySnapshot)
+      }
+      case 'event': {
+        const ev = msg.data as Event
+        setEvents((prev) =>
+          prev.some((e) => e.id === ev.id) ? prev : [...prev, ev],
+        )
         break
-      case 'event':
-        setEvents((prev) => {
-          const ev = msg.data as Event
-          return prev.some((e) => e.id === ev.id) ? prev : [...prev, ev]
-        })
-        break
+      }
       case 'prediction':
         break
     }
@@ -95,7 +98,7 @@ export default function App() {
             <DigitalTwinMap robots={robots} />
           </div>
           <div className="panel panel-alerts">
-            <AlertBoard events={events} />
+            <AlertBoard alerts={alerts} events={events} />
           </div>
           <div className="panel panel-console">
             <CommandConsole onSendCommand={handleSendCommand} />

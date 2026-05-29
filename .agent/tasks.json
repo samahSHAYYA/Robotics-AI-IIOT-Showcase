@@ -1,114 +1,109 @@
 {
-  "sprint": "MVP Dockerized Showcase",
+  "sprint": "Showcase Polish Sprint",
   "status": "in_progress",
   "tasks": [
     {
       "id": 1,
       "title": "Phase 1: Add Redis to docker-compose + update env templates",
       "status": "completed",
-      "committed": true,
-      "acceptance": [
-        "redis:7-alpine service in docker-compose",
-        "REDIS_PORT env var with default 6379",
-        "redis_data named volume",
-        "depends_on: redis on ai-service and ops-api",
-        "REDIS_URL in ai-service and ops-api env templates",
-        "REDIS_PORT in root .env.template"
-      ]
+      "committed": true
     },
     {
       "id": 2,
       "title": "Phase 2: Create shared schemas (Pydantic models for events)",
       "status": "completed",
-      "committed": true,
-      "acceptance": [
-        "src/shared/__init__.py",
-        "src/shared/schemas/__init__.py",
-        "src/shared/schemas/events.py with SensorEvent, MLPrediction, CommandEvent",
-        "src/shared/schemas/telemetry.py with TelemetrySnapshot, RobotStatus",
-        "All models use BaseModel with field descriptions",
-        "trace_id propagation field on events"
-      ]
+      "committed": true
     },
     {
       "id": 3,
       "title": "Phase 3: Build ai-service (Python, FastAPI, Redis consumer, mock ML)",
       "status": "completed",
-      "committed": true,
-      "acceptance": [
-        "FastAPI app with /health endpoint",
-        "Redis consumer reading events:core-platform stream",
-        "Mock ML inference (canned defect/prediction results)",
-        "Emits results to events:ai-service stream",
-        "Dockerfile with pip install -r requirements.txt",
-        "requirements.txt with redis, fastapi, uvicorn, pydantic",
-        "Service logs to stdout",
-        "Health check in Dockerfile or docker-compose"
-      ]
+      "committed": true
     },
     {
       "id": 4,
       "title": "Phase 4: Build ops-api (FastAPI, Redis consumer, REST + WebSocket)",
       "status": "completed",
-      "committed": true,
-      "acceptance": [
-        "FastAPI app with /health endpoint",
-        "Redis consumer reading both core-platform and ai-service streams",
-        "In-memory store for latest telemetry",
-        "REST endpoints: GET /api/v1/telemetry, GET /api/v1/robot/status",
-        "POST /api/v1/robot/command (writes to Redis stream)",
-        "POST /api/v1/inspect (triggers mock inspection)",
-        "WebSocket endpoint at /ws for live dashboard updates",
-        "Dockerfile + requirements.txt",
-        "CORS enabled for frontend origin"
-      ]
+      "committed": true
     },
     {
       "id": 5,
       "title": "Phase 5: Build core-platform Dockerfile (real C++ build)",
       "status": "completed",
-      "committed": true,
-      "acceptance": [
-        "Multi-stage Dockerfile (build + runtime)",
-        "Builds C++20 CMake project",
-        "Runs simulation on container start",
-        "Outputs to Redis via publish_to_redis.py publisher",
-        "Proper .dockerignore",
-        "Health check verifies publisher process"
-      ]
+      "committed": true
     },
     {
       "id": 6,
       "title": "Phase 6: Build ops-frontend (React dashboard)",
       "status": "completed",
-      "committed": true,
-      "acceptance": [
-        "React 18+ Vite app",
-        "KPI cards (throughput, defect rate, uptime)",
-        "Alert board (critical/warning/healthy)",
-        "Robot fleet status list",
-        "Command console with execute button",
-        "Digital twin plant map (simplified grid)",
-        "Login page with auth (calls /api/v1/auth/login)",
-        "WebSocket connection to ops-api for live updates",
-        "Dockerfile (multi-stage: build + nginx)",
-        "nginx.conf with runtime resolver for upstreams"
-      ]
+      "committed": true
     },
     {
       "id": 7,
       "title": "Phase 7: Wire full stack + end-to-end validation",
       "status": "completed",
-      "committed": true,
+      "committed": true
+    },
+    {
+      "id": 8,
+      "title": "Phase 8: Fix Frontend↔Backend Data Pipeline",
+      "status": "in_progress",
+      "committed": false,
       "acceptance": [
-        "docker compose build succeeds for all services",
-        "docker compose up starts all containers",
-        "core-platform generates events",
-        "ai-service consumes and produces predictions",
-        "ops-api serves REST, WebSocket, and auth",
-        "ops-frontend loads in browser",
-        "/health returns OK on all services",
-        "All 7 containers healthy (redis, postgres, core-platform, ai-service, ops-api, ai-agent, ops-frontend)"
+        "WebSocket broadcast wraps payload with type field",
+        "TelemetrySnapshot type matches backend store shape",
+        "RobotStatus type matches store robot shape",
+        "Robot fleet data wired from WebSocket snapshot",
+        "KPI cards show live data, not fallback defaults",
+        "DigitalTwinMap renders robots with pose data",
+        "AlertBoard renders alerts from backend store"
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Phase 9: Remove dead event_logger.hpp",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "event_logger.hpp removed",
+        "No compilation errors from removal"
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Phase 10: Refactor ai-agent with PydanticAI",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "prompt.md file with system prompt",
+        "tools.py with telemetry fetch tools",
+        "agent.py with PydanticAI Agent wired to tools",
+        "router.py uses agent.py instead of old llm.py",
+        "Old llm.py and telemetry.py removed",
+        "Dockerfile + requirements.txt updated for pydantic-ai",
+        "Works with any OpenAI-compatible LLM",
+        "Mock fallback preserved for no-LLM mode"
+      ]
+    },
+    {
+      "id": 11,
+      "title": "Phase 11: Quality Cleanup",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "Root .dockerignore created (excludes node_modules, __pycache__, .venv, data, logs)",
+        "event_logger.hpp removed as dead code",
+        "All existing tests still pass"
+      ]
+    },
+    {
+      "id": 12,
+      "title": "Phase 12: Commit and push all changes",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "All changes committed with descriptive messages",
+        "Pushed to remote"
       ]
     }
   ]

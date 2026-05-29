@@ -6,17 +6,17 @@ interface KpiBoardProps {
 }
 
 export default function KpiBoard({ telemetry }: KpiBoardProps) {
-  const cpuTemp = telemetry?.cpu_temp_c ?? 45
-  const battery = telemetry?.battery_pct ?? 85
-  const motorLoad = telemetry?.motor_load_pct ?? 40
-  const latency = telemetry?.network_latency_ms ?? 15
+  const throughput = telemetry?.throughput ?? 0
+  const defectRate = telemetry?.defect_rate_pct ?? 0
+  const uptime = telemetry?.robot_uptime_pct ?? 100
+  const robotCount = telemetry?.robots?.length ?? 0
 
   return (
     <div class="kpi-board">
-      <GaugeCard label="CPU Temperature" value={cpuTemp} unit="°C" max={100} threshold_warn={60} threshold_crit={80} />
-      <GaugeCard label="Battery" value={battery} unit="%" threshold_warn={40} threshold_crit={20} />
-      <GaugeCard label="Motor Load" value={motorLoad} unit="%" threshold_warn={70} threshold_crit={90} />
-      <GaugeCard label="Network Latency" value={latency} unit="ms" max={300} threshold_warn={100} threshold_crit={200} />
+      <GaugeCard label="Throughput" value={throughput} unit="units" max={5000} threshold_warn={3000} threshold_crit={1000} />
+      <GaugeCard label="Defect Rate" value={defectRate} unit="%" max={10} threshold_warn={3} threshold_crit={7} />
+      <GaugeCard label="Robot Uptime" value={uptime} unit="%" threshold_warn={90} threshold_crit={80} />
+      <GaugeCard label="Active Robots" value={robotCount} unit="bots" max={20} threshold_warn={5} threshold_crit={2} />
     </div>
   )
 }
