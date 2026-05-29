@@ -5,6 +5,7 @@ import AlertBoard from './components/AlertBoard'
 import RobotFleet from './components/RobotFleet'
 import CommandConsole from './components/CommandConsole'
 import DigitalTwinMap from './components/DigitalTwinMap'
+import RobotCamera from './components/RobotCamera'
 import ChatPanel from './components/ChatPanel'
 import LoginPage from './components/LoginPage'
 import type { TelemetrySnapshot, RobotStatus, Alert, Event } from './types/telemetry'
@@ -156,6 +157,9 @@ export default function App() {
               onStopRobot={handleRobotStop}
               onAssignTask={handleAssignTask}
             />
+          </div>
+          <div className="panel panel-camera">
+            <RobotCamera robots={robots} />
           </div>
           <div className="panel panel-agent">
             <ChatPanel />

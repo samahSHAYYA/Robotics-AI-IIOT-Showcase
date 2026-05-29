@@ -10,11 +10,15 @@ background task.
 
 import asyncio
 import copy
+import logging
 import math
+import random
 import threading
 
 from datetime import datetime, timezone
 from typing import Any
+
+logger: logging.Logger = logging.getLogger(__name__)
 
 
 # Robot waypoint loops (closed loops in 0-10 coordinate space)
@@ -137,11 +141,17 @@ class TelemetryStore:
     async def _simulate_robot_movement(self):
         """
         Background coroutine: every 500ms moves each robot toward its next
-        waypoint, applies collision avoidance, and updates the snapshot.
+        waypoint, applies collision avoidance, dynamically varies dashboard
+        metrics, generates random alerts, and updates the snapshot.
         """
         WHILE_SLEEP_S = 0.5
         COLLISION_DIST = 0.8
         COLLISION_PAUSE_S = 1.0
+        STATUS_CHANGE_INTERVAL_S = 40  # ~every 40s change robot status
+
+        last_status_change: float = 0.0
+        error_robot: str | None = None
+        error_since: float = 0.0
 
         while True:
             try:
@@ -156,7 +166,128 @@ class TelemetryStore:
                                 current_poses[rid] = dict(r['pose'])
                                 break
 
-                # Compute movement per robot
+                # ---- Task 3a: Random data variation every tick ----
+                with self._lock:
+                    self._data['throughput'] += random.uniform(-5, 5)
+                    self._data['throughput'] = max(1100, min(1400, self._data['throughput']))
+
+                    self._data['defect_rate_pct'] += random.uniform(-0.05, 0.05)
+                    self._data['defect_rate_pct'] = max(0.5, min(4.0, self._data['defect_rate_pct']))
+
+                    self._data['robot_uptime_pct'] += random.uniform(-0.02, 0.02)
+                    self._data['robot_uptime_pct'] = max(95, min(100, self._data['robot_uptime_pct']))
+
+                    # Randomly generate alerts (~2% chance per tick ≈ 1 per 25s)
+                    if random.random() < 0.02:
+                        severities = ['info', 'warning', 'critical']
+                        severity = random.choices(severities, weights=[0.6, 0.3, 0.1])[0]
+                        messages = {
+                            'info': ['Motor temperature stable', 'Camera recalibrated',
+                                     'Network latency normal'],
+                            'warning': ['Motor load high on {robot}',
+                                        'Camera focus drift on {robot}',
+                                        'Battery below 30% on {robot}'],
+                            'critical': ['Overheating on {robot}',
+                                         'Collision risk detected at zone {zone}',
+                                         'Emergency stop triggered on {robot}'],
+                        }
+                        robot_ids = ['C3', 'W2', 'Q1']
+                        robots_names = {'C3': 'C3 Humanoid', 'W2': 'W2 Welder Arm',
+                                        'Q1': 'Q1 Inspector'}
+                        picked = random.choice(robot_ids)
+                        msg = random.choice(messages[severity]).format(
+                            robot=robots_names[picked],
+                            zone=random.choice(['A', 'B', 'C']),
+                        )
+                        self._data['alerts'].insert(0, {
+                            'severity': severity,
+                            'message': msg,
+                            'timestamp': datetime.now(timezone.utc).isoformat(),
+                        })
+                        self._data['alerts'] = self._data['alerts'][:20]
+
+                    # Randomly change robot tasks (~1% chance per tick)
+                    if random.random() < 0.01:
+                        tasks_pool = ['Assembly Line A', 'Assembly Line B',
+                                      'Welding Station 3', 'Welding Station 1',
+                                      'Visual Inspection', 'Quality Check',
+                                      'Material Handling', 'Packaging Zone',
+                                      'Charging Station', 'Maintenance Bay']
+                        rid = random.choice(list(self._robot_tasks.keys()))
+                        if random.random() < 0.15:
+                            self._robot_tasks[rid] = random.choice(tasks_pool)
+                        else:
+                            self._robot_tasks[rid] = None  # idle
+
+                # ---- Task 3b: Random robot status changes every ~40s ----
+                if now - last_status_change > STATUS_CHANGE_INTERVAL_S:
+                    last_status_change = now
+                    with self._lock:
+                        # Auto-resolve error after 10s
+                        if error_robot is not None and now - error_since > 10.0:
+                            for r in self._data['robots']:
+                                if r['robot_id'] == error_robot:
+                                    r['status'] = 'active'
+                                    self._robot_fleet[error_robot]['status'] = 'active'
+                                    self._robot_moving[error_robot] = True
+                                    logger.info('Robot %s error auto-resolved', error_robot)
+                                    self._data['alerts'].insert(0, {
+                                        'severity': 'info',
+                                        'message': f'{error_robot} error resolved — back online',
+                                        'timestamp': datetime.now(timezone.utc).isoformat(),
+                                    })
+                                    self._data['alerts'] = self._data['alerts'][:20]
+                                    break
+                            error_robot = None
+
+                        # Pick a random robot to change status
+                        rid = random.choice(list(self._robot_fleet.keys()))
+                        current_status = self._robot_fleet[rid]['status']
+
+                        if current_status in ('active', 'moving'):
+                            choice = random.choices(
+                                ['warning', 'error', 'active'],
+                                weights=[0.4, 0.1, 0.5],
+                            )[0]
+                            if choice == 'warning':
+                                self._robot_fleet[rid]['status'] = 'maintenance'
+                                self._robot_moving[rid] = False
+                                for r in self._data['robots']:
+                                    if r['robot_id'] == rid:
+                                        r['status'] = 'maintenance'
+                                logger.info('Robot %s status → maintenance', rid)
+                                self._data['alerts'].insert(0, {
+                                    'severity': 'warning',
+                                    'message': f'{rid} requires maintenance — robot slowed',
+                                    'timestamp': datetime.now(timezone.utc).isoformat(),
+                                })
+                                self._data['alerts'] = self._data['alerts'][:20]
+                            elif choice == 'error':
+                                self._robot_fleet[rid]['status'] = 'error'
+                                self._robot_moving[rid] = False
+                                for r in self._data['robots']:
+                                    if r['robot_id'] == rid:
+                                        r['status'] = 'error'
+                                error_robot = rid
+                                error_since = now
+                                logger.info('Robot %s status → error', rid)
+                                self._data['alerts'].insert(0, {
+                                    'severity': 'critical',
+                                    'message': f'{rid} encountered a fault — emergency stop',
+                                    'timestamp': datetime.now(timezone.utc).isoformat(),
+                                })
+                                self._data['alerts'] = self._data['alerts'][:20]
+
+                        elif current_status in ('maintenance', 'idle'):
+                            if random.random() < 0.5:
+                                self._robot_fleet[rid]['status'] = 'active'
+                                self._robot_moving[rid] = True
+                                for r in self._data['robots']:
+                                    if r['robot_id'] == rid:
+                                        r['status'] = 'active'
+                                logger.info('Robot %s status → active', rid)
+
+                # ---- Compute movement per robot ----
                 for rid in self._robot_paths:
                     pose = current_poses.get(rid)
                     if pose is None:
@@ -192,6 +323,10 @@ class TelemetryStore:
                         pose['x'] += (dx / dist) * min(step, dist)
                         pose['y'] += (dy / dist) * min(step, dist)
 
+                    # ---- Task 1: Clamp to factory floor bounds ----
+                    pose['x'] = max(0.5, min(9.5, pose['x']))
+                    pose['y'] = max(0.5, min(9.5, pose['y']))
+
                     pose['theta'] = math.atan2(dy, dx)
 
                     updates[rid] = {'pose': pose, 'status': 'moving'}
@@ -221,16 +356,19 @@ class TelemetryStore:
                             r['status'] = updates[rid]['status']
                         if rid in self._robot_moving:
                             moving = self._robot_moving[rid]
-                            if not moving and r['status'] != 'idle':
+                            if not moving and r['status'] in ('moving', 'active'):
                                 r['status'] = 'idle'
                         if rid in self._robot_tasks and self._robot_tasks[rid] is not None:
                             r['current_task'] = self._robot_tasks[rid]
+                        elif rid in self._robot_tasks and self._robot_tasks[rid] is None:
+                            r['current_task'] = None
                     self._data['last_update'] = datetime.now(timezone.utc).isoformat()
 
                 await asyncio.sleep(WHILE_SLEEP_S)
             except asyncio.CancelledError:
                 break
-            except Exception:
+            except Exception as exc:
+                logger.warning('Movement simulation error: %s', exc, exc_info=True)
                 await asyncio.sleep(WHILE_SLEEP_S)
 
     def update_from_sensor_event(self, event: dict[str, Any]):

@@ -10,7 +10,6 @@ interface DigitalTwinMapProps {
 
 const FACTORY_W = 600
 const FACTORY_H = 400
-const COLLISION_GLOW_DIST = 1.0
 
 interface InterpRobot {
   robot_id: string
@@ -23,6 +22,10 @@ interface InterpRobot {
   current_task: string | null
 }
 
+/** Maximum trail positions to store per robot */
+const MAX_TRAIL = 20
+
+/** Map status → color */
 const statusColor = (status: string): string => {
   switch (status) {
     case 'moving':
@@ -31,42 +34,191 @@ const statusColor = (status: string): string => {
     case 'idle':
       return '#6b7280'
     case 'error':
+    case 'critical':
       return '#ef4444'
     case 'maintenance':
+    case 'warning':
       return '#eab308'
+    case 'offline':
+      return '#6b7280'
     default:
       return '#6b7280'
   }
 }
 
-function renderRobotTriangle(
+/**
+ * Compute a blink alpha multiplier based on status and time.
+ * - active/moving: slow pulse (green)
+ * - idle: solid (no blink)
+ * - error/critical: fast pulse (red)
+ * - warning/maintenance: medium pulse (orange)
+ * - offline: dimmed static
+ */
+function blinkAlpha(status: string, timeMs: number): number {
+  switch (status) {
+    case 'moving':
+    case 'active':
+      // Slow pulse ~1s period
+      return 0.6 + 0.4 * Math.sin(timeMs / 500)
+    case 'error':
+    case 'critical':
+      // Fast pulse ~0.3s period
+      return 0.6 + 0.4 * Math.sin(timeMs / 150)
+    case 'maintenance':
+    case 'warning':
+      // Medium pulse ~0.6s period
+      return 0.6 + 0.4 * Math.sin(timeMs / 300)
+    case 'offline':
+      return 0.4
+    case 'idle':
+    default:
+      return 1.0
+  }
+}
+
+/** Draw a more detailed robot arrow shape */
+function renderRobotShape(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
   theta: number,
   color: string,
-  glow: boolean,
+  alpha: number,
+  collisionGlow: boolean,
 ) {
   const size = 10
   ctx.save()
+  ctx.globalAlpha = alpha
   ctx.translate(x, y)
   ctx.rotate(theta)
 
-  if (glow) {
-    ctx.shadowColor = '#ef4444'
-    ctx.shadowBlur = 20
+  // Collision glow ring
+  if (collisionGlow) {
+    ctx.beginPath()
+    ctx.arc(0, 0, size * 1.8, 0, Math.PI * 2)
+    ctx.strokeStyle = '#ef4444'
+    ctx.lineWidth = 2
+    ctx.setLineDash([4, 4])
+    ctx.stroke()
+    ctx.setLineDash([])
   }
 
+  // Main body arrow
   ctx.beginPath()
   ctx.moveTo(size, 0)
   ctx.lineTo(-size * 0.7, -size * 0.6)
+  ctx.lineTo(-size * 0.3, 0)
   ctx.lineTo(-size * 0.7, size * 0.6)
   ctx.closePath()
   ctx.fillStyle = color
   ctx.fill()
-  ctx.shadowBlur = 0
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)'
+  ctx.lineWidth = 0.5
+  ctx.stroke()
+
+  // Head sensor circle at front
+  ctx.beginPath()
+  ctx.arc(size * 0.3, 0, 2.5, 0, Math.PI * 2)
+  ctx.fillStyle = '#ffffff'
+  ctx.fill()
+  ctx.strokeStyle = color
+  ctx.lineWidth = 1.5
+  ctx.stroke()
 
   ctx.restore()
+}
+
+/** Draw a radar beacon pulse — expanding concentric rings */
+function renderBeacon(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  color: string,
+  timeMs: number,
+) {
+  const numRings = 3
+  const period = 1500 // ms for full cycle
+  const maxRadius = 22
+
+  for (let i = 0; i < numRings; i++) {
+    const phase = (i / numRings) * period
+    const t = ((timeMs + phase) % period) / period // 0 → 1
+    const radius = t * maxRadius
+    const opacity = 0.4 * (1 - t)
+
+    ctx.beginPath()
+    ctx.arc(x, y, radius, 0, Math.PI * 2)
+    ctx.strokeStyle = color
+    ctx.lineWidth = 1.5
+    ctx.globalAlpha = opacity
+    ctx.stroke()
+  }
+  ctx.globalAlpha = 1
+}
+
+/** Draw a dotted trail of recent positions */
+function renderTrail(
+  ctx: CanvasRenderingContext2D,
+  trail: Array<{ x: number; y: number }>,
+  scaleFn: (v: number) => number,
+  color: string,
+  maxTrail: number,
+) {
+  if (trail.length < 2) return
+
+  for (let i = 1; i < trail.length; i++) {
+    const t = i / maxTrail // 0→1
+    const alpha = 0.2 + 0.8 * t
+    const cx = scaleFn(trail[i].x)
+    const cy = scaleFn(trail[i].y)
+
+    ctx.beginPath()
+    ctx.arc(cx, cy, 2, 0, Math.PI * 2)
+    ctx.fillStyle = color
+    ctx.globalAlpha = alpha
+    ctx.fill()
+  }
+  ctx.globalAlpha = 1
+}
+
+/** Draw robot label with subtle background box */
+function renderLabel(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  robotId: string,
+  status: string,
+) {
+  const text = robotId
+  ctx.font = 'bold 11px sans-serif'
+  const metrics = ctx.measureText(text)
+  const tw = metrics.width
+  const th = 14
+  const bx = x - tw / 2 - 4
+  const by = y - 24
+
+  // Background box
+  ctx.fillStyle = 'rgba(11, 17, 33, 0.75)'
+  ctx.beginPath()
+  ctx.roundRect(bx, by, tw + 8, th + 4, 3)
+  ctx.fill()
+
+  // Border color matches status
+  const borderColor = statusColor(status)
+  ctx.strokeStyle = borderColor
+  ctx.lineWidth = 1
+  ctx.globalAlpha = 0.4
+  ctx.beginPath()
+  ctx.roundRect(bx, by, tw + 8, th + 4, 3)
+  ctx.stroke()
+  ctx.globalAlpha = 1
+
+  // Text
+  ctx.fillStyle = '#e2e8f0'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(text, x, by + (th + 4) / 2)
+  ctx.textBaseline = 'alphabetic'
 }
 
 export default function DigitalTwinMap({
@@ -79,10 +231,14 @@ export default function DigitalTwinMap({
   const rafRef = useRef<number>(0)
   const interpRef = useRef<InterpRobot[]>([])
   const targetRef = useRef<InterpRobot[]>([])
+
+  /** Trail storage: robot_id → array of {x, y} positions */
+  const trailsRef = useRef<Record<string, Array<{ x: number; y: number }>>>({})
+
   const [selectedRobot, setSelectedRobot] = useState<InterpRobot | null>(null)
   const [popupPos, setPopupPos] = useState({ x: 0, y: 0 })
 
-  const scale = (v: number) => (v / 10) * FACTORY_W
+  const scale = useCallback((v: number) => (v / 10) * FACTORY_W, [])
 
   // Sync target robots from props
   useEffect(() => {
@@ -110,6 +266,7 @@ export default function DigitalTwinMap({
     const render = () => {
       const w = canvas.width
       const h = canvas.height
+      const now = Date.now()
 
       // Interpolate positions
       const interp = interpRef.current
@@ -137,6 +294,33 @@ export default function DigitalTwinMap({
         }
       }
 
+      // Update trails — append interpolated position for each robot
+      const trails = trailsRef.current
+      for (const r of interp) {
+        if (!trails[r.robot_id]) {
+          trails[r.robot_id] = []
+        }
+        const trail = trails[r.robot_id]
+        // Only add if position changed significantly to avoid dense clusters
+        const last = trail[trail.length - 1]
+        if (
+          !last ||
+          Math.abs(r.x - last.x) > 0.02 ||
+          Math.abs(r.y - last.y) > 0.02
+        ) {
+          trail.push({ x: r.x, y: r.y })
+          if (trail.length > MAX_TRAIL) {
+            trail.splice(0, trail.length - MAX_TRAIL)
+          }
+        }
+      }
+      // Clean up trails for robots no longer present
+      for (const rid of Object.keys(trails)) {
+        if (!targetIds.has(rid)) {
+          delete trails[rid]
+        }
+      }
+
       // Detect collisions
       const closePairs = new Set<string>()
       for (let i = 0; i < interp.length; i++) {
@@ -144,15 +328,17 @@ export default function DigitalTwinMap({
           const dx = interp[i].x - interp[j].x
           const dy = interp[i].y - interp[j].y
           const dist = Math.sqrt(dx * dx + dy * dy)
-          if (dist < COLLISION_GLOW_DIST) {
+          if (dist < 1.0) {
             closePairs.add(interp[i].robot_id)
             closePairs.add(interp[j].robot_id)
           }
         }
       }
 
-      // Draw background
+      // Draw everything
       ctx.clearRect(0, 0, w, h)
+
+      // Background
       ctx.fillStyle = '#1e293b'
       ctx.beginPath()
       ctx.roundRect(0, 0, w, h, 8)
@@ -180,20 +366,35 @@ export default function DigitalTwinMap({
         ctx.fillText(zones[i], (w / 6) + (w / 3) * i, h - 8)
       }
 
-      // Draw robots
+      // Draw trails first (behind robots)
+      for (const r of interp) {
+        const trail = trails[r.robot_id]
+        if (trail && trail.length >= 2) {
+          const color = statusColor(r.status)
+          renderTrail(ctx, trail, scale, color, MAX_TRAIL)
+        }
+      }
+
+      // Draw beacons + robots
       for (const r of interp) {
         const cx = scale(r.x)
         const cy = scale(r.y)
         const color = statusColor(r.status)
         const glow = closePairs.has(r.robot_id)
 
-        renderRobotTriangle(ctx, cx, cy, r.theta, color, glow)
+        // Beacon pulse for active/moving robots
+        if (r.status === 'moving' || r.status === 'active') {
+          renderBeacon(ctx, cx, cy, color, now)
+        }
 
-        // Robot ID label
-        ctx.fillStyle = '#e2e8f0'
-        ctx.font = '11px sans-serif'
-        ctx.textAlign = 'center'
-        ctx.fillText(r.robot_id, cx, cy - 18)
+        // Blink alpha
+        const alpha = blinkAlpha(r.status, now)
+
+        // Render robot shape
+        renderRobotShape(ctx, cx, cy, r.theta, color, alpha, glow)
+
+        // Robot ID label with background box
+        renderLabel(ctx, cx, cy, r.robot_id, r.status)
       }
 
       rafRef.current = requestAnimationFrame(render)
@@ -206,7 +407,7 @@ export default function DigitalTwinMap({
         cancelAnimationFrame(rafRef.current)
       }
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [scale])
 
   const handleCanvasClick = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -216,7 +417,6 @@ export default function DigitalTwinMap({
       const mx = ((e.clientX - rect.left) / rect.width) * canvas.width
       const my = ((e.clientY - rect.top) / rect.height) * canvas.height
 
-      // Check if click is near any robot
       let found: InterpRobot | null = null
       for (const r of interpRef.current) {
         const cx = scale(r.x)
@@ -236,7 +436,7 @@ export default function DigitalTwinMap({
         setSelectedRobot(null)
       }
     },
-    [], // eslint-disable-line react-hooks/exhaustive-deps
+    [scale],
   )
 
   if (error) {
