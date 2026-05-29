@@ -1,0 +1,15 @@
+add_executable(test_rules test_rules.cpp)
+target_link_libraries(test_rules PRIVATE core_platform_objs)
+add_test(NAME rules COMMAND test_rules)
+
+add_executable(test_sensor_node test_sensor_node.cpp)
+target_link_libraries(test_sensor_node PRIVATE core_platform_objs)
+add_test(NAME sensor_node COMMAND test_sensor_node)
+
+add_executable(test_safety_node test_safety_node.cpp)
+target_link_libraries(test_safety_node PRIVATE core_platform_objs)
+add_test(NAME safety_node COMMAND test_safety_node)
+
+add_executable(test_maintenance_node test_maintenance_node.cpp)
+target_link_libraries(test_maintenance_node PRIVATE core_platform_objs)
+add_test(NAME maintenance_node COMMAND test_maintenance_node)

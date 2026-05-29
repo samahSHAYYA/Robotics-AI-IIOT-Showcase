@@ -26,7 +26,7 @@ class SensorNode {
  public:
   explicit SensorNode(unsigned int seed);
 
-  Sensors tick(const LineState& state);
+  void tick(const LineState& state, Sensors& sensors);
 
  private:
   std::mt19937 rng;
