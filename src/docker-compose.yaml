@@ -26,6 +26,9 @@ services:
       - ./envs/core-platform/.env
     ports:
       - "${CORE_PLATFORM_PORT:-8001}:8001"
+    depends_on:
+      redis:
+        condition: service_healthy
     networks:
       - showcase_net
     volumes:
@@ -70,6 +73,21 @@ services:
     networks:
       - showcase_net
 
+  ai-agent:
+    build:
+      context: .
+      dockerfile: ./ai-agent/Dockerfile
+    container_name: ai-agent
+    env_file:
+      - .env
+      - ./envs/ai-agent/.env
+    ports:
+      - "${AI_AGENT_PORT:-8004}:8004"
+    depends_on:
+      - ops-api
+    networks:
+      - showcase_net
+
   ops-frontend:
     build:
       context: ./ops-frontend
@@ -79,7 +97,7 @@ services:
       - .env
       - ./envs/ops-frontend/.env
     ports:
-      - "${OPS_FRONTEND_PORT:-3000}:3000"
+      - "${OPS_FRONTEND_PORT:-3000}:80"
     depends_on:
       - ops-api
     networks:

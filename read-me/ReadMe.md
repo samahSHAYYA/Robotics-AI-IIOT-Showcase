@@ -85,11 +85,12 @@ redis streams                  ops-frontend (React, reads ops-api)
 ```
 
 | Service | Emits (`type` prefix) | Consumes |
-|---|---|---|
+|---|---|---|---|
 | `core-platform` | `sensor.*`, `camera.*`, `safety.*` | — (produces only) |
 | `ai-service` | `ml.*` | `events:core-platform` |
 | `ops-api` | `api.*` | `events:core-platform`, `events:ai-service` |
-| `ops-frontend` | — | HTTP from `ops-api` (no direct stream access) |
+| `ai-agent` | — | HTTP from `ops-api` (readonly, no stream access) |
+| `ops-frontend` | — | HTTP + WebSocket from `ops-api` (no direct stream access) |
 
 ## 5. Project structure
 
@@ -105,9 +106,10 @@ src/
 ├── .env / .env.template
 ├── envs/<service>/    — per-service env overrides
 ├── core-platform/     — C++20 simulation (fully implemented)
-├── ai-service/        — Python ML inference (placeholder)
-├── ops-api/           — FastAPI backend (placeholder)
-├── ops-frontend/      — React dashboard (placeholder)
+├── ai-service/        — Python ML inference service
+├── ops-api/           — FastAPI backend (REST + WebSocket)
+├── ai-agent/          — AI chat agent (FastAPI, mock LLM)
+├── ops-frontend/      — React dashboard (Vite + TypeScript)
 └── shared/            — cross-service schemas and utilities
 data/                  — runtime output (gitignored)
 logs/                  — runtime output (gitignored)
@@ -125,35 +127,33 @@ Node.js 18+
 From the project root directory, run:
 
 ```bash
-docker compose -f docker/docker-compose.local.yml build
-docker compose -f docker/docker-compose.local.yml up -d
+docker compose -f src/docker-compose.yaml build
+docker compose -f src/docker-compose.yaml up -d
 ```
 
 ### Open UI
 
-API: http://localhost:8000/docs
+API: http://localhost:8003/docs
 Dashboard: http://localhost:3000
+AI Agent: http://localhost:8004/docs
 
 ### CLI and robot sim
 
 ```bash
-cd edge
-python run_sim.py
+cd src/core-platform
+python scripts/publish_to_redis.py
 ```
 
 ## 7. Validation checks
 
-`curl http://localhost:8000/health` (API health)
-`curl http://localhost:8000/robot/status` (edge status)
-`curl -X POST http://localhost:8000/op/inspect -d '...'`
-  (inference ping)
+`curl http://localhost:8003/health` (API health)
+`curl http://localhost:8003/api/v1/robot/status` (edge status)
+`curl http://localhost:8004/health` (AI agent health)
 
 ## 8. Security stance
 
-TLS enforced between edge and backend.
-Secrets in local vault simulation (`security/vault`).
-Role definitions in `security/rbac.yml`.
-Audit logs from `backend/logs/audit.log`.
+Hardcoded demo credentials (admin/admin) on the login page — not for production.
+No TLS, RBAC, or vault implemented in this showcase.
 
 ## 9. Visual and diagram sources
 
@@ -179,7 +179,6 @@ Add MLFlow with model registry and CI retraining pipeline.
 
 ## 11. Own this architecture
 
-Start from `docker/docker-compose.local.yml`.
-Incrementally add real robotics interfaces from `edge/` into Gazebo.
-Train models in `ml/` and wire to backend inference endpoints.
-Build ops metrics and security gates from `security/` definitions.
+Start from `src/docker-compose.yaml`.
+Extend the C++ simulation in `src/core-platform/cpp/`.
+Train models and wire to the ai-service inference endpoints.
