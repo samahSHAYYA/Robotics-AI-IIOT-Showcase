@@ -2,12 +2,35 @@ import type { RobotStatus } from '../types/telemetry'
 
 interface DigitalTwinMapProps {
   robots: RobotStatus[]
+  error?: string | null
 }
 
 const FACTORY_W = 600
 const FACTORY_H = 400
 
-export default function DigitalTwinMap({ robots }: DigitalTwinMapProps) {
+export default function DigitalTwinMap({ robots, error }: DigitalTwinMapProps) {
+  if (error) {
+    return (
+      <div class="digital-twin">
+        <h3>Factory Floor</h3>
+        <div class="error-banner">
+          <span class="error-text">{error}</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (robots.length === 0) {
+    return (
+      <div class="digital-twin">
+        <h3>Factory Floor</h3>
+        <div class="empty-state">
+          <div class="empty-state-text">Waiting for robot telemetry...</div>
+        </div>
+      </div>
+    )
+  }
+
   const scale = (v: number, max: number) => (v / max) * FACTORY_W
 
   return (

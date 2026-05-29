@@ -2,6 +2,7 @@ import type { RobotStatus } from '../types/telemetry'
 
 interface RobotFleetProps {
   robots: RobotStatus[]
+  error?: string | null
 }
 
 const statusColors: Record<string, string> = {
@@ -12,12 +13,34 @@ const statusColors: Record<string, string> = {
   offline: '#9ca3af',
 }
 
-export default function RobotFleet({ robots }: RobotFleetProps) {
+export default function RobotFleet({ robots, error }: RobotFleetProps) {
+  if (error) {
+    return (
+      <div class="robot-fleet">
+        <h3>Robot Fleet</h3>
+        <div class="error-banner">
+          <span class="error-text">{error}</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (robots.length === 0) {
+    return (
+      <div class="robot-fleet">
+        <h3>Robot Fleet</h3>
+        <div class="empty-state">
+          <div class="empty-state-icon">🤖</div>
+          <div class="empty-state-text">No robots connected</div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div class="robot-fleet">
       <h3>Robot Fleet</h3>
       <div class="fleet-grid">
-        {robots.length === 0 && <div class="fleet-empty">No robots connected</div>}
         {robots.map((r) => (
           <div key={r.robot_id} class="robot-card">
             <div class="robot-header">

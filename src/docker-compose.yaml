@@ -1,5 +1,9 @@
 name: showcase-project
 
+# Profiles:
+#   default  — production-like deployment
+#   dev      — development with hot-reload (add --profile dev)
+
 services:
   redis:
     image: redis:7-alpine
@@ -74,6 +78,7 @@ services:
       - ai_service_cache:/app/cache
 
   ops-api:
+    profiles: ["dev"]
     build:
       context: .
       dockerfile: ./ops-api/Dockerfile
@@ -90,8 +95,12 @@ services:
         condition: service_healthy
     networks:
       - showcase_net
+    volumes:
+      - ./ops-api/app:/app/ops-api/app
+    command: python -m init_db && uvicorn app.main:app --host 0.0.0.0 --port 8003 --reload
 
   ai-agent:
+    profiles: ["dev"]
     build:
       context: .
       dockerfile: ./ai-agent/Dockerfile
@@ -105,6 +114,9 @@ services:
       - ops-api
     networks:
       - showcase_net
+    volumes:
+      - ./ai-agent/app:/app/ai-agent/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8004 --reload
 
   ops-frontend:
     build:
@@ -120,6 +132,30 @@ services:
       - ops-api
     networks:
       - showcase_net
+
+  ops-frontend-dev:
+    profiles: ["dev"]
+    image: node:22-alpine
+    container_name: ops-frontend-dev
+    working_dir: /app
+    command: sh -c "npm install && npm run dev"
+    env_file:
+      - .env
+      - ./envs/ops-frontend/.env
+    ports:
+      - "5173:3000"
+    depends_on:
+      - ops-api
+    networks:
+      - showcase_net
+    volumes:
+      - ./ops-frontend/package.json:/app/package.json
+      - ./ops-frontend/tsconfig.json:/app/tsconfig.json
+      - ./ops-frontend/tsconfig.node.json:/app/tsconfig.node.json
+      - ./ops-frontend/vite.config.ts:/app/vite.config.ts
+      - ./ops-frontend/index.html:/app/index.html
+      - ./ops-frontend/src:/app/src
+      - ./ops-frontend/public:/app/public
 
 volumes:
   redis_data:

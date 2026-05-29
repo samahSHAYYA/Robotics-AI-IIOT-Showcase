@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useWebSocket } from './hooks/useWebSocket'
 import KpiBoard from './components/KpiBoard'
 import AlertBoard from './components/AlertBoard'
@@ -19,6 +19,8 @@ export default function App() {
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [events, setEvents] = useState<Event[]>([])
   const [clock, setClock] = useState(new Date())
+  const [error, setError] = useState<string | null>(null)
+  const maxRetriesReached = useRef(false)
 
   useEffect(() => {
     const id = setInterval(() => setClock(new Date()), 1000)
@@ -28,6 +30,7 @@ export default function App() {
   const handleMessage = useCallback((data: unknown) => {
     const msg = data as { type: string; data: unknown }
     if (!msg?.type) return
+    setError(null)
     switch (msg.type) {
       case 'snapshot': {
         const snapshot = msg.data as TelemetrySnapshot
@@ -48,7 +51,21 @@ export default function App() {
     }
   }, [])
 
-  useWebSocket(WS_URL, handleMessage)
+  const handleWsError = useCallback((err: string) => {
+    setError(err)
+  }, [])
+
+  const { status } = useWebSocket(WS_URL, handleMessage, handleWsError)
+
+  useEffect(() => {
+    if (status === 'failed') {
+      maxRetriesReached.current = true
+    }
+    if (status === 'connected' && maxRetriesReached.current) {
+      maxRetriesReached.current = false
+      window.location.reload()
+    }
+  }, [status])
 
   const handleSendCommand = useCallback(async (cmd: CommandPayload) => {
     try {
@@ -72,10 +89,33 @@ export default function App() {
     setAuthed(false)
   }
 
+  const handleRetry = useCallback(() => {
+    setError(null)
+  }, [])
+
+  const bannerClass =
+    status === 'failed'
+      ? 'reconnect-banner--error'
+      : status === 'disconnected' || status === 'connecting'
+        ? 'reconnect-banner--warning'
+        : null
+
+  const bannerText =
+    status === 'failed'
+      ? 'Connection lost — page will reload on reconnection'
+      : status === 'disconnected' || status === 'connecting'
+        ? 'Reconnecting...'
+        : null
+
   if (!authed) return <LoginPage onLogin={() => setAuthed(true)} />
 
   return (
     <div className="app">
+      {bannerClass && (
+        <div className={`reconnect-banner ${bannerClass}`}>
+          {bannerText}
+        </div>
+      )}
       <header className="app-header">
         <div className="header-left">
           <h1>Smart Factory Supervisor</h1>
@@ -88,17 +128,17 @@ export default function App() {
       </header>
       <main className="app-main">
         <section className="grid-kpi">
-          <KpiBoard telemetry={telemetry} />
+          <KpiBoard telemetry={telemetry} error={error} onRetry={handleRetry} />
         </section>
         <section className="grid-main">
           <div className="panel panel-fleet">
-            <RobotFleet robots={robots} />
+            <RobotFleet robots={robots} error={error} />
           </div>
           <div className="panel panel-map">
-            <DigitalTwinMap robots={robots} />
+            <DigitalTwinMap robots={robots} error={error} />
           </div>
           <div className="panel panel-alerts">
-            <AlertBoard alerts={alerts} events={events} />
+            <AlertBoard alerts={alerts} events={events} error={error} />
           </div>
           <div className="panel panel-console">
             <CommandConsole onSendCommand={handleSendCommand} />
