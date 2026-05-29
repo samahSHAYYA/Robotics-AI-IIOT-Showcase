@@ -19,7 +19,8 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.consumer import run_consumer
-from app.routes import telemetry, commands
+from app.db import init_db
+from app.routes import auth, telemetry, commands
 from app.store import store
 
 REDIS_URL: str = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
@@ -71,6 +72,9 @@ async def lifespan(app: FastAPI):
 
     global _consumer_task
 
+    logger.info('Initialising database ...')
+    await init_db()
+
     logger.info('Starting ops-api consumer ...')
 
     _consumer_task = asyncio.create_task(run_consumer(REDIS_URL))
@@ -107,6 +111,7 @@ app.add_middleware(
     allow_headers = ['*'],
 )
 
+app.include_router(auth.router)
 app.include_router(telemetry.router)
 app.include_router(commands.router)
 

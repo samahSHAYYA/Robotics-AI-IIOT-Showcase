@@ -49,9 +49,13 @@ export default function App() {
 
   const handleSendCommand = useCallback(async (cmd: CommandPayload) => {
     try {
+      const token = localStorage.getItem('sf_session')
       const resp = await fetch('/api/v1/robot/command', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(cmd),
       })
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`)

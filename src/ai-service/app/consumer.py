@@ -10,7 +10,7 @@ import asyncio
 import logging
 import uuid
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 import redis.asyncio as aioredis
@@ -60,7 +60,7 @@ async def process_message(msg_data: Dict[str, str]) -> Optional[Dict[str, Any]]:
     prediction: Dict[str, Any] = run_mock_inference(msg_data)
 
     prediction['trace_id'] = msg_data.get('trace_id', str(uuid.uuid4()))
-    prediction['timestamp'] = datetime.utcnow().isoformat()
+    prediction['timestamp'] = datetime.now(timezone.utc).isoformat()
     prediction['source'] = 'ai-service'
 
     return prediction

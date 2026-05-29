@@ -11,7 +11,7 @@ background task.
 import copy
 import threading
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 
@@ -39,15 +39,15 @@ class TelemetryStore:
             ],
             'alerts': [
                 {'severity': 'healthy', 'message': 'Safety gate pass',
-                 'timestamp': datetime.utcnow().isoformat()},
+                 'timestamp': datetime.now(timezone.utc).isoformat()},
                 {'severity': 'warning', 'message': 'Camera re-focus needed',
-                 'timestamp': datetime.utcnow().isoformat()},
+                 'timestamp': datetime.now(timezone.utc).isoformat()},
                 {'severity': 'critical', 'message': 'Bearing temp high on C3',
-                 'timestamp': datetime.utcnow().isoformat()},
+                 'timestamp': datetime.now(timezone.utc).isoformat()},
             ],
             'events_consumed': 0,
             'predictions_consumed': 0,
-            'last_update': datetime.utcnow().isoformat(),
+            'last_update': datetime.now(timezone.utc).isoformat(),
         }
         self._robot_fleet: Dict[str, Dict[str, Any]] = {
             'C3': {'status': 'active', 'uptime_pct': 99.5},
@@ -64,7 +64,7 @@ class TelemetryStore:
 
         with self._lock:
             self._data['events_consumed'] += 1
-            self._data['last_update'] = datetime.utcnow().isoformat()
+            self._data['last_update'] = datetime.now(timezone.utc).isoformat()
 
     def update_from_prediction(self, prediction: Dict[str, Any]):
         """
@@ -82,17 +82,17 @@ class TelemetryStore:
                 self._data['alerts'].insert(0, {
                     'severity': 'critical',
                     'message': f"ML alert: {prediction.get('prediction_type', 'unknown')}",
-                    'timestamp': datetime.utcnow().isoformat(),
+                    'timestamp': datetime.now(timezone.utc).isoformat(),
                 })
             elif triggered == 'warning':
                 self._data['alerts'].insert(0, {
                     'severity': 'warning',
                     'message': f"ML warning: {prediction.get('prediction_type', 'unknown')}",
-                    'timestamp': datetime.utcnow().isoformat(),
+                    'timestamp': datetime.now(timezone.utc).isoformat(),
                 })
 
             self._data['alerts'] = self._data['alerts'][:20]  # keep last 20
-            self._data['last_update'] = datetime.utcnow().isoformat()
+            self._data['last_update'] = datetime.now(timezone.utc).isoformat()
 
     def get_snapshot(self) -> Dict[str, Any]:
         """

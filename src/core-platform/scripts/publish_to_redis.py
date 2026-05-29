@@ -13,7 +13,7 @@ import os
 import time
 import uuid
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 import redis
@@ -71,7 +71,7 @@ def _publish_from_events_jsonl():
                 event_type: str = parsed.get('type', '')
                 payload: Dict = parsed.get('payload', {})
                 trace_id: str = str(uuid.uuid4())
-                timestamp: str = parsed.get('ts', datetime.utcnow().isoformat())
+                timestamp: str = parsed.get('ts', datetime.now(timezone.utc).isoformat())
 
                 event: Dict[str, Any] = {
                     'event_type': event_type,
@@ -95,7 +95,7 @@ def _publish_from_snapshot(snapshot: Dict[str, Any]):
     """
 
     trace_id: str = str(uuid.uuid4())
-    now: str = datetime.utcnow().isoformat()
+    now: str = datetime.now(timezone.utc).isoformat()
 
     sensor_types = ['temperature', 'vibration', 'current', 'torque',
                     'pressure', 'humidity', 'distance']

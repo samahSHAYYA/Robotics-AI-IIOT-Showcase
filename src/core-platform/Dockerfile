@@ -22,5 +22,5 @@ COPY entrypoint.sh .
 RUN chmod +x entrypoint.sh
 EXPOSE 8001
 HEALTHCHECK --interval=15s --timeout=5s --retries=3 \
-  CMD pgrep -x core_platform_sim || exit 1
+  CMD grep -q publish_to_redis /proc/*/cmdline 2>/dev/null || exit 1
 CMD ["./entrypoint.sh"]

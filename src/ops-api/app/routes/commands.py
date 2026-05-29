@@ -9,7 +9,7 @@ import logging
 import os
 import uuid
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict
 
 import redis.asyncio as aioredis
@@ -45,7 +45,7 @@ async def post_command(payload: Dict[str, Any]):
     event: Dict[str, Any] = {
         'event_type': 'command.issue',
         'trace_id': trace_id,
-        'timestamp': datetime.utcnow().isoformat(),
+        'timestamp': datetime.now(timezone.utc).isoformat(),
         'source': 'ops-api',
         'command': payload.get('command', 'unknown'),
         'target': payload.get('target', 'unknown'),
@@ -80,7 +80,7 @@ async def trigger_inspect(payload: Dict[str, Any]):
     event: Dict[str, Any] = {
         'event_type': 'camera.frame',
         'trace_id': trace_id,
-        'timestamp': datetime.utcnow().isoformat(),
+        'timestamp': datetime.now(timezone.utc).isoformat(),
         'source': 'ops-api',
         'camera_id': payload.get('camera_id', 'cam_main'),
         'frame_id': f"manual_{uuid.uuid4().hex[:8]}",

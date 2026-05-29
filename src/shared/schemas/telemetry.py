@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field
@@ -14,7 +14,7 @@ class RobotStatus(BaseModel):
 
 
 class TelemetrySnapshot(BaseModel):
-    timestamp: datetime = Field(default_factory = datetime.utcnow)
+    timestamp: datetime = Field(default_factory = lambda: datetime.now(timezone.utc))
     throughput: int = Field(default = 0, description = 'Units processed per hour')
     defect_rate_pct: float = Field(default = 0.0, ge = 0.0, le = 100.0)
     robot_uptime_pct: float = Field(default = 0.0, ge = 0.0, le = 100.0)

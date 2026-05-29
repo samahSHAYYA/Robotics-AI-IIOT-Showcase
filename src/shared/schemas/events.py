@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
@@ -15,7 +15,7 @@ class SensorReading(BaseModel):
 class SensorEvent(BaseModel):
     event_type: str = Field('sensor.reading', description = 'Event type discriminator')
     trace_id: str = Field(..., description = 'Propagated trace identifier')
-    timestamp: datetime = Field(default_factory = datetime.utcnow)
+    timestamp: datetime = Field(default_factory = lambda: datetime.now(timezone.utc))
     source: str = Field('core-platform', description = 'Originating service')
     readings: List[SensorReading] = Field(default_factory = list)
 
@@ -23,7 +23,7 @@ class SensorEvent(BaseModel):
 class SafetyEvent(BaseModel):
     event_type: str = Field('safety.status', description = 'Event type discriminator')
     trace_id: str = Field(..., description = 'Propagated trace identifier')
-    timestamp: datetime = Field(default_factory = datetime.utcnow)
+    timestamp: datetime = Field(default_factory = lambda: datetime.now(timezone.utc))
     source: str = Field('core-platform', description = 'Originating service')
     safe_state: str = Field(..., description = 'healthy, warning, critical')
     details: Optional[str] = None
@@ -32,7 +32,7 @@ class SafetyEvent(BaseModel):
 class CameraEvent(BaseModel):
     event_type: str = Field('camera.frame', description = 'Event type discriminator')
     trace_id: str = Field(..., description = 'Propagated trace identifier')
-    timestamp: datetime = Field(default_factory = datetime.utcnow)
+    timestamp: datetime = Field(default_factory = lambda: datetime.now(timezone.utc))
     source: str = Field('core-platform', description = 'Originating service')
     camera_id: str = Field(..., description = 'Camera identifier')
     frame_id: str = Field(..., description = 'Frame sequence identifier')
@@ -43,7 +43,7 @@ class CameraEvent(BaseModel):
 class MLPrediction(BaseModel):
     event_type: str = Field('ml.prediction', description = 'Event type discriminator')
     trace_id: str = Field(..., description = 'Propagated trace identifier')
-    timestamp: datetime = Field(default_factory = datetime.utcnow)
+    timestamp: datetime = Field(default_factory = lambda: datetime.now(timezone.utc))
     source: str = Field('ai-service', description = 'Originating service')
 
     model_name: str = Field(..., description = 'Model identifier (cv_inspector_v12, ...)')
@@ -56,7 +56,7 @@ class MLPrediction(BaseModel):
 class CommandEvent(BaseModel):
     event_type: str = Field('command.issue', description = 'Event type discriminator')
     trace_id: str = Field(..., description = 'Propagated trace identifier')
-    timestamp: datetime = Field(default_factory = datetime.utcnow)
+    timestamp: datetime = Field(default_factory = lambda: datetime.now(timezone.utc))
     source: str = Field('ops-api', description = 'Originating service')
     command: str = Field(..., description = 'Command identifier (safe-stop, resume, inspect, ...)')
     target: str = Field(..., description = 'Target robot or station')

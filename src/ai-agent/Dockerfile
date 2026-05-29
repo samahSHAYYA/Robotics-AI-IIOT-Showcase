@@ -9,4 +9,5 @@ RUN uv pip install --no-cache -r /app/ai-agent/requirements.txt
 EXPOSE 8004
 HEALTHCHECK --interval=15s --timeout=5s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8004/health')"
-CMD ["uvicorn", "ai-agent.app.main:app", "--host", "0.0.0.0", "--port", "8004"]
+WORKDIR /app/ai-agent
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8004"]

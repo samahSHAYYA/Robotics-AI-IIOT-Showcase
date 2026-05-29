@@ -16,6 +16,25 @@ services:
       timeout: 3s
       retries: 5
 
+  postgres:
+    image: postgres:16-alpine
+    container_name: showcase-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-showcase}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-showcase_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-showcase}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    networks:
+      - showcase_net
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-showcase} -d ${POSTGRES_DB:-showcase}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   core-platform:
     build:
       context: ./core-platform
@@ -53,9 +72,6 @@ services:
     volumes:
       - ai_service_models:/app/models
       - ai_service_cache:/app/cache
-    # Optional GPU enablement (sample):
-    # Enable when deploying on a GPU-capable host.
-    # gpus: all
 
   ops-api:
     build:
@@ -69,6 +85,8 @@ services:
       - "${OPS_API_PORT:-8003}:8003"
     depends_on:
       redis:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
     networks:
       - showcase_net
@@ -105,6 +123,7 @@ services:
 
 volumes:
   redis_data:
+  postgres_data:
   core_platform_data:
   core_platform_logs:
   ai_service_models:

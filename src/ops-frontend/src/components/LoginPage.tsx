@@ -18,14 +18,24 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
       return
     }
     setLoading(true)
-    await new Promise((r) => setTimeout(r, 600))
-    if (username === 'admin' && password === 'admin') {
-      localStorage.setItem('sf_session', 'authenticated')
+    try {
+      const resp = await fetch('/api/v1/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      })
+      if (!resp.ok) {
+        setError('Invalid credentials')
+        return
+      }
+      const data = await resp.json()
+      localStorage.setItem('sf_session', data.access_token)
       onLogin()
-    } else {
-      setError('Invalid credentials')
+    } catch {
+      setError('Connection error')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   return (

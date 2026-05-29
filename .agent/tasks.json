@@ -1,0 +1,115 @@
+{
+  "sprint": "MVP Dockerized Showcase",
+  "status": "in_progress",
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Phase 1: Add Redis to docker-compose + update env templates",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        "redis:7-alpine service in docker-compose",
+        "REDIS_PORT env var with default 6379",
+        "redis_data named volume",
+        "depends_on: redis on ai-service and ops-api",
+        "REDIS_URL in ai-service and ops-api env templates",
+        "REDIS_PORT in root .env.template"
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Phase 2: Create shared schemas (Pydantic models for events)",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        "src/shared/__init__.py",
+        "src/shared/schemas/__init__.py",
+        "src/shared/schemas/events.py with SensorEvent, MLPrediction, CommandEvent",
+        "src/shared/schemas/telemetry.py with TelemetrySnapshot, RobotStatus",
+        "All models use BaseModel with field descriptions",
+        "trace_id propagation field on events"
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Phase 3: Build ai-service (Python, FastAPI, Redis consumer, mock ML)",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        "FastAPI app with /health endpoint",
+        "Redis consumer reading events:core-platform stream",
+        "Mock ML inference (canned defect/prediction results)",
+        "Emits results to events:ai-service stream",
+        "Dockerfile with pip install -r requirements.txt",
+        "requirements.txt with redis, fastapi, uvicorn, pydantic",
+        "Service logs to stdout",
+        "Health check in Dockerfile or docker-compose"
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Phase 4: Build ops-api (FastAPI, Redis consumer, REST + WebSocket)",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        "FastAPI app with /health endpoint",
+        "Redis consumer reading both core-platform and ai-service streams",
+        "In-memory store for latest telemetry",
+        "REST endpoints: GET /api/v1/telemetry, GET /api/v1/robot/status",
+        "POST /api/v1/robot/command (writes to Redis stream)",
+        "POST /api/v1/inspect (triggers mock inspection)",
+        "WebSocket endpoint at /ws for live dashboard updates",
+        "Dockerfile + requirements.txt",
+        "CORS enabled for frontend origin"
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Phase 5: Build core-platform Dockerfile (real C++ build)",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        "Multi-stage Dockerfile (build + runtime)",
+        "Builds C++20 CMake project",
+        "Runs simulation on container start",
+        "Outputs to Redis via publish_to_redis.py publisher",
+        "Proper .dockerignore",
+        "Health check verifies publisher process"
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Phase 6: Build ops-frontend (React dashboard)",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        "React 18+ Vite app",
+        "KPI cards (throughput, defect rate, uptime)",
+        "Alert board (critical/warning/healthy)",
+        "Robot fleet status list",
+        "Command console with execute button",
+        "Digital twin plant map (simplified grid)",
+        "Login page with auth (calls /api/v1/auth/login)",
+        "WebSocket connection to ops-api for live updates",
+        "Dockerfile (multi-stage: build + nginx)",
+        "nginx.conf with runtime resolver for upstreams"
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Phase 7: Wire full stack + end-to-end validation",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        "docker compose build succeeds for all services",
+        "docker compose up starts all containers",
+        "core-platform generates events",
+        "ai-service consumes and produces predictions",
+        "ops-api serves REST, WebSocket, and auth",
+        "ops-frontend loads in browser",
+        "/health returns OK on all services",
+        "All 7 containers healthy (redis, postgres, core-platform, ai-service, ops-api, ai-agent, ops-frontend)"
+      ]
+    }
+  ]
+}
