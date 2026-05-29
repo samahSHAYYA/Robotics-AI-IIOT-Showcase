@@ -1,2 +1,26 @@
-# Placeholder Dockerfile for core-platform
-FROM ubuntu:24.04
+FROM ghcr.io/astral-sh/uv:latest AS uv
+
+FROM python:3.12-slim AS builder
+COPY --from=uv /uv /uvx /bin/
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    cmake \
+    g++ \
+    make \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY cpp/ /app/cpp/
+RUN cmake -S /app/cpp -B /app/build -DCMAKE_BUILD_TYPE=Release \
+    && cmake --build /app/build --parallel "$(nproc)"
+
+FROM python:3.12-slim
+COPY --from=uv /uv /uvx /bin/
+RUN uv pip install --system --no-cache redis
+WORKDIR /app
+COPY --from=builder /app/build/core_platform_sim .
+COPY scripts/ scripts/
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
+EXPOSE 8001
+HEALTHCHECK --interval=15s --timeout=5s --retries=3 \
+  CMD pgrep -x core_platform_sim || exit 1
+CMD ["./entrypoint.sh"]
