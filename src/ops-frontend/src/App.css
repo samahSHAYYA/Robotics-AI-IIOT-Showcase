@@ -195,19 +195,29 @@ body {
 .login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ===== App ===== */
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+}
+
 .app {
+  height: 100vh;
   max-width: 1440px;
   margin: 0 auto;
-  padding: 1rem 1.5rem;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .app-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.25rem;
-  padding-bottom: 1rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--surface2);
+  flex-shrink: 0;
 }
 
 .header-left h1 {
@@ -256,13 +266,14 @@ body {
 
 /* ===== KPI Board + Gauge Cards ===== */
 .grid-kpi {
-  margin-bottom: 1.25rem;
+  flex-shrink: 0;
+  margin-bottom: 0.75rem;
 }
 
 .kpi-board {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
 }
 
 .gauge-card {
@@ -307,19 +318,28 @@ body {
 
 /* ===== Grid Layout ===== */
 .grid-main {
+  flex: 1;
+  min-height: 0;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  grid-template-rows: auto auto;
-  gap: 1rem;
+  grid-template-rows: 1fr 1fr;
+  gap: 0.75rem;
 }
 
 .panel {
   background: var(--surface);
   border-radius: 0.75rem;
   border: 1px solid var(--surface2);
-  padding: 1rem;
+  padding: 0.75rem;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   overflow: hidden;
+}
+
+.panel > * {
+  min-height: 0;
 }
 
 .panel::before {
@@ -353,14 +373,26 @@ body {
   border-radius: 2px;
 }
 
-/* Map panel — taller in row 1 */
+/* Map panel — fill available space */
 .panel-map {
   min-height: 0;
 }
 
-/* Alert panel — fixed height, scrollable list */
+.panel-map .digital-twin {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.panel-map canvas {
+  flex: 1;
+  min-height: 0;
+  object-fit: contain;
+}
+
+/* Alert panel — scrollable list */
 .panel-alerts {
-  max-height: 340px;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -368,6 +400,23 @@ body {
 
 .panel-alerts h3 {
   flex-shrink: 0;
+}
+
+/* Fleet panel — scrollable */
+.panel-fleet {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.panel-fleet h3 {
+  flex-shrink: 0;
+}
+
+.fleet-grid {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 /* Camera panel */

@@ -25,6 +25,13 @@ interface InterpRobot {
 /** Maximum trail positions to store per robot */
 const MAX_TRAIL = 20
 
+/** Robot waypoint paths (matching backend store.py) */
+const ROBOT_PATHS: Record<string, Array<{ x: number; y: number }>> = {
+  C3: [{ x: 1, y: 1 }, { x: 8, y: 1 }, { x: 8, y: 5 }, { x: 5, y: 8 }, { x: 1, y: 5 }],
+  W2: [{ x: 7, y: 2 }, { x: 9, y: 7 }, { x: 4, y: 9 }, { x: 2, y: 4 }],
+  Q1: [{ x: 3, y: 3 }, { x: 6, y: 3 }, { x: 6, y: 6 }, { x: 3, y: 6 }],
+}
+
 /** Map status → color */
 const statusColor = (status: string): string => {
   switch (status) {
@@ -58,16 +65,16 @@ function blinkAlpha(status: string, timeMs: number): number {
   switch (status) {
     case 'moving':
     case 'active':
-      // Slow pulse ~1s period
-      return 0.6 + 0.4 * Math.sin(timeMs / 500)
+      // Slow pulse ~1s period, prominent (0.4→1.0)
+      return 0.4 + 0.6 * Math.sin(timeMs / 500)
     case 'error':
     case 'critical':
-      // Fast pulse ~0.3s period
-      return 0.6 + 0.4 * Math.sin(timeMs / 150)
+      // Fast pulse ~0.3s period, sharp (0.3→1.0)
+      return 0.3 + 0.7 * Math.sin(timeMs / 150)
     case 'maintenance':
     case 'warning':
-      // Medium pulse ~0.6s period
-      return 0.6 + 0.4 * Math.sin(timeMs / 300)
+      // Medium pulse ~0.6s period (0.4→1.0)
+      return 0.4 + 0.6 * Math.sin(timeMs / 300)
     case 'offline':
       return 0.4
     case 'idle':
@@ -179,6 +186,55 @@ function renderTrail(
     ctx.fill()
   }
   ctx.globalAlpha = 1
+}
+
+/** Draw a dotted trajectory showing the future path through waypoints */
+function renderTrajectoryAhead(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  robotId: string,
+  scaleFn: (v: number) => number,
+  color: string,
+) {
+  const path = ROBOT_PATHS[robotId]
+  if (!path || path.length < 2) return
+
+  // Find nearest waypoint ahead
+  let minDist = Infinity
+  let nearestIdx = 0
+  for (let i = 0; i < path.length; i++) {
+    const d = Math.hypot(path[i].x - x, path[i].y - y)
+    if (d < minDist) {
+      minDist = d
+      nearestIdx = i
+    }
+  }
+
+  // Build ordered list from nearest waypoint forward (wrap around once for visual continuity)
+  const ahead: Array<{ x: number; y: number }> = []
+  ahead.push({ x, y })
+  for (let offset = 0; offset <= path.length; offset++) {
+    const idx = (nearestIdx + offset) % path.length
+    ahead.push(path[idx])
+  }
+
+  ctx.save()
+  ctx.setLineDash([4, 6])
+  ctx.lineWidth = 1.5
+  ctx.globalAlpha = 0.35
+  ctx.strokeStyle = color
+  ctx.beginPath()
+  for (let i = 0; i < ahead.length; i++) {
+    const sx = scaleFn(ahead[i].x)
+    const sy = scaleFn(ahead[i].y)
+    if (i === 0) ctx.moveTo(sx, sy)
+    else ctx.lineTo(sx, sy)
+  }
+  ctx.stroke()
+  ctx.setLineDash([])
+  ctx.globalAlpha = 1
+  ctx.restore()
 }
 
 /** Draw robot label with subtle background box */
@@ -375,6 +431,14 @@ export default function DigitalTwinMap({
         }
       }
 
+      // Draw future trajectory ahead for each robot
+      for (const r of interp) {
+        const cx = scale(r.x)
+        const cy = scale(r.y)
+        const color = statusColor(r.status)
+        renderTrajectoryAhead(ctx, r.x, r.y, r.robot_id, scale, color)
+      }
+
       // Draw beacons + robots
       for (const r of interp) {
         const cx = scale(r.x)
@@ -471,10 +535,11 @@ export default function DigitalTwinMap({
         onClick={handleCanvasClick}
         style={{
           width: '100%',
-          height: 'auto',
+          height: '100%',
           borderRadius: '0.5rem',
           cursor: 'pointer',
           display: 'block',
+          objectFit: 'contain',
         }}
       />
       {selectedRobot && (
