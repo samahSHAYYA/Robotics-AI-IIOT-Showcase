@@ -4,6 +4,7 @@ interface CommandConsoleProps {
   onStartRobot: (id: string) => void
   onStopRobot: (id: string) => void
   onAssignTask: (id: string, task: string) => void
+  onEmergencyStop: (id: string) => void
 }
 
 const ROBOTS = [
@@ -12,55 +13,93 @@ const ROBOTS = [
   { value: 'Q1', label: 'Q1 Inspector' },
 ]
 
+const QUICK_TASKS = [
+  'Assembly Line A',
+  'Assembly Line B',
+  'Welding Station 3',
+  'Visual Inspection',
+  'Quality Check',
+  'Material Handling',
+  'Packaging Zone',
+  'Charging Station',
+  'Maintenance Bay',
+]
+
 export default function CommandConsole({
   onStartRobot,
   onStopRobot,
   onAssignTask,
+  onEmergencyStop,
 }: CommandConsoleProps) {
   const [robotId, setRobotId] = useState('C3')
   const [task, setTask] = useState('')
 
-  const handleStart = (e: React.MouseEvent) => {
-    e.preventDefault()
-    onStartRobot(robotId)
-  }
-
-  const handleStop = (e: React.MouseEvent) => {
-    e.preventDefault()
-    onStopRobot(robotId)
-  }
-
-  const handleTask = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (task.trim()) {
-      onAssignTask(robotId, task.trim())
-      setTask('')
-    }
-  }
-
   return (
     <div className="command-console">
       <h3>Command Console</h3>
-      <div className="command-row">
-        <label>
-          Robot
-          <select value={robotId} onChange={(e) => setRobotId(e.target.value)}>
-            {ROBOTS.map((r) => (
-              <option key={r.value} value={r.value}>{r.label}</option>
-            ))}
-          </select>
-        </label>
-        <button className="btn-start" onClick={handleStart}>Start</button>
-        <button className="btn-stop" onClick={handleStop}>Stop</button>
+
+      <label className="cc-select-label">
+        Robot
+        <select value={robotId} onChange={(e) => setRobotId(e.target.value)}>
+          {ROBOTS.map((r) => (
+            <option key={r.value} value={r.value}>{r.label}</option>
+          ))}
+        </select>
+      </label>
+
+      <div className="cc-btn-row">
+        <button className="btn-start" onClick={() => onStartRobot(robotId)} title="Resume movement">
+          ▶ Resume
+        </button>
+        <button className="btn-stop" onClick={() => onStopRobot(robotId)} title="Pause movement">
+          ⏸ Pause
+        </button>
+        <button className="btn-danger" onClick={() => onEmergencyStop(robotId)} title="Emergency stop">
+          ⚠ E-Stop
+        </button>
       </div>
-      <form className="task-row" onSubmit={handleTask}>
-        <label>
-          Assign Task
+
+      <button
+        className="btn-base"
+        onClick={() => onAssignTask(robotId, 'Returning to Base')}
+      >
+        ↲ Return to Base
+      </button>
+
+      <label className="cc-select-label">
+        Quick Task
+        <select
+          value=""
+          onChange={(e) => {
+            if (e.target.value) {
+              onAssignTask(robotId, e.target.value)
+            }
+          }}
+        >
+          <option value="">— select —</option>
+          {QUICK_TASKS.map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
+        </select>
+      </label>
+
+      <form
+        className="task-row"
+        onSubmit={(e) => {
+          e.preventDefault()
+          if (task.trim()) {
+            onAssignTask(robotId, task.trim())
+            setTask('')
+          }
+        }}
+      >
+        <label className="cc-input-label">
+          Custom Task
           <input
             type="text"
             value={task}
             onChange={(e) => setTask(e.target.value)}
-            placeholder="e.g. Assembly Line B"
+            placeholder="e.g. Zone B inspection"
           />
         </label>
         <button type="submit" className="btn-send">Assign</button>

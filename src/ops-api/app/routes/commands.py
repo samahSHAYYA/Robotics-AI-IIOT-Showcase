@@ -43,6 +43,15 @@ async def stop_robot(robot_id: str):
     return {'status': 'stopped', 'robot_id': robot_id}
 
 
+@router.post('/robot/{robot_id}/emergency-stop')
+async def emergency_stop_robot(robot_id: str):
+    """Emergency stops a robot with critical alert."""
+    ok = store.emergency_stop_robot(robot_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail='Robot not found')
+    return {'status': 'emergency_stopped', 'robot_id': robot_id}
+
+
 @router.post('/robot/{robot_id}/task')
 async def assign_task(robot_id: str, body: dict[str, Any]):
     """Assigns a task to a robot."""

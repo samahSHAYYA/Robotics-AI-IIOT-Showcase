@@ -115,6 +115,24 @@ class TelemetryStore:
                 self._robot_fleet[robot_id]['status'] = 'idle'
             return True
 
+    def emergency_stop_robot(self, robot_id: str) -> bool:
+        with self._lock:
+            if robot_id not in self._robot_moving:
+                return False
+            self._robot_moving[robot_id] = False
+            for r in self._data['robots']:
+                if r['robot_id'] == robot_id:
+                    r['status'] = 'error'
+            if robot_id in self._robot_fleet:
+                self._robot_fleet[robot_id]['status'] = 'error'
+            self._data['alerts'].insert(0, {
+                'severity': 'critical',
+                'message': f'Emergency stop triggered on {robot_id}',
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+            })
+            self._data['alerts'] = self._data['alerts'][:20]
+            return True
+
     def assign_task(self, robot_id: str, task: str) -> bool:
         with self._lock:
             if robot_id not in self._robot_tasks:

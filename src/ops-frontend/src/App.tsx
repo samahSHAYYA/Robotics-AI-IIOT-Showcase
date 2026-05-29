@@ -90,6 +90,12 @@ export default function App() {
     } catch (err) { console.error(err) }
   }, [])
 
+  const handleEmergencyStop = useCallback(async (id: string) => {
+    try {
+      await fetch(`/api/v1/robot/${id}/emergency-stop`, { method: 'POST' })
+    } catch (err) { console.error(err) }
+  }, [])
+
   const handleLogout = () => {
     localStorage.removeItem('sf_session')
     setAuthed(false)
@@ -156,6 +162,7 @@ export default function App() {
               onStartRobot={handleRobotStart}
               onStopRobot={handleRobotStop}
               onAssignTask={handleAssignTask}
+              onEmergencyStop={handleEmergencyStop}
             />
           </div>
           <div className="panel panel-camera">

@@ -36,9 +36,10 @@ src/
 │       ├── include/                ← public/private headers
 │       ├── src/                    ← translation units
 │       └── CMakeLists.txt
-├── ai-service/        ← Python ML inference (placeholder)
-├── ops-api/           ← FastAPI backend (placeholder)
-├── ops-frontend/      ← React dashboard (placeholder)
+├── ai-service/        ← Python ML inference (mock predictions)
+├── ops-api/           ← FastAPI backend (telemetry store, robot simulation, auth, WebSocket)
+├── ops-frontend/      ← React dashboard (live KPI, robot map, alerts, AI chat)
+├── ai-agent/          ← PydanticAI agent with Ollama support + mock fallback
 └── shared/            ← cross-service schemas/utilities
 doc-site/              ← generated documentation site (gitignored)
 data/                  ← runtime output (gitignored)
@@ -56,8 +57,7 @@ Load these in order to get context efficiently on a cold start:
 | 3 | `.agent/general/coding.md` | Language rules, naming, full conventions |
 | 4 | `.agent/general/error-handling.md` | Error taxonomy, retry, recovery |
 | 5 | `.agent/local/` (all) | Project-specific: UI-UX, logging, deploy |
-| 6 | `.agent/roles/.index.md` | Role responsibilities at a glance |
-| 7 | `.agent/workflow.md` | Pipeline stages, handoff, rejection paths |
+| 6 | `.agent/workflow.md` | Pipeline stages, handoff, rejection paths |
 | 8 | `.agent/skills/<name>/skill.md` | Load only when task matches a skill |
 
 All language conventions live in `.agent/general/coding.md` (single source of
@@ -101,8 +101,7 @@ This project uses defined agent roles to structure work:
 
 1. **Orchestrator** — plans, delegates, tracks, accepts/rejects
 2. **Developer** — implements code per conventions
-3. **Reviewer** — checks correctness, conventions, security
-4. **QA** — runs tests, validates acceptance criteria
+3. **QA** — reviews conventions/security + runs tests, validates acceptance criteria
 
 Full details in `.agent/roles/` and `.agent/workflow.md`.
 
