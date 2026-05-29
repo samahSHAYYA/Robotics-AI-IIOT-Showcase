@@ -16,8 +16,8 @@ import httpx
 import websockets
 
 
-GREEN_CHECK = '\u2713'
-RED_CROSS = '\u2717'
+GREEN_CHECK = '+'
+RED_CROSS = 'x'
 GREEN = '\033[92m'
 RED = '\033[91m'
 CYAN = '\033[96m'
@@ -165,6 +165,34 @@ async def check_ai_chat(
         return False
 
 
+async def check_tcp(name: str, host: str, port: int, timeout: float) -> bool:
+    """Check TCP connectivity to a host:port.
+
+    @param name: Human-readable check name.
+    @param host: Target hostname.
+    @param port: Target port.
+    @param timeout: Seconds before giving up.
+
+    @return passed: True if TCP connection succeeded.
+    """
+
+    try:
+        _, writer = await asyncio.wait_for(
+            asyncio.open_connection(host, port),
+            timeout=timeout,
+        )
+        writer.close()
+        await writer.wait_closed()
+        log_pass(f'{name} ({host}:{port})')
+        return True
+    except asyncio.TimeoutError:
+        log_fail(f'{name} — timed out after {timeout}s ({host}:{port})')
+        return False
+    except Exception as exc:
+        log_fail(f'{name} — {exc} ({host}:{port})')
+        return False
+
+
 async def main() -> int:
     """Run all smoke test checks and return exit code."""
 
@@ -185,33 +213,39 @@ async def main() -> int:
     print(f'{GREEN}  Smart Factory Supervisor — Smoke Test{RESET}')
     print(f'{GREEN}========================================{RESET}\n')
 
-    checks: list[tuple[str, str]] = [
-        ('ops-api health', 'http://localhost:8000/health'),
-        ('ops-api root', 'http://localhost:8000/'),
-        ('ai-agent health', 'http://localhost:8080/health'),
-        ('ai-service health', 'http://localhost:8001/health'),
-        ('ops-frontend', 'http://localhost:5173/'),
+    checks: list[tuple[str, str, bool]] = [
+        ('ops-api health', 'http://localhost:8003/health', False),
+        ('ops-api root', 'http://localhost:8003/', True),
+        ('ai-agent health', 'http://localhost:8004/health', False),
+        ('ai-service health', 'http://localhost:8002/health', False),
+        ('ops-frontend', 'http://localhost:3000/', False),
     ]
 
     passed: int = 0
-    total: int = len(checks) + 2  # +2 for WebSocket and AI chat
+    total: int = len(checks) + 3  # +3 for TCP, WebSocket, AI chat
 
     async with httpx.AsyncClient() as client:
-        for check_name, check_url in checks:
-            allow = 'ai-service' in check_name
-            expect_json = check_name == 'ops-api root'
+        for check_name, check_url, expect_json in checks:
             ok = await check_http(
                 client, check_name, check_url, timeout,
-                expect_json=expect_json, allow_fail=allow,
+                expect_json=expect_json,
             )
             if ok:
                 passed += 1
 
         print()
+        log_info('Checking core-platform TCP connectivity...')
+        tcp_ok = await check_tcp(
+            'core-platform', 'localhost', 8001, timeout,
+        )
+        if tcp_ok:
+            passed += 1
+
+        print()
         log_info('Checking WebSocket snapshot...')
         ws_ok = await check_websocket(
             'WebSocket snapshot',
-            'ws://localhost:8000/ws',
+            'ws://localhost:8003/ws',
             timeout,
         )
         if ws_ok:
@@ -222,7 +256,7 @@ async def main() -> int:
         chat_ok = await check_ai_chat(
             client,
             'AI Agent chat',
-            'http://localhost:8080/api/v1/agent/chat',
+            'http://localhost:8004/api/v1/agent/chat',
             timeout,
         )
         if chat_ok:

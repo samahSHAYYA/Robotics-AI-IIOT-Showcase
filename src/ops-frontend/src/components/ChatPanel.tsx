@@ -37,27 +37,27 @@ export default function ChatPanel() {
   }
 
   return (
-    <div class="chat-panel">
+    <div className="chat-panel">
       <h3>AI Agent</h3>
-      <div class="chat-messages" ref={listRef}>
+      <div className="chat-messages" ref={listRef}>
         {messages.map((m, i) => (
           <div key={i} class={`chat-msg chat-msg--${m.role}`}>
-            <div class="chat-bubble">{m.text}</div>
+            <div className="chat-bubble">{m.text}</div>
             {m.chart && <TelemetryChart config={m.chart} />}
           </div>
         ))}
-        {loading && <div class="chat-msg chat-msg--agent"><div class="chat-bubble chat-thinking">Thinking...</div></div>}
+        {loading && <div className="chat-msg chat-msg--agent"><div className="chat-bubble chat-thinking">Thinking...</div></div>}
       </div>
-      <div class="chat-input-row">
+      <div className="chat-input-row">
         <input
-          class="chat-input"
+          className="chat-input"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && send()}
           placeholder="Ask about telemetry..."
           disabled={loading}
         />
-        <button class="btn-send" onClick={send} disabled={loading}>Send</button>
+        <button className="btn-send" onClick={send} disabled={loading}>Send</button>
       </div>
     </div>
   )

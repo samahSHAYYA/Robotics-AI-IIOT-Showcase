@@ -12,12 +12,12 @@ export default function KpiCard({ label, value, unit, trend, severity }: KpiCard
 
   return (
     <div class={`kpi-card ${severityClass}`}>
-      <div class="kpi-label">{label}</div>
-      <div class="kpi-value">
+      <div className="kpi-label">{label}</div>
+      <div className="kpi-value">
         {value}
-        {unit && <span class="kpi-unit">{unit}</span>}
+        {unit && <span className="kpi-unit">{unit}</span>}
       </div>
-      {trend && <div class="kpi-trend">{trendIcon}</div>}
+      {trend && <div className="kpi-trend">{trendIcon}</div>}
     </div>
   )
 }

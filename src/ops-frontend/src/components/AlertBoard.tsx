@@ -12,10 +12,10 @@ const severityClass = (s: string) =>
 export default function AlertBoard({ alerts, events, error }: AlertBoardProps) {
   if (error) {
     return (
-      <div class="alert-board">
+      <div className="alert-board">
         <h3>Alerts & Events</h3>
-        <div class="error-banner">
-          <span class="error-text">{error}</span>
+        <div className="error-banner">
+          <span className="error-text">{error}</span>
         </div>
       </div>
     )
@@ -23,33 +23,33 @@ export default function AlertBoard({ alerts, events, error }: AlertBoardProps) {
 
   if (alerts.length === 0 && events.length === 0) {
     return (
-      <div class="alert-board">
+      <div className="alert-board">
         <h3>Alerts & Events</h3>
-        <div class="empty-state empty-state--success">
-          <div class="empty-state-icon">✓</div>
-          <div class="empty-state-text">No active alerts</div>
+        <div className="empty-state empty-state--success">
+          <div className="empty-state-icon">✓</div>
+          <div className="empty-state-text">No active alerts</div>
         </div>
       </div>
     )
   }
 
   return (
-    <div class="alert-board">
+    <div className="alert-board">
       <h3>Alerts & Events</h3>
-      <div class="alert-list">
+      <div className="alert-list">
         {[...alerts].reverse().slice(0, 10).map((a, i) => (
           <div key={`alert-${i}`} class={`alert-item ${severityClass(a.severity)}`}>
-            <span class="alert-time">{new Date(a.timestamp).toLocaleTimeString()}</span>
-            <span class="alert-badge">{a.severity}</span>
-            <span class="alert-detail">{a.message}</span>
+            <span className="alert-time">{new Date(a.timestamp).toLocaleTimeString()}</span>
+            <span className="alert-badge">{a.severity}</span>
+            <span className="alert-detail">{a.message}</span>
           </div>
         ))}
         {[...events].reverse().slice(0, 10).map((ev) => (
           <div key={ev.id} class={`alert-item ${severityClass(ev.severity)}`}>
-            <span class="alert-time">{new Date(ev.timestamp).toLocaleTimeString()}</span>
-            <span class="alert-badge">{ev.severity}</span>
-            <span class="alert-type">{ev.subtype}</span>
-            <span class="alert-detail">{ev.detail ?? `${ev.value ?? ''} ${ev.unit ?? ''}`}</span>
+            <span className="alert-time">{new Date(ev.timestamp).toLocaleTimeString()}</span>
+            <span className="alert-badge">{ev.severity}</span>
+            <span className="alert-type">{ev.subtype}</span>
+            <span className="alert-detail">{ev.detail ?? `${ev.value ?? ''} ${ev.unit ?? ''}`}</span>
           </div>
         ))}
       </div>

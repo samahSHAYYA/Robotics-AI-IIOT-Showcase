@@ -34,9 +34,9 @@ export default function TelemetryChart({ config }: TelemetryChartProps) {
   }
 
   return (
-    <div class="telemetry-chart">
-      <div class="chart-title">{config.title}</div>
-      <svg viewBox={`0 0 ${W} ${H}`} class="chart-svg">
+    <div className="telemetry-chart">
+      <div className="chart-title">{config.title}</div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="chart-svg">
         {/* Grid lines */}
         {yTicks.map((v) => (
           <g key={v}>

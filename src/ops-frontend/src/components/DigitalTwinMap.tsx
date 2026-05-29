@@ -11,10 +11,10 @@ const FACTORY_H = 400
 export default function DigitalTwinMap({ robots, error }: DigitalTwinMapProps) {
   if (error) {
     return (
-      <div class="digital-twin">
+      <div className="digital-twin">
         <h3>Factory Floor</h3>
-        <div class="error-banner">
-          <span class="error-text">{error}</span>
+        <div className="error-banner">
+          <span className="error-text">{error}</span>
         </div>
       </div>
     )
@@ -22,10 +22,10 @@ export default function DigitalTwinMap({ robots, error }: DigitalTwinMapProps) {
 
   if (robots.length === 0) {
     return (
-      <div class="digital-twin">
+      <div className="digital-twin">
         <h3>Factory Floor</h3>
-        <div class="empty-state">
-          <div class="empty-state-text">Waiting for robot telemetry...</div>
+        <div className="empty-state">
+          <div className="empty-state-text">Waiting for robot telemetry...</div>
         </div>
       </div>
     )
@@ -34,9 +34,9 @@ export default function DigitalTwinMap({ robots, error }: DigitalTwinMapProps) {
   const scale = (v: number, max: number) => (v / max) * FACTORY_W
 
   return (
-    <div class="digital-twin">
+    <div className="digital-twin">
       <h3>Factory Floor</h3>
-      <svg viewBox={`0 0 ${FACTORY_W} ${FACTORY_H}`} class="factory-svg">
+      <svg viewBox={`0 0 ${FACTORY_W} ${FACTORY_H}`} className="factory-svg">
         <rect x="0" y="0" width={FACTORY_W} height={FACTORY_H} fill="#1e293b" rx="8" />
         <line x1="200" y1="0" x2="200" y2={FACTORY_H} stroke="#334155" stroke-width="2" stroke-dasharray="8 4" />
         <line x1="400" y1="0" x2="400" y2={FACTORY_H} stroke="#334155" stroke-width="2" stroke-dasharray="8 4" />

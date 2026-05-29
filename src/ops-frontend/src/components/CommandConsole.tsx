@@ -24,9 +24,9 @@ export default function CommandConsole({ onSendCommand }: CommandConsoleProps) {
   }
 
   return (
-    <form class="command-console" onSubmit={handleSubmit}>
+    <form className="command-console" onSubmit={handleSubmit}>
       <h3>Command Console</h3>
-      <div class="command-row">
+      <div className="command-row">
         <label>
           Robot
           <select value={robotId} onChange={(e) => setRobotId(e.target.value)}>
@@ -43,7 +43,7 @@ export default function CommandConsole({ onSendCommand }: CommandConsoleProps) {
             ))}
           </select>
         </label>
-        <button type="submit" class="btn-send">Send</button>
+        <button type="submit" className="btn-send">Send</button>
       </div>
     </form>
   )

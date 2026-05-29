@@ -78,7 +78,6 @@ services:
       - ai_service_cache:/app/cache
 
   ops-api:
-    profiles: ["dev"]
     build:
       context: .
       dockerfile: ./ops-api/Dockerfile
@@ -97,10 +96,9 @@ services:
       - showcase_net
     volumes:
       - ./ops-api/app:/app/ops-api/app
-    command: python -m init_db && uvicorn app.main:app --host 0.0.0.0 --port 8003 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8003 --reload
 
   ai-agent:
-    profiles: ["dev"]
     build:
       context: .
       dockerfile: ./ai-agent/Dockerfile
@@ -134,7 +132,6 @@ services:
       - showcase_net
 
   ops-frontend-dev:
-    profiles: ["dev"]
     image: node:22-alpine
     container_name: ops-frontend-dev
     working_dir: /app

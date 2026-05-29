@@ -16,10 +16,10 @@ const statusColors: Record<string, string> = {
 export default function RobotFleet({ robots, error }: RobotFleetProps) {
   if (error) {
     return (
-      <div class="robot-fleet">
+      <div className="robot-fleet">
         <h3>Robot Fleet</h3>
-        <div class="error-banner">
-          <span class="error-text">{error}</span>
+        <div className="error-banner">
+          <span className="error-text">{error}</span>
         </div>
       </div>
     )
@@ -27,33 +27,33 @@ export default function RobotFleet({ robots, error }: RobotFleetProps) {
 
   if (robots.length === 0) {
     return (
-      <div class="robot-fleet">
+      <div className="robot-fleet">
         <h3>Robot Fleet</h3>
-        <div class="empty-state">
-          <div class="empty-state-icon">🤖</div>
-          <div class="empty-state-text">No robots connected</div>
+        <div className="empty-state">
+          <div className="empty-state-icon">🤖</div>
+          <div className="empty-state-text">No robots connected</div>
         </div>
       </div>
     )
   }
 
   return (
-    <div class="robot-fleet">
+    <div className="robot-fleet">
       <h3>Robot Fleet</h3>
-      <div class="fleet-grid">
+      <div className="fleet-grid">
         {robots.map((r) => (
-          <div key={r.robot_id} class="robot-card">
-            <div class="robot-header">
-              <span class="robot-name">{r.name}</span>
-              <span class="robot-status" style={{ backgroundColor: statusColors[r.status] ?? '#6b7280' }}>
+          <div key={r.robot_id} className="robot-card">
+            <div className="robot-header">
+              <span className="robot-name">{r.name}</span>
+              <span className="robot-status" style={{ backgroundColor: statusColors[r.status] ?? '#6b7280' }}>
                 {r.status}
               </span>
             </div>
-            <div class="robot-pose">
+            <div className="robot-pose">
               ({r.pose.x.toFixed(1)}, {r.pose.y.toFixed(1)}, {r.pose.theta.toFixed(1)}°)
             </div>
-            <div class="robot-task">Task: {r.current_task ?? 'none'}</div>
-            <div class="robot-uptime">Uptime: {r.uptime_pct.toFixed(1)}%</div>
+            <div className="robot-task">Task: {r.current_task ?? 'none'}</div>
+            <div className="robot-uptime">Uptime: {r.uptime_pct.toFixed(1)}%</div>
           </div>
         ))}
       </div>

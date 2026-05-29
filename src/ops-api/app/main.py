@@ -19,7 +19,8 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.consumer import run_consumer
-from app.db import init_db
+from app.auth import hash_password
+from app.db import User, async_session_factory, init_db
 from app.routes import auth, telemetry, commands
 from app.store import store
 
@@ -65,6 +66,32 @@ async def _broadcast_snapshot():
             _ws_connections.remove(ws)
 
 
+ADMIN_USERNAME: str = os.getenv('ADMIN_USERNAME', 'admin')
+ADMIN_PASSWORD: str = os.getenv('ADMIN_PASSWORD', 'admin')
+
+
+async def _seed_admin():
+    from sqlalchemy import select
+
+    async with async_session_factory() as session:
+        result = await session.execute(
+            select(User).where(User.username == ADMIN_USERNAME),
+        )
+        existing = result.scalar_one_or_none()
+
+        if existing is None:
+            user = User(
+                username=ADMIN_USERNAME,
+                password_hash=hash_password(ADMIN_PASSWORD),
+                role='admin',
+            )
+            session.add(user)
+            await session.commit()
+            logger.info('Created admin user (username=%s)', ADMIN_USERNAME)
+        else:
+            logger.info('Admin user already exists (username=%s)', ADMIN_USERNAME)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
@@ -77,6 +104,7 @@ async def lifespan(app: FastAPI):
 
     logger.info('Initialising database ...')
     await init_db()
+    await _seed_admin()
 
     logger.info('Starting ops-api consumer ...')
 
@@ -118,6 +146,23 @@ app.include_router(auth.router)
 app.include_router(telemetry.router)
 app.include_router(commands.router)
 
+
+
+@app.get('/')
+async def root():
+    """Returns service overview information."""
+    return {
+        'service': 'Operations API',
+        'version': '0.1.0',
+        'endpoints': {
+            'health': '/health',
+            'docs': '/docs',
+            'auth': '/api/v1/auth/login',
+            'telemetry': '/api/v1/telemetry',
+            'commands': '/api/v1/commands',
+            'websocket': '/ws',
+        },
+    }
 
 @app.get('/health')
 async def health():
