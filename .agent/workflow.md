@@ -19,12 +19,7 @@ User Request
        │
        ▼
 ┌─────────────┐
-│  Reviewer    │  Conventions, correctness, security
-└──────┬──────┘
-       │ pass
-       ▼
-┌─────────────┐
-│     QA      │  Tests, acceptance criteria
+│     QA      │  Review conventions, security + run tests, validate criteria
 └──────┬──────┘
        │ pass
        ▼
@@ -35,11 +30,11 @@ User Request
 
 ## Rejection paths
 
-- **Reviewer fail** → back to Developer with review notes.
-- **QA fail** → back to Orchestrator. Orchestrator decides:
+- **QA fail (review)** → back to Developer with review notes.
+- **QA fail (tests)** → back to Orchestrator. Orchestrator decides:
   return to Developer with bug report, or adjust criteria.
-- **Double reject** (reviewer or QA rejects the same task
-  twice) → escalate to user with options.
+- **Double reject** (QA rejects the same task twice) → escalate
+  to user with options.
 
 ## Handoff summary format
 
@@ -62,8 +57,7 @@ Every handoff between roles must include a summary. Format:
 ## Parallel work
 
 If a task has independent sub-tasks, Orchestrator may split them and run
-Developer + Reviewer in parallel for each sub-task. QA always runs on the
-merged result.
+Developer in parallel for each sub-task. QA always runs on the merged result.
 
 ## Emergencies
 
@@ -71,8 +65,7 @@ merged result.
   fast-track:
 
   ```
-  Developer → Reviewer (expedited) → QA (expedited) → Orchestrator
+  Developer → QA (expedited) → Orchestrator
   ```
 
-- Reviewer and QA still check — just prioritised. Never skip either role
-  entirely.
+- QA still checks — just prioritised. Never skip QA entirely.
