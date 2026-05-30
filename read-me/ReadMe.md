@@ -36,6 +36,10 @@ Backend: FastAPI for telemetry, command, and digital twin state
 Frontend: React dashboard with live telemetry and command widgets
 Security: TLS, RBAC mode, secret files + vault simulation
 
+> **Live demo** — real-time factory floor with robot trajectories, collision avoidance, and AI-powered telemetry.
+
+![Demo preview](./assets/demo-preview.gif)
+
 ## 3. Architecture Visuals
 
 ### Main architecture

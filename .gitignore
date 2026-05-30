@@ -1,3 +1,9 @@
+# ====================
+# Media / Demo Assets
+# ====================
+snapshots/
+video-demos/
+
 # =========================================
 # Global Local/Generated Folders (Anywhere)
 # =========================================
@@ -124,3 +130,9 @@ docs/agent/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# ===========================
+# Snapshots and Video Files
+# ========================
+video-demos/
+snapshots/
