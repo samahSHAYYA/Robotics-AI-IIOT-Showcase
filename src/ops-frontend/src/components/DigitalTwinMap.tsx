@@ -10,6 +10,7 @@ const FACTORY_H = 400
 interface DigitalTwinMapProps {
   robots: RobotStatus[]
   error?: string | null
+  role?: string
   onRobotStart?: (id: string) => void
   onRobotStop?: (id: string) => void
 }
@@ -307,6 +308,7 @@ function renderLabel(
 export default function DigitalTwinMap({
   robots,
   error,
+  role,
   onRobotStart,
   onRobotStop,
 }: DigitalTwinMapProps) {
@@ -808,46 +810,48 @@ export default function DigitalTwinMap({
           <div style={{ fontSize: '0.75rem', color: '#7e93b4', marginBottom: '0.5rem' }}>
             Uptime: {selectedRobot.uptime_pct.toFixed(1)}%
           </div>
-          <div style={{ display: 'flex', gap: '0.4rem' }}>
-            <button
-              className="robot-popup-btn"
-              onClick={(e) => {
-                e.stopPropagation()
-                onRobotStart?.(selectedRobot.robot_id)
-              }}
-              style={{
-                background: '#22c55e',
-                border: 'none',
-                color: '#fff',
-                padding: '0.2rem 0.6rem',
-                borderRadius: '0.25rem',
-                fontSize: '0.7rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              Start
-            </button>
-            <button
-              className="robot-popup-btn"
-              onClick={(e) => {
-                e.stopPropagation()
-                onRobotStop?.(selectedRobot.robot_id)
-              }}
-              style={{
-                background: '#ef4444',
-                border: 'none',
-                color: '#fff',
-                padding: '0.2rem 0.6rem',
-                borderRadius: '0.25rem',
-                fontSize: '0.7rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              Stop
-            </button>
-          </div>
+          {role !== 'viewer' && (
+            <div style={{ display: 'flex', gap: '0.4rem' }}>
+              <button
+                className="robot-popup-btn"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onRobotStart?.(selectedRobot.robot_id)
+                }}
+                style={{
+                  background: '#22c55e',
+                  border: 'none',
+                  color: '#fff',
+                  padding: '0.2rem 0.6rem',
+                  borderRadius: '0.25rem',
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Start
+              </button>
+              <button
+                className="robot-popup-btn"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onRobotStop?.(selectedRobot.robot_id)
+                }}
+                style={{
+                  background: '#ef4444',
+                  border: 'none',
+                  color: '#fff',
+                  padding: '0.2rem 0.6rem',
+                  borderRadius: '0.25rem',
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Stop
+              </button>
+            </div>
+          )}
         </div>
       )}
     </>

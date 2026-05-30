@@ -1,12 +1,13 @@
 import { useState } from 'react'
 
 interface LoginPageProps {
-  onLogin: () => void
+  onLogin: (role: string) => void
 }
 
 export default function LoginPage({ onLogin }: LoginPageProps) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [role, setRole] = useState('admin')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -30,7 +31,8 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
       }
       const data = await resp.json()
       localStorage.setItem('sf_session', data.access_token)
-      onLogin()
+      localStorage.setItem('sf_role', role)
+      onLogin(role)
     } catch {
       setError('Connection error')
     } finally {
@@ -80,6 +82,19 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
             placeholder="admin"
             disabled={loading}
           />
+        </div>
+        <div className="login-field">
+          <label>Role</label>
+          <select
+            className="login-select"
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            disabled={loading}
+          >
+            <option value="admin">Admin</option>
+            <option value="operator">Operator</option>
+            <option value="viewer">Viewer</option>
+          </select>
         </div>
         <button className="login-btn" type="submit" disabled={loading}>
           {loading ? 'Authenticating...' : 'Enter Control Room'}

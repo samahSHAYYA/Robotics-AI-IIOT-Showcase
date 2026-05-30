@@ -4,6 +4,7 @@ interface RobotFleetProps {
   robots: RobotStatus[]
   error?: string | null
   highlightedRobotId?: string | null
+  role?: string
 }
 
 const statusColors: Record<string, string> = {

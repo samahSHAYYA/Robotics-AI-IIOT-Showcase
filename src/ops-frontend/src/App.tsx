@@ -9,7 +9,10 @@ import { MapSettingsProvider } from './contexts/MapSettingsContext'
 import RobotCamera from './components/RobotCamera'
 import ChatPanel from './components/ChatPanel'
 import EnergyWidget from './components/EnergyWidget'
+import PredictiveMaintenance from './components/PredictiveMaintenance'
+import OEEWidget from './components/OEEWidget'
 import ScreenshotExport from './components/ScreenshotExport'
+import VoiceCommand from './components/VoiceCommand'
 import LoginPage from './components/LoginPage'
 import LayoutSettingsPanel, { loadLayout, saveLayout } from './components/LayoutSettingsPanel'
 import type { TelemetrySnapshot, RobotStatus, Alert, Event } from './types/telemetry'
@@ -19,6 +22,7 @@ const WS_URL = import.meta.env.VITE_WS_URL ?? `${window.location.hostname}:8003/
 
 export default function App() {
   const [authed, setAuthed] = useState(() => !!localStorage.getItem('sf_session'))
+  const [role, setRole] = useState<'admin' | 'operator' | 'viewer'>(() => (localStorage.getItem('sf_role') as 'admin' | 'operator' | 'viewer') || 'admin')
   const [telemetry, setTelemetry] = useState<TelemetrySnapshot | undefined>()
   const [robots, setRobots] = useState<RobotStatus[]>([])
   const [alerts, setAlerts] = useState<Alert[]>([])
@@ -31,6 +35,8 @@ export default function App() {
   const [showLayoutSettings, setShowLayoutSettings] = useState(false)
   const [selectedRobotId, setSelectedRobotId] = useState<string | null>(null)
   const [showShortcuts, setShowShortcuts] = useState(false)
+  const [voiceResult, setVoiceResult] = useState<{ text: string; ok: boolean } | null>(null)
+  const voiceTimeoutRef = useRef<number>(0)
 
   useEffect(() => {
     saveLayout(panelVisibility)
@@ -151,6 +157,7 @@ export default function App() {
 
   const handleLogout = () => {
     localStorage.removeItem('sf_session')
+    localStorage.removeItem('sf_role')
     setAuthed(false)
   }
 
@@ -161,6 +168,55 @@ export default function App() {
   const togglePanel = useCallback((key: string) => {
     setPanelVisibility((prev) => ({ ...prev, [key]: !(prev[key] ?? true) }))
   }, [])
+
+  useEffect(() => {
+    const handler = ((e: globalThis.Event) => {
+      const detail = (e as unknown as CustomEvent).detail as {
+        command: string
+        params?: string
+        transcript: string
+        recognized: boolean
+      }
+      if (voiceTimeoutRef.current) clearTimeout(voiceTimeoutRef.current)
+      if (detail.recognized) {
+        switch (detail.command) {
+          case 'start-robot':
+            if (detail.params) handleRobotStart(detail.params)
+            break
+          case 'stop-robot':
+            if (detail.params) handleRobotStop(detail.params)
+            break
+          case 'fullscreen':
+          case 'exit-fullscreen':
+            window.dispatchEvent(new CustomEvent('fullscreen-toggle'))
+            break
+          case 'reset-map':
+            window.dispatchEvent(new CustomEvent('map-reset'))
+            break
+          case 'show-alerts':
+          case 'hide-alerts':
+            togglePanel('alerts')
+            break
+          case 'show-fleet':
+          case 'hide-fleet':
+            togglePanel('fleet')
+            break
+          case 'help':
+            setShowShortcuts(true)
+            break
+        }
+        setVoiceResult({ text: `Command: ${detail.transcript}`, ok: true })
+      } else {
+        setVoiceResult({ text: `Unrecognized: ${detail.transcript}`, ok: false })
+      }
+      voiceTimeoutRef.current = window.setTimeout(() => setVoiceResult(null), 2000)
+    }) as unknown as EventListener
+    window.addEventListener('voice-command', handler)
+    return () => {
+      window.removeEventListener('voice-command', handler)
+      if (voiceTimeoutRef.current) clearTimeout(voiceTimeoutRef.current)
+    }
+  }, [handleRobotStart, handleRobotStop, togglePanel])
 
   const bannerClass =
     status === 'failed'
@@ -176,7 +232,7 @@ export default function App() {
         ? 'Reconnecting...'
         : null
 
-  if (!authed) return <LoginPage onLogin={() => setAuthed(true)} />
+  if (!authed) return <LoginPage onLogin={(r) => { setRole(r as 'admin' | 'operator' | 'viewer'); setAuthed(true) }} />
 
   return (
     <div className="app">
@@ -191,8 +247,10 @@ export default function App() {
           <span className="app-subtitle">Industrial Humanoid Robotics IIoT Showcase</span>
         </div>
         <div className="header-right">
+          <VoiceCommand />
           <ScreenshotExport />
-          <button className="layout-settings-btn" onClick={() => setShowLayoutSettings(true)}>Layout</button>
+          <span className={`role-badge role-badge--${role}`}>{role}</span>
+          {role === 'admin' && <button className="layout-settings-btn" onClick={() => setShowLayoutSettings(true)}>Layout</button>}
           <button className="layout-settings-btn" onClick={() => setShowShortcuts((p) => !p)}>?</button>
           <span className="header-clock">{clock.toLocaleTimeString()}</span>
           <button className="logout-btn" onClick={handleLogout}>Logout</button>
@@ -209,6 +267,7 @@ export default function App() {
             <div className="panel panel-fleet">
               <RobotFleet robots={robots} error={error} highlightedRobotId={selectedRobotId} />
               <EnergyWidget robots={robots} />
+              <PredictiveMaintenance robots={robots} />
             </div>
           )}
           {panelVisibility.map !== false && (
@@ -217,6 +276,7 @@ export default function App() {
                 <DigitalTwinMap
                   robots={robots}
                   error={error}
+                  role={role}
                   onRobotStart={handleRobotStart}
                   onRobotStop={handleRobotStop}
                 />
@@ -231,11 +291,17 @@ export default function App() {
           {panelVisibility.console !== false && (
             <div className="panel panel-console">
               <CommandConsole
+                role={role}
                 onStartRobot={handleRobotStart}
                 onStopRobot={handleRobotStop}
                 onAssignTask={handleAssignTask}
                 onEmergencyStop={handleEmergencyStop}
               />
+            </div>
+          )}
+          {panelVisibility.oee !== false && (
+            <div className="panel panel-oee">
+              <OEEWidget robots={robots} />
             </div>
           )}
           {panelVisibility.camera !== false && (
@@ -272,6 +338,11 @@ export default function App() {
             <span className="shortcuts-key">?</span>
             <span className="shortcuts-desc">Toggle this help</span>
           </div>
+        </div>
+      )}
+      {voiceResult && (
+        <div className={'voice-toast' + (voiceResult.ok ? ' voice-toast--ok' : ' voice-toast--fail')}>
+          {voiceResult.text}
         </div>
       )}
     </div>

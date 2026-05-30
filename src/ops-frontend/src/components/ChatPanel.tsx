@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import type { ChatMessage } from '../types/agent'
 import TelemetryChart from './TelemetryChart'
 
@@ -13,6 +13,16 @@ export default function ChatPanel() {
   useEffect(() => {
     if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight
   }, [messages])
+
+  const handlePreFill = useCallback((e: Event) => {
+    const ce = e as CustomEvent
+    if (typeof ce.detail === 'string') setInput(ce.detail)
+  }, [])
+
+  useEffect(() => {
+    window.addEventListener('chat-pre-fill', handlePreFill)
+    return () => window.removeEventListener('chat-pre-fill', handlePreFill)
+  }, [handlePreFill])
 
   const send = async () => {
     const msg = input.trim()

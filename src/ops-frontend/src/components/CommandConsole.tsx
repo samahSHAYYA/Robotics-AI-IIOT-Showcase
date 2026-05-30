@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 interface CommandConsoleProps {
+  role?: string
   onStartRobot: (id: string) => void
   onStopRobot: (id: string) => void
   onAssignTask: (id: string, task: string) => void
@@ -26,6 +27,7 @@ const QUICK_TASKS = [
 ]
 
 export default function CommandConsole({
+  role,
   onStartRobot,
   onStopRobot,
   onAssignTask,
@@ -34,13 +36,15 @@ export default function CommandConsole({
   const [robotId, setRobotId] = useState('C3')
   const [task, setTask] = useState('')
 
+  const isViewer = role === 'viewer'
+
   return (
-    <div className="command-console">
+    <div className={`command-console ${isViewer ? 'command-console--readonly' : ''}`}>
       <h3>Command Console</h3>
 
       <label className="cc-select-label">
         Robot
-        <select value={robotId} onChange={(e) => setRobotId(e.target.value)}>
+        <select value={robotId} onChange={(e) => setRobotId(e.target.value)} disabled={isViewer}>
           {ROBOTS.map((r) => (
             <option key={r.value} value={r.value}>{r.label}</option>
           ))}
@@ -48,13 +52,13 @@ export default function CommandConsole({
       </label>
 
       <div className="cc-btn-row">
-        <button className="btn-start" onClick={() => onStartRobot(robotId)} title="Resume movement">
+        <button className="btn-start" onClick={() => onStartRobot(robotId)} title="Resume movement" disabled={isViewer}>
           ▶ Resume
         </button>
-        <button className="btn-stop" onClick={() => onStopRobot(robotId)} title="Pause movement">
+        <button className="btn-stop" onClick={() => onStopRobot(robotId)} title="Pause movement" disabled={isViewer}>
           ⏸ Pause
         </button>
-        <button className="btn-danger" onClick={() => onEmergencyStop(robotId)} title="Emergency stop">
+        <button className="btn-danger" onClick={() => onEmergencyStop(robotId)} title="Emergency stop" disabled={isViewer}>
           ⚠ E-Stop
         </button>
       </div>
@@ -62,6 +66,7 @@ export default function CommandConsole({
       <button
         className="btn-base"
         onClick={() => onAssignTask(robotId, 'Returning to Base')}
+        disabled={isViewer}
       >
         ↲ Return to Base
       </button>
@@ -75,6 +80,7 @@ export default function CommandConsole({
               onAssignTask(robotId, e.target.value)
             }
           }}
+          disabled={isViewer}
         >
           <option value="">— select —</option>
           {QUICK_TASKS.map((t) => (
@@ -100,9 +106,10 @@ export default function CommandConsole({
             value={task}
             onChange={(e) => setTask(e.target.value)}
             placeholder="e.g. Zone B inspection"
+            disabled={isViewer}
           />
         </label>
-        <button type="submit" className="btn-send">Assign</button>
+        <button type="submit" className="btn-send" disabled={isViewer}>Assign</button>
       </form>
     </div>
   )
