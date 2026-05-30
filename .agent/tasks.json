@@ -47,8 +47,8 @@
     {
       "id": 8,
       "title": "Phase 8: Fix Frontend↔Backend Data Pipeline",
-      "status": "in_progress",
-      "committed": false,
+      "status": "completed",
+      "committed": true,
       "acceptance": [
         "WebSocket broadcast wraps payload with type field",
         "TelemetrySnapshot type matches backend store shape",
@@ -62,8 +62,8 @@
     {
       "id": 9,
       "title": "Phase 9: Remove dead event_logger.hpp",
-      "status": "pending",
-      "committed": false,
+      "status": "completed",
+      "committed": true,
       "acceptance": [
         "event_logger.hpp removed",
         "No compilation errors from removal"
@@ -72,8 +72,8 @@
     {
       "id": 10,
       "title": "Phase 10: Refactor ai-agent with PydanticAI",
-      "status": "pending",
-      "committed": false,
+      "status": "completed",
+      "committed": true,
       "acceptance": [
         "prompt.md file with system prompt",
         "tools.py with telemetry fetch tools",
@@ -88,7 +88,7 @@
     {
       "id": 11,
       "title": "Phase 11: Quality Cleanup",
-      "status": "pending",
+      "status": "completed",
       "committed": false,
       "acceptance": [
         "Root .dockerignore created (excludes node_modules, __pycache__, .venv, data, logs)",
@@ -99,7 +99,7 @@
     {
       "id": 12,
       "title": "Phase 12: Commit and push all changes",
-      "status": "pending",
+      "status": "in_progress",
       "committed": false,
       "acceptance": [
         "All changes committed with descriptive messages",

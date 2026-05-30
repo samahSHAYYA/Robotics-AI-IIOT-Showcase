@@ -1,0 +1,87 @@
+# =====================
+# Node / JS Dependencies
+# =====================
+node_modules/
+**/node_modules/
+.npm/
+.pnpm-store/
+.yarn/
+
+# =========================
+# Python Dependencies / Cache
+# =========================
+.venv/
+venv/
+ENV/
+**/__pycache__/
+**/*.py[cod]
+**/*.pyo
+**/*.pyd
+**/*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.eggs/
+
+# ==========================
+# Build Artifacts / Output
+# ==========================
+**/build/
+**/dist/
+**/out/
+**/bin/
+**/CMakeFiles/
+**/*.o
+**/*.obj
+**/*.a
+**/*.lib
+**/*.dll
+**/*.exe
+
+# ==================
+# Runtime Data / Logs
+# ==================
+data/
+logs/
+log/
+cache/
+tmp/
+temp/
+
+# ============
+# Environment
+# ============
+.env
+.env.*
+secrets/
+
+# =================
+# IDE / OS Artifacts
+# =================
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+*~
+
+# ================
+# Git / Repo Meta
+# ================
+.git/
+.gitattributes
+.gitignore
+.gitmodules
+
+# ==============
+# Documentation
+# ==============
+site/
+doc-site/
+
+# =========
+# Media
+# =========
+snapshots/
+video-demos/
