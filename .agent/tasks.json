@@ -1,6 +1,6 @@
 {
   "sprint": "Showcase Polish Sprint",
-  "status": "in_progress",
+  "status": "completed",
   "tasks": [
     {
       "id": 1,
@@ -89,7 +89,7 @@
       "id": 11,
       "title": "Phase 11: Quality Cleanup",
       "status": "completed",
-      "committed": false,
+      "committed": true,
       "acceptance": [
         "Root .dockerignore created (excludes node_modules, __pycache__, .venv, data, logs)",
         "event_logger.hpp removed as dead code",
@@ -99,8 +99,8 @@
     {
       "id": 12,
       "title": "Phase 12: Commit and push all changes",
-      "status": "in_progress",
-      "committed": false,
+      "status": "completed",
+      "committed": true,
       "acceptance": [
         "All changes committed with descriptive messages",
         "Pushed to remote"
