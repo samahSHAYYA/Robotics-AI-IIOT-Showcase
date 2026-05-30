@@ -1,0 +1,6 @@
+apiVersion: v2
+name: smart-factory
+description: Helm chart for Smart Factory Supervisor
+type: application
+version: 0.1.0
+appVersion: 0.1.0

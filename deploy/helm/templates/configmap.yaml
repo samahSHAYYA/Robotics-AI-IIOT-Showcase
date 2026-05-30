@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: smart-factory-config
+  labels:
+    {{- include "smart-factory.labels" . | nindent 4 }}
+data:
+  # Global / shared
+  ENVIRONMENT: {{ .Values.global.environment | quote }}
+  IMAGE_TAG: {{ .Values.global.imageTag | quote }}
+
+  # ops-api
+  OPS_API_PORT: {{ .Values.opsApi.port | quote }}
+  REDIS_URL: {{ .Values.opsApi.env.REDIS_URL | quote }}
+  POSTGRES_HOST: {{ .Values.opsApi.env.POSTGRES_HOST | quote }}
+  POSTGRES_DB: {{ .Values.opsApi.env.POSTGRES_DB | quote }}
+  FRONTEND_ORIGIN: {{ .Values.opsApi.env.FRONTEND_ORIGIN | quote }}
+
+  # ai-service
+  AI_SERVICE_PORT: {{ .Values.aiService.port | quote }}
+  AI_SERVICE_REDIS_URL: {{ .Values.aiService.env.REDIS_URL | quote }}
+
+  # ai-agent
+  AI_AGENT_PORT: {{ .Values.aiAgent.port | quote }}
+  AI_AGENT_REDIS_URL: {{ .Values.aiAgent.env.REDIS_URL | quote }}
+
+  # postgres
+  POSTGRES_USER: {{ .Values.postgres.env.POSTGRES_USER | quote }}
+  POSTGRES_PASSWORD: {{ .Values.postgres.env.POSTGRES_PASSWORD | quote }}

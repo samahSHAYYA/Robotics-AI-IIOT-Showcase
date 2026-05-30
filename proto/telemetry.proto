@@ -1,0 +1,50 @@
+syntax = "proto3";
+package factory;
+
+service TelemetryService {
+  rpc GetSnapshot(Empty) returns (TelemetrySnapshot);
+  rpc StreamSnapshots(Empty) returns (stream TelemetrySnapshot);
+  rpc SendCommand(CommandRequest) returns (CommandResponse);
+}
+
+message Empty {}
+
+message TelemetrySnapshot {
+  int64 timestamp = 1;
+  repeated RobotStatus robots = 2;
+  repeated Alert alerts = 3;
+}
+
+message RobotStatus {
+  string robot_id = 1;
+  string name = 2;
+  string status = 3;
+  Pose pose = 4;
+  float uptime_pct = 5;
+  string current_task = 6;
+}
+
+message Pose {
+  float x = 1;
+  float y = 2;
+  float theta = 3;
+}
+
+message Alert {
+  string id = 1;
+  string severity = 2;
+  string type = 3;
+  string message = 4;
+  int64 timestamp = 5;
+}
+
+message CommandRequest {
+  string robot_id = 1;
+  string command = 2;
+  map<string, string> params = 3;
+}
+
+message CommandResponse {
+  bool success = 1;
+  string message = 2;
+}

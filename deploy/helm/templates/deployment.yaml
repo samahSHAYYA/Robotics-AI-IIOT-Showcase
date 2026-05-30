@@ -1,0 +1,51 @@
+{{- range $component, $cfg := dict
+  "ops-frontend" .Values.opsFrontend
+  "ops-api"      .Values.opsApi
+  "ai-service"   .Values.aiService
+  "ai-agent"     .Values.aiAgent
+  "redis"        .Values.redis
+  "postgres"     .Values.postgres
+}}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $component }}
+  labels:
+    {{- include "smart-factory.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $component }}
+spec:
+  replicas: {{ $cfg.replicas | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "smart-factory.selectorLabels" $ | nindent 6 }}
+      app.kubernetes.io/component: {{ $component }}
+  template:
+    metadata:
+      labels:
+        {{- include "smart-factory.selectorLabels" $ | nindent 8 }}
+        app.kubernetes.io/component: {{ $component }}
+    spec:
+      containers:
+      - name: {{ $component }}
+        image: "{{ $cfg.image }}{{ if $.Values.global.imageTag }}:{{ $.Values.global.imageTag }}{{ end }}"
+        {{- with $cfg.port }}
+        ports:
+        - containerPort: {{ . }}
+          protocol: TCP
+        {{- end }}
+        {{- with $cfg.env }}
+        env:
+        {{- range $key, $val := . }}
+        - name: {{ $key }}
+          value: {{ $val | quote }}
+        {{- end }}
+        {{- end }}
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+{{- end }}

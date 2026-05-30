@@ -38,6 +38,18 @@ from app.routes import reports as reports_router
 # Feature 34: Prometheus metrics (router)
 from app.routes import metrics as metrics_router
 
+# Feature 42: Robot Fleet Auto-Discovery (router)
+from app.routes import robots as robots_router
+
+# Feature 44: Digital Twin State Reconciliation (router)
+from app.routes import reconcile as reconcile_router
+
+# Feature 47: Multi-Factory / Site Management (router)
+from app.routes import sites as sites_router
+
+# Feature 41: Edge Device Simulator (sensor proxy)
+from app.routes import sensors as sensors_router
+
 # Feature 30: Analytics engine (fed by broadcast loop)
 from app import analytics_engine
 
@@ -194,6 +206,18 @@ app.include_router(reports_router.router)
 # Feature 34: Prometheus metrics router
 app.include_router(metrics_router.router)
 
+# Feature 42: Robot Fleet Auto-Discovery router
+app.include_router(robots_router.router)
+
+# Feature 44: Digital Twin State Reconciliation router
+app.include_router(reconcile_router.router)
+
+# Feature 47: Multi-Factory / Site Management router
+app.include_router(sites_router.router)
+
+# Feature 41: Edge Device Simulator (sensor proxy)
+app.include_router(sensors_router.router)
+
 
 @app.get('/')
 async def root():
@@ -214,6 +238,17 @@ async def root():
             'reports': '/api/v1/reports/pdf',
             'metrics': '/metrics',
             'websocket': '/ws',
+            'robots': '/api/v1/robots',
+            'robots_register': '/api/v1/robots/register',
+            'robots_heartbeat': '/api/v1/robots/{robot_id}/heartbeat',
+            'reconcile_state': '/api/v1/reconcile/state',
+            'reconcile_diff': '/api/v1/reconcile/diff',
+            'reconcile_resolve': '/api/v1/reconcile/resolve',
+            'sites': '/api/v1/sites',
+            'sites_switch': '/api/v1/sites/{site_id}/switch',
+            'sites_telemetry': '/api/v1/sites/{site_id}/telemetry',
+            'sites_active': '/api/v1/sites/active/info',
+            'sensors': '/api/v1/sensors',
         },
     }
 

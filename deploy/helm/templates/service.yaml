@@ -1,0 +1,27 @@
+{{- range $component, $cfg := dict
+  "ops-frontend" .Values.opsFrontend
+  "ops-api"      .Values.opsApi
+  "ai-service"   .Values.aiService
+  "ai-agent"     .Values.aiAgent
+  "redis"        .Values.redis
+  "postgres"     .Values.postgres
+}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $component }}
+  labels:
+    {{- include "smart-factory.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $component }}
+spec:
+  type: ClusterIP
+  ports:
+  - port: {{ $cfg.port }}
+    targetPort: {{ $cfg.port }}
+    protocol: TCP
+    name: http
+  selector:
+    {{- include "smart-factory.selectorLabels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $component }}
+{{- end }}

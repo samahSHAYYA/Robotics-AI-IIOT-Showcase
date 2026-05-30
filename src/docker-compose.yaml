@@ -136,6 +136,28 @@ services:
     networks:
       - showcase_net
 
+  edge-sim:
+    build:
+      context: .
+      dockerfile: ./edge-sim/Dockerfile
+    container_name: edge-sim
+    env_file:
+      - .env
+      - ./envs/edge-sim/.env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    ports:
+      - "${EDGE_SIM_PORT:-8005}:8005"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - showcase_net
+    volumes:
+      - ./edge-sim/app:/app/edge-sim/app
+    command: uv run uvicorn app.main:app --host 0.0.0.0 --port 8005 --reload
+
   ops-frontend-dev:
     profiles: ["dev"]
     image: node:22-alpine

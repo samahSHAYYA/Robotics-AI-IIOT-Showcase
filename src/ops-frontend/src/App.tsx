@@ -21,6 +21,10 @@ import ServiceHealth from './components/ServiceHealth'
 import AuditLog from './components/AuditLog'
 import WebhookManager from './components/WebhookManager'
 import AnalyticsWidget from './components/AnalyticsWidget'
+import SensorGrid from './components/SensorGrid'
+import RobotFleetPanel from './components/RobotFleetPanel'
+import ReconcilePanel from './components/ReconcilePanel'
+import SiteManagerPanel from './components/SiteManagerPanel'
 import LoginPage from './components/LoginPage'
 import LayoutSettingsPanel, { loadLayout, saveLayout } from './components/LayoutSettingsPanel'
 import useAlertNotifications from './hooks/useAlertNotifications'
@@ -466,6 +470,11 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
                   <ChatPanel />
                 </div>
               )}
+              {!isMobile && panelVisibility.sensors !== false && (
+                <div className="panel panel-sensors">
+                  <SensorGrid />
+                </div>
+              )}
               {!isMobile && panelVisibility.health !== false && (
                 <div className="panel panel-health">
                   <ServiceHealth />
@@ -479,6 +488,21 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
               {!isMobile && panelVisibility.webhooks !== false && (
                 <div className="panel panel-webhooks">
                   <WebhookManager />
+                </div>
+              )}
+              {!isMobile && panelVisibility.robots !== false && (
+                <div className="panel panel-robots">
+                  <RobotFleetPanel />
+                </div>
+              )}
+              {!isMobile && panelVisibility.reconcile !== false && (
+                <div className="panel panel-reconcile">
+                  <ReconcilePanel />
+                </div>
+              )}
+              {!isMobile && panelVisibility.sites !== false && (
+                <div className="panel panel-sites">
+                  <SiteManagerPanel />
                 </div>
               )}
             </section>

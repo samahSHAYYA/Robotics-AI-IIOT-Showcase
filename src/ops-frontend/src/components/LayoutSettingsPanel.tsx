@@ -17,6 +17,10 @@ const PANELS = [
   { key: 'health', label: 'Service Health' },
   { key: 'audit', label: 'Audit Log' },
   { key: 'webhooks', label: 'Webhook Manager' },
+  { key: 'sensors', label: 'IoT Sensor Grid' },
+  { key: 'robots', label: 'Robot Fleet Panel' },
+  { key: 'reconcile', label: 'State Reconciliation' },
+  { key: 'sites', label: 'Multi-Factory Sites' },
 ] as const
 
 export type LayoutKey = (typeof PANELS)[number]['key']
@@ -36,6 +40,10 @@ const DEFAULTS: Record<string, boolean> = {
   health: true,
   audit: true,
   webhooks: true,
+  sensors: true,
+  robots: true,
+  reconcile: true,
+  sites: true,
 }
 
 export function loadLayout(): Record<string, boolean> {

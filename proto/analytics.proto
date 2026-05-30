@@ -1,0 +1,19 @@
+syntax = "proto3";
+package factory;
+
+service AnalyticsService {
+  rpc GetCurrentAnalytics(Empty) returns (AnalyticsResult);
+  rpc StreamAnalytics(Empty) returns (stream AnalyticsResult);
+}
+
+message AnalyticsResult {
+  int64 timestamp = 1;
+  float avg_uptime = 2;
+  float max_uptime = 3;
+  float min_uptime = 4;
+  float alert_rate = 5;
+  float robot_utilization = 6;
+  int32 active_robot_count = 7;
+  int32 idle_robot_count = 8;
+  int32 error_robot_count = 9;
+}

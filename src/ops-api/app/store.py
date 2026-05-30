@@ -6,7 +6,7 @@
 Holds the latest snapshot of sensor readings, robot states, alerts, and ML
 predictions. Thread-safe via a lock since the Redis consumer runs in a
 background task.
-"""
+ """
 
 import asyncio
 import copy
@@ -17,6 +17,16 @@ import threading
 
 from datetime import datetime, timezone
 from typing import Any
+
+# Feature 42: Robot Fleet Auto-Discovery — registered robots in-memory store
+registered_robots: dict[str, dict[str, Any]] = {}
+_registered_robots_lock: threading.Lock = threading.Lock()
+_robot_sequence_counters: dict[str, int] = {'H': 0, 'W': 0, 'I': 0}
+ROBOT_TYPE_PREFIX: dict[str, str] = {
+    'humanoid': 'H',
+    'welder': 'W',
+    'inspector': 'I',
+}
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -445,6 +455,14 @@ class TelemetryStore:
                             r['current_task'] = None
                     self._data['last_update'] = datetime.now(timezone.utc).isoformat()
 
+                # Feature 42: Update heartbeat for registered robots on each tick
+                with _registered_robots_lock:
+                    for rid in self._robot_paths:
+                        if rid in registered_robots:
+                            registered_robots[rid]['last_heartbeat'] = (
+                                datetime.now(timezone.utc).isoformat()
+                            )
+
                 await asyncio.sleep(WHILE_SLEEP_S)
             except asyncio.CancelledError:
                 break
@@ -520,6 +538,164 @@ class TelemetryStore:
 
         with self._lock:
             return copy.deepcopy(self._data.get('robots', []))
+
+    # ── Feature 42: Robot Fleet Auto-Discovery ────────────────────────────────
+
+    def register_robot(self, name: str, robot_type: str) -> dict[str, Any]:
+        """
+        Register a new robot, auto-assigning an ID with a type prefix.
+
+        @param name: Human-readable name for the robot.
+        @param robot_type: Type of robot (humanoid, welder, inspector).
+
+        @return record: The full robot record with assigned ID.
+        """
+        prefix = ROBOT_TYPE_PREFIX.get(robot_type, 'X')
+        with _registered_robots_lock:
+            _robot_sequence_counters.setdefault(prefix, 0)
+            _robot_sequence_counters[prefix] += 1
+            robot_id = f'{prefix}{_robot_sequence_counters[prefix]}'
+
+            record: dict[str, Any] = {
+                'robot_id': robot_id,
+                'name': name,
+                'type': robot_type,
+                'status': 'offline',
+                'registered_at': datetime.now(timezone.utc).isoformat(),
+                'last_heartbeat': None,
+            }
+            registered_robots[robot_id] = record
+
+            # Also add the robot to the movement simulation if it is a known type
+            if robot_id not in self._robot_paths:
+                # Assign a random path near existing robots
+                path = [(random.uniform(1, 8), random.uniform(1, 7))
+                        for _ in range(4)]
+                self._robot_paths[robot_id] = path
+                self._robot_waypoint_idx[robot_id] = 0
+                self._robot_speed[robot_id] = random.uniform(0.3, 0.6)
+                self._robot_moving[robot_id] = True
+                self._robot_tasks[robot_id] = 'Auto-discovered'
+                self._robot_paused_until[robot_id] = 0.0
+
+                # Add to data['robots']
+                self._data['robots'].append({
+                    'robot_id': robot_id,
+                    'name': name,
+                    'status': 'moving',
+                    'uptime_pct': 100.0,
+                    'current_task': 'Auto-discovered',
+                    'pose': {'x': path[0][0], 'y': path[0][1], 'theta': 0.0},
+                })
+                # Add to _robot_fleet
+                self._robot_fleet[robot_id] = {
+                    'status': 'moving',
+                    'uptime_pct': 100.0,
+                    'pose': {'x': path[0][0], 'y': path[0][1], 'theta': 0.0},
+                }
+
+        return dict(record)
+
+    def unregister_robot(self, robot_id: str) -> bool:
+        """
+        Remove a registered robot from the fleet.
+
+        @param robot_id: ID of the robot to remove.
+
+        @return ok: True if the robot was removed, False if not found.
+        """
+        with _registered_robots_lock:
+            if robot_id not in registered_robots:
+                return False
+            del registered_robots[robot_id]
+
+        # Also remove from simulation data
+        with self._lock:
+            self._robot_paths.pop(robot_id, None)
+            self._robot_waypoint_idx.pop(robot_id, None)
+            self._robot_speed.pop(robot_id, None)
+            self._robot_moving.pop(robot_id, None)
+            self._robot_tasks.pop(robot_id, None)
+            self._robot_paused_until.pop(robot_id, None)
+            self._robot_fleet.pop(robot_id, None)
+            self._data['robots'] = [
+                r for r in self._data['robots']
+                if r['robot_id'] != robot_id
+            ]
+
+        return True
+
+    def record_heartbeat(self, robot_id: str) -> bool:
+        """
+        Record a heartbeat for a registered robot.
+
+        @param robot_id: The robot's unique ID.
+
+        @return ok: True if the robot is registered, False otherwise.
+        """
+        with _registered_robots_lock:
+            if robot_id not in registered_robots:
+                return False
+            registered_robots[robot_id]['last_heartbeat'] = (
+                datetime.now(timezone.utc).isoformat()
+            )
+        return True
+
+    def get_registered_robots(self) -> list[dict[str, Any]]:
+        """
+        Return all registered robots with online/offline status computed.
+
+        A robot is 'online' if its last heartbeat was within 30 seconds.
+
+        @return robots: List of robot records with computed status.
+        """
+        now = datetime.now(timezone.utc)
+        result: list[dict[str, Any]] = []
+        with _registered_robots_lock:
+            for rid, rec in registered_robots.items():
+                rec_copy = dict(rec)
+                hb = rec_copy.get('last_heartbeat')
+                if hb is not None:
+                    try:
+                        hb_dt = datetime.fromisoformat(hb)
+                        if (now - hb_dt).total_seconds() <= 30:
+                            rec_copy['status'] = 'online'
+                        else:
+                            rec_copy['status'] = 'offline'
+                    except (ValueError, TypeError):
+                        rec_copy['status'] = 'offline'
+                else:
+                    rec_copy['status'] = 'offline'
+                result.append(rec_copy)
+        return result
+
+
+# ── Feature 42: Auto-register the initial 3 robots on module load ──────────
+# These are the legacy robots (C3, W2, Q1) that already exist in the simulation.
+_INITIAL_ROBOT_REGISTRATIONS: list[dict[str, str]] = [
+    {'robot_id': 'C3', 'name': 'C3 Humanoid', 'type': 'humanoid'},
+    {'robot_id': 'W2', 'name': 'W2 Welder Arm', 'type': 'welder'},
+    {'robot_id': 'Q1', 'name': 'Q1 Inspector', 'type': 'inspector'},
+]
+
+with _registered_robots_lock:
+    for _ir in _INITIAL_ROBOT_REGISTRATIONS:
+        rid = _ir['robot_id']
+        if rid not in registered_robots:
+            # Extract type prefix for sequence counter
+            prefix = rid[0]
+            if prefix in _robot_sequence_counters:
+                seq = int(rid[1:])
+                if seq > _robot_sequence_counters[prefix]:
+                    _robot_sequence_counters[prefix] = seq
+            registered_robots[rid] = {
+                'robot_id': rid,
+                'name': _ir['name'],
+                'type': _ir['type'],
+                'status': 'online',
+                'registered_at': datetime.now(timezone.utc).isoformat(),
+                'last_heartbeat': datetime.now(timezone.utc).isoformat(),
+            }
 
 
 store: TelemetryStore = TelemetryStore()

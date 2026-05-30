@@ -1,0 +1,21 @@
+syntax = "proto3";
+package factory;
+
+service EdgeSensorService {
+  rpc GetAllSensors(Empty) returns (SensorList);
+  rpc StreamSensorReadings(Empty) returns (stream SensorReading);
+}
+
+message SensorList {
+  repeated SensorReading sensors = 1;
+}
+
+message SensorReading {
+  string id = 1;
+  string name = 2;
+  string category = 3;
+  string unit = 4;
+  float value = 5;
+  string status = 6;
+  int64 timestamp = 7;
+}
