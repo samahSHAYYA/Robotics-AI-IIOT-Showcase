@@ -22,6 +22,19 @@ from app.consumer import run_consumer
 from app.auth import hash_password
 from app.db import User, async_session_factory, init_db
 from app.routes import auth, telemetry, commands
+
+# Feature 28: Audit logging (router)
+from app.routes import audit as audit_router
+# Feature 29: Webhooks (router)
+from app.routes import webhooks as webhooks_router
+# Feature 30: Analytics (router)
+from app.routes import analytics as analytics_router
+# Feature 32: Reports / PDF (router)
+from app.routes import reports as reports_router
+
+# Feature 30: Analytics engine (fed by broadcast loop)
+from app import analytics_engine
+
 from app.store import store
 
 REDIS_URL: str = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
@@ -43,13 +56,17 @@ _ws_connections: list[WebSocket] = []
 async def _broadcast_snapshot():
     """
     Periodically broadcasts the telemetry snapshot to all connected WebSocket
-    clients.
+    clients and feeds the analytics engine.
     """
 
     while True:
         await asyncio.sleep(2)
 
         snapshot: dict[str, Any] = store.get_snapshot()
+
+        # Feed streaming analytics engine
+        analytics_engine.update(snapshot)
+
         payload: str = json.dumps(
             {'type': 'snapshot', 'data': snapshot},
             default = str,
@@ -147,9 +164,22 @@ app.add_middleware(
     allow_headers = ['*'],
 )
 
+# Original routers
 app.include_router(auth.router)
 app.include_router(telemetry.router)
 app.include_router(commands.router)
+
+# Feature 28: Audit log router
+app.include_router(audit_router.router)
+
+# Feature 29: Webhooks router
+app.include_router(webhooks_router.router)
+
+# Feature 30: Analytics router
+app.include_router(analytics_router.router)
+
+# Feature 32: Reports / PDF router
+app.include_router(reports_router.router)
 
 
 
@@ -165,6 +195,11 @@ async def root():
             'auth': '/api/v1/auth/login',
             'telemetry': '/api/v1/telemetry',
             'commands': '/api/v1/commands',
+            'audit': '/api/v1/audit',
+            'webhooks': '/api/v1/webhooks',
+            'analytics': '/api/v1/analytics/current',
+            'analytics_ws': '/api/v1/analytics/ws',
+            'reports': '/api/v1/reports/pdf',
             'websocket': '/ws',
         },
     }

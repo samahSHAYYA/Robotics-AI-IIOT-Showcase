@@ -17,6 +17,10 @@ import VoiceCommand from './components/VoiceCommand'
 import AmbientAudio from './components/AmbientAudio'
 import TelemetryExport from './components/TelemetryExport'
 import ShiftScheduler from './components/ShiftScheduler'
+import ServiceHealth from './components/ServiceHealth'
+import AuditLog from './components/AuditLog'
+import WebhookManager from './components/WebhookManager'
+import AnalyticsWidget from './components/AnalyticsWidget'
 import LoginPage from './components/LoginPage'
 import LayoutSettingsPanel, { loadLayout, saveLayout } from './components/LayoutSettingsPanel'
 import useAlertNotifications from './hooks/useAlertNotifications'
@@ -213,6 +217,20 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
     } catch (err) { console.error(err) }
   }, [])
 
+  const handleDownloadPdf = useCallback(async () => {
+    try {
+      const res = await fetch('/api/v1/reports/pdf')
+      if (!res.ok) throw new Error('PDF download failed')
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `report-${new Date().toISOString().slice(0, 10)}.pdf`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (err) { console.error(err) }
+  }, [])
+
   const handleLogout = () => {
     localStorage.removeItem('sf_session')
     localStorage.removeItem('sf_role')
@@ -331,6 +349,7 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
               </svg>
             </button>
             <ScreenshotExport />
+            <button className="layout-settings-btn" onClick={handleDownloadPdf} title="Download PDF report">📄</button>
             <ThemeToggleButton />
             <button
               className="layout-settings-btn"
@@ -373,6 +392,11 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
             {panelVisibility.kpi !== false && (
               <section className="grid-kpi">
                 <KpiBoard telemetry={telemetry} error={error} onRetry={handleRetry} diffs={kpiDiffs} />
+              </section>
+            )}
+            {panelVisibility.analytics !== false && (
+              <section className="grid-analytics">
+                <AnalyticsWidget />
               </section>
             )}
             <section className="grid-main">
@@ -440,6 +464,21 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
               {showPanel('chat') && panelVisibility.chat !== false && (
                 <div className="panel panel-agent">
                   <ChatPanel />
+                </div>
+              )}
+              {!isMobile && panelVisibility.health !== false && (
+                <div className="panel panel-health">
+                  <ServiceHealth />
+                </div>
+              )}
+              {!isMobile && panelVisibility.audit !== false && (
+                <div className="panel panel-audit">
+                  <AuditLog />
+                </div>
+              )}
+              {!isMobile && panelVisibility.webhooks !== false && (
+                <div className="panel panel-webhooks">
+                  <WebhookManager />
                 </div>
               )}
             </section>

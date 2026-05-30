@@ -13,9 +13,11 @@ from datetime import datetime, timezone
 from typing import Any
 
 import redis.asyncio as aioredis
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
+from app.audit_logger import log_action
 from app.store import store
+from app.webhook_engine import trigger_webhooks
 
 router: APIRouter = APIRouter(prefix = '/api/v1')
 
@@ -25,40 +27,108 @@ COMMAND_STREAM: str = 'events:commands'
 logger: logging.Logger = logging.getLogger(__name__)
 
 
+def _client_ip(request: Request) -> str:
+    """Extracts the client IP address from a request."""
+    if request.client is not None:
+        return request.client.host or ''
+    return ''
+
+
 @router.post('/robot/{robot_id}/start')
-async def start_robot(robot_id: str):
+async def start_robot(robot_id: str, request: Request):
     """Starts robot movement."""
     ok = store.start_robot(robot_id)
     if not ok:
         raise HTTPException(status_code=404, detail='Robot not found')
+
+    ip = _client_ip(request)
+    log_action(
+        robot_id=robot_id,
+        action='start',
+        user_role='operator',
+        details=f'Robot {robot_id} started',
+        ip_address=ip,
+    )
+    await trigger_webhooks('robot.start', {
+        'robot_id': robot_id,
+        'status': 'started',
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+    })
+
     return {'status': 'started', 'robot_id': robot_id}
 
 
 @router.post('/robot/{robot_id}/stop')
-async def stop_robot(robot_id: str):
+async def stop_robot(robot_id: str, request: Request):
     """Stops robot movement."""
     ok = store.stop_robot(robot_id)
     if not ok:
         raise HTTPException(status_code=404, detail='Robot not found')
+
+    ip = _client_ip(request)
+    log_action(
+        robot_id=robot_id,
+        action='stop',
+        user_role='operator',
+        details=f'Robot {robot_id} stopped',
+        ip_address=ip,
+    )
+    await trigger_webhooks('robot.stop', {
+        'robot_id': robot_id,
+        'status': 'stopped',
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+    })
+
     return {'status': 'stopped', 'robot_id': robot_id}
 
 
 @router.post('/robot/{robot_id}/emergency-stop')
-async def emergency_stop_robot(robot_id: str):
+async def emergency_stop_robot(robot_id: str, request: Request):
     """Emergency stops a robot with critical alert."""
     ok = store.emergency_stop_robot(robot_id)
     if not ok:
         raise HTTPException(status_code=404, detail='Robot not found')
+
+    ip = _client_ip(request)
+    log_action(
+        robot_id=robot_id,
+        action='emergency_stop',
+        user_role='operator',
+        details=f'Emergency stop triggered on {robot_id}',
+        ip_address=ip,
+    )
+    await trigger_webhooks('robot.emergency_stop', {
+        'robot_id': robot_id,
+        'status': 'emergency_stopped',
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+    })
+
     return {'status': 'emergency_stopped', 'robot_id': robot_id}
 
 
 @router.post('/robot/{robot_id}/task')
-async def assign_task(robot_id: str, body: dict[str, Any]):
+async def assign_task(robot_id: str, body: dict[str, Any],
+                      request: Request):
     """Assigns a task to a robot."""
     task = body.get('task', '')
     ok = store.assign_task(robot_id, task)
     if not ok:
         raise HTTPException(status_code=404, detail='Robot not found')
+
+    ip = _client_ip(request)
+    log_action(
+        robot_id=robot_id,
+        action='assign_task',
+        user_role='operator',
+        details=f'Task "{task}" assigned to {robot_id}',
+        ip_address=ip,
+    )
+    await trigger_webhooks('robot.task_assigned', {
+        'robot_id': robot_id,
+        'task': task,
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+    })
+
     return {'status': 'task_assigned', 'robot_id': robot_id, 'task': task}
 
 

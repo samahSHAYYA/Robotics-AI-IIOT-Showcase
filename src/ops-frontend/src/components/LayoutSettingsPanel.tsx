@@ -13,6 +13,10 @@ const PANELS = [
   { key: 'production', label: 'Production Line' },
   { key: 'camera', label: 'Robot Camera' },
   { key: 'chat', label: 'AI Chat' },
+  { key: 'analytics', label: 'Analytics Widget' },
+  { key: 'health', label: 'Service Health' },
+  { key: 'audit', label: 'Audit Log' },
+  { key: 'webhooks', label: 'Webhook Manager' },
 ] as const
 
 export type LayoutKey = (typeof PANELS)[number]['key']
@@ -28,6 +32,10 @@ const DEFAULTS: Record<string, boolean> = {
   production: true,
   camera: true,
   chat: true,
+  analytics: true,
+  health: true,
+  audit: true,
+  webhooks: true,
 }
 
 export function loadLayout(): Record<string, boolean> {
