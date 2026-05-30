@@ -92,3 +92,105 @@
     }
   ]
 }
+,
+{
+  "sprint": "Sprint 3 — Advanced Intelligence & Infrastructure",
+  "status": "in_progress",
+  "tasks": [
+    {
+      "id": 20,
+      "title": "Feature 8: Predictive Maintenance Dashboard",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "New panel shows Remaining Useful Life (RUL) estimate per robot",
+        "RUL calculated from simulated wear factors (runtime, task intensity, error count)",
+        "Color-coded health bars (green→yellow→red)",
+        "Maintenance recommendations displayed for robots below threshold",
+        "Integration with AI agent for natural-language maintenance queries"
+      ]
+    },
+    {
+      "id": 21,
+      "title": "Feature 9: 3D Factory Floor (Three.js)",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "Toggle between 2D canvas and 3D Three.js view",
+        "3D scene shows factory floor with extruded walls and zones",
+        "Robots rendered as 3D cylinders/cones with orientation",
+        "Camera orbit controls (rotate/pan/zoom)",
+        "Smooth robot position interpolation matching 2D view",
+        "Robot selection by clicking 3D objects"
+      ]
+    },
+    {
+      "id": 22,
+      "title": "Feature 10: Voice Command Interface",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "Microphone button in header activates speech recognition",
+        "Commands: 'start robot C3', 'stop robot W2', 'fullscreen', 'reset map', 'show alerts'",
+        "Visual feedback while listening (pulsing mic icon)",
+        "Transcribed command shown as chat message",
+        "Fallback message if command not recognized",
+        "Works with Web Speech API (Chrome/Edge/Safari)"
+      ]
+    },
+    {
+      "id": 23,
+      "title": "Feature 11: Activity Heatmap Overlay",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "Toggle heatmap overlay on the factory floor map",
+        "Heatmap shows robot movement density (time spent per zone)",
+        "Gradient from cool (blue) to hot (red) based on activity",
+        "Heatmap data accumulates in real-time",
+        "Reset button to clear accumulated heatmap data"
+      ]
+    },
+    {
+      "id": 24,
+      "title": "Feature 12: Production Line Visualization",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "New panel shows animated product flow through assembly stations",
+        "Products (colored dots) move along conveyor lines between robots",
+        "Each product has a state (raw→assembled→welded→inspected→complete)",
+        "Throughput counter shows products per minute",
+        "Real-time animation synced with robot status"
+      ]
+    },
+    {
+      "id": 25,
+      "title": "Feature 13: Role-Based Access Control (RBAC)",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "Three roles: Admin, Operator, Viewer",
+        "Admin: full access (all panels, start/stop robots, settings)",
+        "Operator: can view and operate robots, cannot change system settings",
+        "Viewer: read-only dashboard, no robot controls",
+        "Role shown in header with color-coded badge",
+        "Login page includes role selection or backend-driven role assignment",
+        "Panel visibility and controls adapt based on role"
+      ]
+    },
+    {
+      "id": 26,
+      "title": "Feature 14: OEE (Overall Equipment Effectiveness) Widget",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "New KPI card showing overall OEE percentage (Availability × Performance × Quality)",
+        "Breakdown bar showing the three OEE components",
+        "Per-robot OEE calculated from simulated telemetry",
+        "Industry-standard color coding (≥85% green, ≥70% amber, <70% red)",
+        "Trend arrow (up/down) compared to previous interval"
+      ]
+    }
+  ]
+}
