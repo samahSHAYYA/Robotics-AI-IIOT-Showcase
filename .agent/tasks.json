@@ -379,13 +379,13 @@
 ,
 {
   "sprint": "Sprint 6 — Backend Intelligence & Infrastructure",
-  "status": "in_progress",
+  "status": "completed",
   "tasks": [
     {
       "id": 41,
       "title": "Feature 27: Backend API Rate Limiting & Security",
-      "status": "pending",
-      "committed": false,
+      "status": "completed",
+      "committed": true,
       "acceptance": [
         "Rate limiting middleware on ops-api (100 req/min per IP)",
         "CORS hardening with explicit allowed origins",
@@ -397,8 +397,8 @@
     {
       "id": 42,
       "title": "Feature 28: Audit Logging Service",
-      "status": "pending",
-      "committed": false,
+      "status": "completed",
+      "committed": true,
       "acceptance": [
         "Structured audit log for all robot operations (start, stop, task, e-stop)",
         "Audit log stored in PostgreSQL with auto-cleanup (30-day retention)",
@@ -410,8 +410,8 @@
     {
       "id": 43,
       "title": "Feature 29: Webhook Integration System",
-      "status": "pending",
-      "committed": false,
+      "status": "completed",
+      "committed": true,
       "acceptance": [
         "Webhook configuration API (CRUD endpoints for webhooks)",
         "Webhook triggers: on_alert_critical, on_robot_error, on_robot_start, on_robot_stop",
@@ -423,8 +423,8 @@
     {
       "id": 44,
       "title": "Feature 30: Real-time Telemetry Streaming Analytics",
-      "status": "pending",
-      "committed": false,
+      "status": "completed",
+      "committed": true,
       "acceptance": [
         "Rolling 1-hour window analytics on telemetry stream",
         "Calculated metrics: avg/max/min uptime, alert rate, robot utilization",
@@ -436,8 +436,8 @@
     {
       "id": 45,
       "title": "Feature 31: Service Health Monitoring Dashboard",
-      "status": "pending",
-      "committed": false,
+      "status": "completed",
+      "committed": true,
       "acceptance": [
         "Health check aggregation across all services (core, ai, api, agent, redis, db)",
         "Service status indicator (up/down/degraded) with latency",
@@ -449,8 +449,8 @@
     {
       "id": 46,
       "title": "Feature 32: PDF Report Generation",
-      "status": "pending",
-      "committed": false,
+      "status": "completed",
+      "committed": true,
       "acceptance": [
         "Backend endpoint generates PDF report of current factory state",
         "Report includes: KPI summary, per-robot status, alert log, OEE",
@@ -462,8 +462,8 @@
     {
       "id": 47,
       "title": "Feature 33: Docker Compose Production Profile",
-      "status": "pending",
-      "committed": false,
+      "status": "completed",
+      "committed": true,
       "acceptance": [
         "Production docker-compose profile with resource limits",
         "Healthcheck improvements on all services",
@@ -471,6 +471,182 @@
         "Volume mounts for persistent data (PostgreSQL, Redis)",
         "Reverse proxy (Caddy/Nginx) for unified ingress",
         "Environment-specific override files (dev/prod profiles)"
+      ]
+    }
+  ]
+}
+,
+{
+  "sprint": "Sprint 7 — Developer Experience & Operations",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 48,
+      "title": "Feature 34: Prometheus Metrics Endpoint",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        "/metrics endpoint exposing http_requests_total, robots_active_total, alerts_critical_total, uptime_seconds",
+        "Prometheus text/plain format with HELP/TYPE annotations"
+      ]
+    },
+    {
+      "id": 49,
+      "title": "Feature 35: Grafana + Prometheus Monitoring Config",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        "Grafana dashboard JSON with 4 panels (uptime, alert rate, robot count, OEE)",
+        "Prometheus scrape config targeting ops-api:8003"
+      ]
+    },
+    {
+      "id": 50,
+      "title": "Feature 36: Terraform Infrastructure-as-Code",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        "Docker provider Terraform config for all 8 containers",
+        "Variables and outputs for environment customization"
+      ]
+    },
+    {
+      "id": 51,
+      "title": "Feature 37: Dependabot + CodeQL Quality Config",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        "Dependabot config for npm, pip, docker, GitHub Actions",
+        "CodeQL workflow for JavaScript + Python analysis"
+      ]
+    },
+    {
+      "id": 52,
+      "title": "Feature 38: Performance Benchmark Scripts",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        "API benchmark script (httpx, concurrency, latency percentiles)",
+        "WebSocket benchmark script (message rate measurement)"
+      ]
+    },
+    {
+      "id": 53,
+      "title": "Feature 39: Developer Onboarding CLI",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        "PowerShell setup script (Windows)",
+        "Bash setup script (Linux/Mac)"
+      ]
+    },
+    {
+      "id": 54,
+      "title": "Feature 40: Security Scanning Configuration",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        ".snyk policy file",
+        ".trivyignore exclusions file",
+        "Weekly security scan GitHub Action"
+      ]
+    }
+  ]
+}
+,
+{
+  "sprint": "Sprint 8 — Edge & Advanced Robotics",
+  "status": "in_progress",
+  "tasks": [
+    {
+      "id": 55,
+      "title": "Feature 41: Edge Device Simulator (IoT Sensor Grid)",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "New edge-sim service simulating 10 IoT sensors (temperature, vibration, humidity, power)",
+        "Sensors publish MQTT-style events to Redis streams",
+        "Sensor dashboard widget showing live readings with sparklines",
+        "Configurable failure modes (drift, spike, dropout) for testing",
+        "REST API to query current sensor values"
+      ]
+    },
+    {
+      "id": 56,
+      "title": "Feature 42: Robot Fleet Auto-Discovery",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "New robots register via HTTP POST to /api/v1/robots/register",
+        "Auto-assigned robot IDs with configurable prefix",
+        "Fleet panel shows registration status and last heartbeat",
+        "Heartbeat timeout marks robots as offline (30s threshold)",
+        "Fleet auto-refresh with new robot animations"
+      ]
+    },
+    {
+      "id": 57,
+      "title": "Feature 43: gRPC Service Definitions",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "Proto definitions for core services (telemetry, command, analytics)",
+        "gRPC server implementation for ops-api alongside HTTP",
+        "Python generated stubs for ai-service and ai-agent",
+        "Docker multi-stage build with protoc codegen",
+        "End-to-end test demonstrating gRPC telemetry streaming"
+      ]
+    },
+    {
+      "id": 58,
+      "title": "Feature 44: Digital Twin State Reconciliation",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "State version vector for conflict detection",
+        "Digital twin state diff visualization in frontend",
+        "Reconciliation endpoint merging conflicting states",
+        "Timestamp-based conflict resolution strategy",
+        "State history tree with branching visualization"
+      ]
+    },
+    {
+      "id": 59,
+      "title": "Feature 45: OpenTelemetry Distributed Tracing",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "OpenTelemetry SDK integration in ops-api, ai-service, ai-agent",
+        "Trace context propagation across HTTP calls",
+        "Span attributes for robot operations and telemetry processing",
+        "Jaeger-compatible export via OTLP",
+        "Trace viewer integration hint in frontend"
+      ]
+    },
+    {
+      "id": 60,
+      "title": "Feature 46: Kubernetes Helm Chart",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "Helm chart for all services (ops-api, ai-service, ai-agent, core, redis, postgres, frontend)",
+        "Values.yaml with configurable replicas, resources, ingress",
+        "Ingress template with TLS support",
+        "ConfigMap and Secret templates",
+        "Helm chart linting workflow in CI"
+      ]
+    },
+    {
+      "id": 61,
+      "title": "Feature 47: Multi-Factory / Site Management",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "Site entity with name, location, timezone, robot fleet",
+        "Site switcher in dashboard header (dropdown)",
+        "Per-site telemetry isolation (different Redis channels)",
+        "Multi-site aggregate dashboard view",
+        "Site configuration API (CRUD)"
       ]
     }
   ]
