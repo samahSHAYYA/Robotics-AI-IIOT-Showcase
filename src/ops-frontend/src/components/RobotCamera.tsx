@@ -239,11 +239,9 @@ export default function RobotCamera({ robots }: RobotCameraProps) {
       <div className="camera-view-container">
         <canvas
           ref={canvasRef}
+          className="camera-canvas"
           style={{
-            width: '100%',
-            height: 'auto',
             borderRadius: '0.5rem',
-            display: 'block',
             imageRendering: 'pixelated',
           }}
         />

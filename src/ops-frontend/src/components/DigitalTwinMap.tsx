@@ -25,19 +25,33 @@ interface InterpRobot {
 /** Maximum trail positions to store per robot */
 const MAX_TRAIL = 20
 
-/** Robot waypoint paths (matching backend store.py) */
+/** Proximity warning threshold (robot centers, in world coords) */
+const PROXIMITY_THRESHOLD = 2.0
+
+/** Collision threshold (robot centers, in world coords) */
+const COLLISION_THRESHOLD = 0.8
+
+/** Robot waypoint paths (matching backend store.py) — organic smooth loops */
 const ROBOT_PATHS: Record<string, Array<{ x: number; y: number }>> = {
-  C3: [{ x: 1, y: 1 }, { x: 8, y: 1 }, { x: 8, y: 5 }, { x: 5, y: 8 }, { x: 1, y: 5 }],
-  W2: [{ x: 7, y: 2 }, { x: 9, y: 7 }, { x: 4, y: 9 }, { x: 2, y: 4 }],
-  Q1: [{ x: 3, y: 3 }, { x: 6, y: 3 }, { x: 6, y: 6 }, { x: 3, y: 6 }],
+  C3: [{ x: 3, y: 1.5 }, { x: 7, y: 1.5 }, { x: 7.5, y: 3 }, { x: 6, y: 5.5 }, { x: 3.5, y: 5.5 }, { x: 2.5, y: 3.5 }],
+  W2: [{ x: 6.5, y: 2 }, { x: 7.5, y: 4 }, { x: 5, y: 5.5 }, { x: 3.5, y: 4 }, { x: 5, y: 2 }],
+  Q1: [{ x: 4, y: 3 }, { x: 5.5, y: 3 }, { x: 6, y: 4.5 }, { x: 5, y: 5 }, { x: 4, y: 5 }, { x: 3.5, y: 4.5 }],
 }
 
-/** Map status → color */
-const statusColor = (status: string): string => {
+/** Robot identity colors (each robot has a unique base hue) */
+const ROBOT_COLORS: Record<string, string> = {
+  C3: '#3b82f6',
+  W2: '#f59e0b',
+  Q1: '#8b5cf6',
+}
+
+/** Map status → color, using robot identity base for normal states */
+function robotColor(robotId: string, status: string): string {
+  const base = ROBOT_COLORS[robotId] ?? '#6b7280'
   switch (status) {
     case 'moving':
     case 'active':
-      return '#22c55e'
+      return base
     case 'idle':
       return '#6b7280'
     case 'error':
@@ -49,7 +63,7 @@ const statusColor = (status: string): string => {
     case 'offline':
       return '#6b7280'
     default:
-      return '#6b7280'
+      return base
   }
 }
 
@@ -83,23 +97,25 @@ function blinkAlpha(status: string, timeMs: number): number {
   }
 }
 
-/** Draw robot as circular base + direction arrow */
+/** Draw robot as circular disk + direction arrow blinking in robot's color */
 function renderRobotShape(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
   theta: number,
-  color: string,
+  robotId: string,
+  status: string,
   alpha: number,
-  collisionGlow: boolean,
+  glowLevel: 'none' | 'warning' | 'critical',
 ) {
   const radius = 8
+  const color = robotColor(robotId, status)
   ctx.save()
   ctx.globalAlpha = alpha
   ctx.translate(x, y)
 
-  // Collision glow ring
-  if (collisionGlow) {
+  // Collision glow ring (two levels)
+  if (glowLevel === 'critical') {
     ctx.beginPath()
     ctx.arc(0, 0, radius * 2.2, 0, Math.PI * 2)
     ctx.strokeStyle = '#ef4444'
@@ -107,9 +123,17 @@ function renderRobotShape(
     ctx.setLineDash([4, 4])
     ctx.stroke()
     ctx.setLineDash([])
+  } else if (glowLevel === 'warning') {
+    ctx.beginPath()
+    ctx.arc(0, 0, radius * 2.2, 0, Math.PI * 2)
+    ctx.strokeStyle = '#f59e0b'
+    ctx.lineWidth = 2
+    ctx.setLineDash([6, 6])
+    ctx.stroke()
+    ctx.setLineDash([])
   }
 
-  // Circular base with subtle gradient
+  // Circular disk with subtle gradient
   const grad = ctx.createRadialGradient(-2, -2, 0, 0, 0, radius)
   grad.addColorStop(0, '#ffffff')
   grad.addColorStop(0.3, color)
@@ -122,7 +146,7 @@ function renderRobotShape(
   ctx.lineWidth = 1
   ctx.stroke()
 
-  // Direction arrow (pointing toward theta, from center outward)
+  // Direction arrow — same color as robot, blinks with it
   ctx.save()
   ctx.rotate(theta)
   ctx.beginPath()
@@ -130,7 +154,7 @@ function renderRobotShape(
   ctx.lineTo(radius - 2, -4)
   ctx.lineTo(radius - 2, 4)
   ctx.closePath()
-  ctx.fillStyle = '#ffffff'
+  ctx.fillStyle = color
   ctx.fill()
   ctx.restore()
 
@@ -175,7 +199,8 @@ function renderBeacon(
 function renderTrail(
   ctx: CanvasRenderingContext2D,
   trail: Array<{ x: number; y: number }>,
-  scaleFn: (v: number) => number,
+  sxFn: (v: number) => number,
+  syFn: (v: number) => number,
   color: string,
   maxTrail: number,
 ) {
@@ -184,8 +209,8 @@ function renderTrail(
   for (let i = 1; i < trail.length; i++) {
     const t = i / maxTrail // 0→1
     const alpha = 0.2 + 0.8 * t
-    const cx = scaleFn(trail[i].x)
-    const cy = scaleFn(trail[i].y)
+    const cx = sxFn(trail[i].x)
+    const cy = syFn(trail[i].y)
 
     ctx.beginPath()
     ctx.arc(cx, cy, 2, 0, Math.PI * 2)
@@ -196,13 +221,41 @@ function renderTrail(
   ctx.globalAlpha = 1
 }
 
-/** Draw a dotted trajectory showing the future path through waypoints */
+/**
+ * Quadratic B-spline through points. Stays strictly within the convex hull
+ * of the control points (no overshoot). Returns a smooth closed path.
+ */
+function bsplineClosedPath(points: Array<{ x: number; y: number }>, samples = 12): Array<{ x: number; y: number }> {
+  const n = points.length
+  if (n < 3) return [...points]
+  const result: Array<{ x: number; y: number }> = []
+  for (let i = 0; i < n; i++) {
+    const p0 = points[(i - 1 + n) % n]
+    const p1 = points[i]
+    const p2 = points[(i + 1) % n]
+    for (let s = 0; s < samples; s++) {
+      const t = s / samples
+      const t2 = t * t
+      const w0 = 0.5 * (1 - t) * (1 - t)
+      const w1 = 0.5 * (-2 * t2 + 2 * t + 1)
+      const w2 = 0.5 * t2
+      result.push({
+        x: w0 * p0.x + w1 * p1.x + w2 * p2.x,
+        y: w0 * p0.y + w1 * p1.y + w2 * p2.y,
+      })
+    }
+  }
+  return result
+}
+
+/** Draw a smooth dotted trajectory showing the future path through waypoints */
 function renderTrajectoryAhead(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
   robotId: string,
-  scaleFn: (v: number) => number,
+  sxFn: (v: number) => number,
+  syFn: (v: number) => number,
   color: string,
 ) {
   const path = ROBOT_PATHS[robotId]
@@ -219,23 +272,31 @@ function renderTrajectoryAhead(
     }
   }
 
-  // Build ordered list from nearest waypoint forward (wrap around once for visual continuity)
-  const ahead: Array<{ x: number; y: number }> = []
-  ahead.push({ x, y })
+  // Build ordered list from nearest waypoint forward (wrap around)
+  const ahead: Array<{ x: number; y: number }> = [{ x, y }]
   for (let offset = 0; offset <= path.length; offset++) {
     const idx = (nearestIdx + offset) % path.length
     ahead.push(path[idx])
   }
 
+  // Generate smooth curve through the ahead points (B-spline stays within convex hull)
+  const smooth = bsplineClosedPath(ahead, 10)
+
+  // Clamp all trajectory points to the safe zone (gray box limits)
+  for (const p of smooth) {
+    p.x = Math.max(0.5, Math.min(9.5, p.x))
+    p.y = Math.max(0.5, Math.min(9.0, p.y))
+  }
+
   ctx.save()
   ctx.setLineDash([4, 6])
-  ctx.lineWidth = 1.5
-  ctx.globalAlpha = 0.35
+  ctx.lineWidth = 3
+  ctx.globalAlpha = 0.8
   ctx.strokeStyle = color
   ctx.beginPath()
-  for (let i = 0; i < ahead.length; i++) {
-    const sx = scaleFn(ahead[i].x)
-    const sy = scaleFn(ahead[i].y)
+  for (let i = 0; i < smooth.length; i++) {
+    const sx = sxFn(smooth[i].x)
+    const sy = syFn(smooth[i].y)
     if (i === 0) ctx.moveTo(sx, sy)
     else ctx.lineTo(sx, sy)
   }
@@ -267,8 +328,8 @@ function renderLabel(
   ctx.roundRect(bx, by, tw + 8, th + 4, 3)
   ctx.fill()
 
-  // Border color matches status
-  const borderColor = statusColor(status)
+  // Border color matches robot identity
+  const borderColor = robotColor(robotId, status)
   ctx.strokeStyle = borderColor
   ctx.lineWidth = 1
   ctx.globalAlpha = 0.4
@@ -302,7 +363,8 @@ export default function DigitalTwinMap({
   const [selectedRobot, setSelectedRobot] = useState<InterpRobot | null>(null)
   const [popupPos, setPopupPos] = useState({ x: 0, y: 0 })
 
-  const scale = useCallback((v: number) => (v / 10) * FACTORY_W, [])
+  const sx = useCallback((v: number) => (v / 10) * FACTORY_W, [])
+  const sy = useCallback((v: number) => (v / 10) * FACTORY_H, [])
 
   // Sync target robots from props
   useEffect(() => {
@@ -350,12 +412,13 @@ export default function DigitalTwinMap({
         }
       }
 
-      // Clamp positions to visible floor bounds
+      // Clamp positions to safe zone (gray box: x 0.5-9.5, y 0.5-9.0)
       const CLAMP_MIN = 0.5
-      const CLAMP_MAX = 9.5
+      const CLAMP_MAX_Y = 9.0
+      const CLAMP_MAX_X = 9.5
       for (const r of interp) {
-        r.x = Math.max(CLAMP_MIN, Math.min(CLAMP_MAX, r.x))
-        r.y = Math.max(CLAMP_MIN, Math.min(CLAMP_MAX, r.y))
+        r.x = Math.max(CLAMP_MIN, Math.min(CLAMP_MAX_X, r.x))
+        r.y = Math.max(CLAMP_MIN, Math.min(CLAMP_MAX_Y, r.y))
       }
 
       // Remove robots no longer in target
@@ -393,16 +456,21 @@ export default function DigitalTwinMap({
         }
       }
 
-      // Detect collisions
+      // Detect collisions (two levels: warning at distance, critical at close)
+      const warningPairs = new Set<string>()
       const closePairs = new Set<string>()
       for (let i = 0; i < interp.length; i++) {
         for (let j = i + 1; j < interp.length; j++) {
           const dx = interp[i].x - interp[j].x
           const dy = interp[i].y - interp[j].y
           const dist = Math.sqrt(dx * dx + dy * dy)
-          if (dist < 1.0) {
+          if (dist < COLLISION_THRESHOLD) {
             closePairs.add(interp[i].robot_id)
             closePairs.add(interp[j].robot_id)
+          }
+          if (dist < PROXIMITY_THRESHOLD) {
+            warningPairs.add(interp[i].robot_id)
+            warningPairs.add(interp[j].robot_id)
           }
         }
       }
@@ -410,11 +478,24 @@ export default function DigitalTwinMap({
       // Draw everything
       ctx.clearRect(0, 0, w, h)
 
-      // Background
-      ctx.fillStyle = '#1e293b'
+      // Outer margin area (outside safe zone) — darker
+      ctx.fillStyle = '#0b1121'
       ctx.beginPath()
       ctx.roundRect(0, 0, w, h, 8)
       ctx.fill()
+
+      // Safe operating zone fill — lighter gray
+      ctx.fillStyle = '#1a2a40'
+      ctx.beginPath()
+      ctx.roundRect(sx(0.5), sy(0.5), sx(9), sy(8.5), 4)
+      ctx.fill()
+
+      // Safe zone border (subtle inner glow)
+      ctx.strokeStyle = 'rgba(59,130,246,0.08)'
+      ctx.lineWidth = 1.5
+      ctx.beginPath()
+      ctx.roundRect(sx(0.5), sy(0.5), sx(9), sy(8.5), 4)
+      ctx.stroke()
 
       // Grid lines
       ctx.strokeStyle = '#334155'
@@ -438,41 +519,34 @@ export default function DigitalTwinMap({
         ctx.fillText(zones[i], (w / 6) + (w / 3) * i, h - 8)
       }
 
-      // Visible floor boundary (0.5-9.5 mapped)
-      ctx.strokeStyle = 'rgba(59,130,246,0.12)'
-      ctx.lineWidth = 1
+      // Operating zone boundary (robots clamped to 1.5-8.0, boundary at 0.5-9.0 bottom)
+      ctx.strokeStyle = 'rgba(59,130,246,0.15)'
+      ctx.lineWidth = 1.5
       ctx.setLineDash([4, 6])
-      ctx.strokeRect(scale(0.5), scale(0.5), scale(9), scale(9))
-      ctx.setLineDash([])
-      // Note: the above computes the boundary rectangle correctly.
-      // Simpler approach:
-      ctx.strokeStyle = 'rgba(59,130,246,0.12)'
-      ctx.lineWidth = 1
-      ctx.setLineDash([4, 6])
-      ctx.strokeRect(scale(0.5), scale(0.5), scale(9), scale(9))
+      ctx.strokeRect(sx(0.5), sy(0.5), sx(9), sy(8.5))
       ctx.setLineDash([])
 
       // Draw trails first (behind robots)
       for (const r of interp) {
         const trail = trails[r.robot_id]
         if (trail && trail.length >= 2) {
-          const color = statusColor(r.status)
-          renderTrail(ctx, trail, scale, color, MAX_TRAIL)
+          const color = robotColor(r.robot_id, r.status)
+          renderTrail(ctx, trail, sx, sy, color, MAX_TRAIL)
         }
       }
 
       // Draw future trajectory ahead for each robot
       for (const r of interp) {
-        const color = statusColor(r.status)
-        renderTrajectoryAhead(ctx, r.x, r.y, r.robot_id, scale, color)
+        const color = robotColor(r.robot_id, r.status)
+        renderTrajectoryAhead(ctx, r.x, r.y, r.robot_id, sx, sy, color)
       }
 
       // Draw beacons + robots
       for (const r of interp) {
-        const cx = scale(r.x)
-        const cy = scale(r.y)
-        const color = statusColor(r.status)
-        const glow = closePairs.has(r.robot_id)
+        const cx = sx(r.x)
+        const cy = sy(r.y)
+        const color = robotColor(r.robot_id, r.status)
+        const glowLevel = closePairs.has(r.robot_id) ? 'critical' : warningPairs.has(r.robot_id) ? 'warning' : 'none'
 
         // Beacon pulse for active/moving robots
         if (r.status === 'moving' || r.status === 'active') {
@@ -482,8 +556,8 @@ export default function DigitalTwinMap({
         // Blink alpha
         const alpha = blinkAlpha(r.status, now)
 
-        // Render robot shape
-        renderRobotShape(ctx, cx, cy, r.theta, color, alpha, glow)
+        // Render robot shape (disk + arrow in identity color)
+        renderRobotShape(ctx, cx, cy, r.theta, r.robot_id, r.status, alpha, glowLevel)
 
         // Robot ID label with background box
         renderLabel(ctx, cx, cy, r.robot_id, r.status)
@@ -499,7 +573,7 @@ export default function DigitalTwinMap({
         cancelAnimationFrame(rafRef.current)
       }
     }
-  }, [scale])
+  }, [sx, sy])
 
   const handleCanvasClick = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -511,8 +585,8 @@ export default function DigitalTwinMap({
 
       let found: InterpRobot | null = null
       for (const r of interpRef.current) {
-        const cx = scale(r.x)
-        const cy = scale(r.y)
+        const cx = sx(r.x)
+        const cy = sy(r.y)
         const dx = mx - cx
         const dy = my - cy
         if (Math.sqrt(dx * dx + dy * dy) < 20) {
@@ -528,7 +602,7 @@ export default function DigitalTwinMap({
         setSelectedRobot(null)
       }
     },
-    [scale],
+    [sx, sy],
   )
 
   if (error) {

@@ -23,9 +23,9 @@ logger: logging.Logger = logging.getLogger(__name__)
 
 # Robot waypoint loops (closed loops in 0-10 coordinate space)
 ROBOT_PATHS: dict[str, list[tuple[float, float]]] = {
-    'C3': [(1, 1), (8, 1), (8, 5), (5, 8), (1, 5)],
-    'W2': [(7, 2), (9, 7), (4, 9), (2, 4)],
-    'Q1': [(3, 3), (6, 3), (6, 6), (3, 6)],
+    'C3': [(3, 1.5), (7, 1.5), (7.5, 3), (6, 5.5), (3.5, 5.5), (2.5, 3.5)],
+    'W2': [(6.5, 2), (7.5, 4), (5, 5.5), (3.5, 4), (5, 2)],
+    'Q1': [(4, 3), (5.5, 3), (6, 4.5), (5, 5), (4, 5), (3.5, 4.5)],
 }
 
 # Priority order for collision avoidance (highest first)
@@ -49,13 +49,13 @@ class TelemetryStore:
             'robots': [
                 {'robot_id': 'C3', 'name': 'C3 Humanoid', 'status': 'moving',
                  'uptime_pct': 99.5, 'current_task': 'Assembly Line A',
-                 'pose': {'x': 1.0, 'y': 1.0, 'theta': 0.0}},
+                 'pose': {'x': 3.0, 'y': 1.5, 'theta': 0.0}},
                 {'robot_id': 'W2', 'name': 'W2 Welder Arm', 'status': 'moving',
                  'uptime_pct': 97.2, 'current_task': 'Welding Station 3',
-                 'pose': {'x': 7.0, 'y': 2.0, 'theta': 0.0}},
+                 'pose': {'x': 6.5, 'y': 2.0, 'theta': 0.0}},
                 {'robot_id': 'Q1', 'name': 'Q1 Inspector', 'status': 'moving',
                  'uptime_pct': 98.7, 'current_task': 'Visual Inspection',
-                 'pose': {'x': 3.0, 'y': 3.0, 'theta': 0.0}},
+                 'pose': {'x': 4.0, 'y': 3.0, 'theta': 0.0}},
             ],
             'alerts': [
                 {'severity': 'healthy', 'message': 'Safety gate pass',
@@ -70,9 +70,9 @@ class TelemetryStore:
             'last_update': datetime.now(timezone.utc).isoformat(),
         }
         self._robot_fleet: dict[str, dict[str, Any]] = {
-            'C3': {'status': 'moving', 'uptime_pct': 99.5, 'pose': {'x': 1.0, 'y': 1.0, 'theta': 0.0}},
-            'W2': {'status': 'moving', 'uptime_pct': 97.2, 'pose': {'x': 7.0, 'y': 2.0, 'theta': 0.0}},
-            'Q1': {'status': 'moving', 'uptime_pct': 98.7, 'pose': {'x': 3.0, 'y': 3.0, 'theta': 0.0}},
+            'C3': {'status': 'moving', 'uptime_pct': 99.5, 'pose': {'x': 3.0, 'y': 1.5, 'theta': 0.0}},
+            'W2': {'status': 'moving', 'uptime_pct': 97.2, 'pose': {'x': 6.5, 'y': 2.0, 'theta': 0.0}},
+            'Q1': {'status': 'moving', 'uptime_pct': 98.7, 'pose': {'x': 4.0, 'y': 3.0, 'theta': 0.0}},
         }
 
         # Robot movement state
@@ -163,7 +163,8 @@ class TelemetryStore:
         metrics, generates random alerts, and updates the snapshot.
         """
         WHILE_SLEEP_S = 0.5
-        COLLISION_DIST = 0.8
+        PROXIMITY_DIST = 2.0   # slowdown threshold
+        COLLISION_DIST = 0.8   # pause threshold
         COLLISION_PAUSE_S = 1.0
         STATUS_CHANGE_INTERVAL_S = 40  # ~every 40s change robot status
 
@@ -312,10 +313,9 @@ class TelemetryStore:
                         continue
 
                     paused_until = self._robot_paused_until.get(rid, 0.0)
-                    if now < paused_until:
-                        continue
+                    is_paused = now < paused_until
 
-                    if not self._robot_moving.get(rid, False):
+                    if not self._robot_moving.get(rid, False) and not is_paused:
                         continue
 
                     path = self._robot_paths[rid]
@@ -324,46 +324,109 @@ class TelemetryStore:
 
                     dx = target[0] - pose['x']
                     dy = target[1] - pose['y']
-                    dist = math.hypot(dx, dy)
+                    dist_to_target = math.hypot(dx, dy)
 
                     speed = self._robot_speed.get(rid, 0.3)
                     step = speed * WHILE_SLEEP_S
 
-                    if dist < 0.1:
+                    if is_paused:
+                        # ---- Dodge: move perpendicular to the robot causing the pause ----
+                        # Find the nearest higher-priority robot that caused the pause
+                        dodge_dir_x, dodge_dir_y = 0.0, 0.0
+                        for other_rid, other_pose in current_poses.items():
+                            if other_rid == rid:
+                                continue
+                            ox = other_pose['x'] - pose['x']
+                            oy = other_pose['y'] - pose['y']
+                            od = math.hypot(ox, oy)
+                            if od < PROXIMITY_DIST and od > 0.01:
+                                # Perpendicular to the direction toward the other robot
+                                dodge_dir_x += -oy / od
+                                dodge_dir_y += ox / od
+                        dodge_len = math.hypot(dodge_dir_x, dodge_dir_y)
+                        if dodge_len > 0:
+                            dodge_speed = 0.15  # slow sidestep
+                            dodge_dir_x /= dodge_len
+                            dodge_dir_y /= dodge_len
+                            pose['x'] += dodge_dir_x * dodge_speed * WHILE_SLEEP_S
+                            pose['y'] += dodge_dir_y * dodge_speed * WHILE_SLEEP_S
+                        # Still update theta toward target while dodging
+                        if dist_to_target > 0:
+                            pose['theta'] = math.atan2(dy, dx)
+                        # Clamp dodged position
+                        pose['x'] = max(0.5, min(9.5, pose['x']))
+                        pose['y'] = max(0.5, min(9.0, pose['y']))
+                        updates[rid] = {'pose': pose, 'status': 'moving'}
+                        continue
+
+                    # ---- Normal movement (not paused) ----
+                    if dist_to_target < 0.1:
                         idx = (idx + 1) % len(path)
                         self._robot_waypoint_idx[rid] = idx
                         target = path[idx % len(path)]
                         dx = target[0] - pose['x']
                         dy = target[1] - pose['y']
-                        dist = math.hypot(dx, dy)
+                        dist_to_target = math.hypot(dx, dy)
 
-                    if dist > 0:
-                        pose['x'] += (dx / dist) * min(step, dist)
-                        pose['y'] += (dy / dist) * min(step, dist)
+                    if dist_to_target > 0:
+                        pose['x'] += (dx / dist_to_target) * min(step, dist_to_target)
+                        pose['y'] += (dy / dist_to_target) * min(step, dist_to_target)
 
-                    # ---- Task 1: Clamp to factory floor bounds ----
                     pose['x'] = max(0.5, min(9.5, pose['x']))
-                    pose['y'] = max(0.5, min(9.5, pose['y']))
-
+                    pose['y'] = max(0.5, min(9.0, pose['y']))
                     pose['theta'] = math.atan2(dy, dx)
-
                     updates[rid] = {'pose': pose, 'status': 'moving'}
 
-                # Collision avoidance
+                # Collision avoidance — two levels
                 pose_list = list(current_poses.items())
+                last_alert_key: str = ''
                 for i in range(len(pose_list)):
                     for j in range(i + 1, len(pose_list)):
                         rid_a, pa = pose_list[i]
                         rid_b, pb = pose_list[j]
                         d = math.hypot(pa['x'] - pb['x'], pa['y'] - pb['y'])
+
+                        pri_a = ROBOT_PRIORITY.index(rid_a) if rid_a in ROBOT_PRIORITY else 99
+                        pri_b = ROBOT_PRIORITY.index(rid_b) if rid_b in ROBOT_PRIORITY else 99
+
+                        if d < PROXIMITY_DIST:
+                            # Generate proximity alert (rate-limited per pair)
+                            alert_key = f'proximity_{min(rid_a, rid_b)}_{max(rid_a, rid_b)}'
+                            if alert_key != last_alert_key:
+                                last_alert_key = alert_key
+                                slower_rid = rid_b if pri_a < pri_b else rid_a
+                                with self._lock:
+                                    self._data['alerts'].insert(0, {
+                                        'severity': 'warning',
+                                        'message': f'Proximity alert: {rid_a} and {rid_b} within {d:.1f}m — '
+                                                   f'{slower_rid} slowing down',
+                                        'timestamp': datetime.now(timezone.utc).isoformat(),
+                                    })
+                                    self._data['alerts'] = self._data['alerts'][:20]
+
                         if d < COLLISION_DIST:
                             # Lower priority robot pauses
-                            pri_a = ROBOT_PRIORITY.index(rid_a) if rid_a in ROBOT_PRIORITY else 99
-                            pri_b = ROBOT_PRIORITY.index(rid_b) if rid_b in ROBOT_PRIORITY else 99
                             if pri_a < pri_b:
                                 self._robot_paused_until[rid_b] = now + COLLISION_PAUSE_S
                             else:
                                 self._robot_paused_until[rid_a] = now + COLLISION_PAUSE_S
+                        elif d < PROXIMITY_DIST:
+                            # Within proximity: lower priority robot slows down
+                            slower_rid = rid_b if pri_a < pri_b else rid_a
+                            original = self._robot_speed.get(slower_rid, 0.3)
+                            # Store original speed if not yet slowed
+                            slowed = self._robot_speed.get(f'{slower_rid}_slowed', False)
+                            if not slowed:
+                                self._robot_speed[slower_rid] = original * 0.4
+                                self._robot_speed[f'{slower_rid}_slowed'] = True
+                        else:
+                            # Outside proximity: restore speed if was slowed
+                            for rid in (rid_a, rid_b):
+                                if self._robot_speed.get(f'{rid}_slowed', False):
+                                    # Restore to map default
+                                    defaults = {'C3': 0.5, 'W2': 0.6, 'Q1': 0.4}
+                                    self._robot_speed[rid] = defaults.get(rid, 0.3)
+                                    self._robot_speed[f'{rid}_slowed'] = False
 
                 # Write updates into snapshot
                 with self._lock:
