@@ -1,0 +1,17 @@
+# Snyk (https://snyk.io) policy file for Smart Factory Supervisor.
+# Excludes build artefacts and vendored dependencies from scanning.
+
+exclude:
+  global:
+    - '**/node_modules/**'
+    - '**/.venv/**'
+    - '**/build/**'
+    - '**/dist/**'
+    - '**/__pycache__/**'
+    - '**/*.egg-info/**'
+    - '**/.pytest_cache/**'
+    - '**/target/**'
+    - '**/cmake-build*/**'
+    - '**/doc-site/**'
+    - '**/data/**'
+    - '**/logs/**'

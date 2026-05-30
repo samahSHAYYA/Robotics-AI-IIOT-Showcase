@@ -23,6 +23,10 @@ from app.auth import hash_password
 from app.db import User, async_session_factory, init_db
 from app.routes import auth, telemetry, commands
 
+# Feature 27: Rate limiting + security middleware
+from app.middleware.rate_limit import RateLimitMiddleware
+from app.middleware.security_headers import SecurityHeadersMiddleware
+
 # Feature 28: Audit logging (router)
 from app.routes import audit as audit_router
 # Feature 29: Webhooks (router)
@@ -31,6 +35,8 @@ from app.routes import webhooks as webhooks_router
 from app.routes import analytics as analytics_router
 # Feature 32: Reports / PDF (router)
 from app.routes import reports as reports_router
+# Feature 34: Prometheus metrics (router)
+from app.routes import metrics as metrics_router
 
 # Feature 30: Analytics engine (fed by broadcast loop)
 from app import analytics_engine
@@ -164,6 +170,10 @@ app.add_middleware(
     allow_headers = ['*'],
 )
 
+# Feature 27: Rate limiting + security headers
+app.add_middleware(RateLimitMiddleware, max_requests=100, window_seconds=60)
+app.add_middleware(SecurityHeadersMiddleware)
+
 # Original routers
 app.include_router(auth.router)
 app.include_router(telemetry.router)
@@ -181,6 +191,8 @@ app.include_router(analytics_router.router)
 # Feature 32: Reports / PDF router
 app.include_router(reports_router.router)
 
+# Feature 34: Prometheus metrics router
+app.include_router(metrics_router.router)
 
 
 @app.get('/')
@@ -200,6 +212,7 @@ async def root():
             'analytics': '/api/v1/analytics/current',
             'analytics_ws': '/api/v1/analytics/ws',
             'reports': '/api/v1/reports/pdf',
+            'metrics': '/metrics',
             'websocket': '/ws',
         },
     }

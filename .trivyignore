@@ -1,0 +1,9 @@
+# Trivy ignore rules for Smart Factory Supervisor container scanning.
+#
+# Add CVE identifiers below with a comment explaining why each is ignored.
+# Format: <CVE-ID> [optional comment]
+#
+# Example:
+# CVE-2023-1234  # Not applicable — dependency used in dev only
+
+# (No ignores currently configured. Review regularly.)

@@ -1,0 +1,5 @@
+:80 {
+    reverse_proxy /api/* ops-api:8003
+    reverse_proxy /ws/* ops-api:8003
+    reverse_proxy / ops-frontend:5173
+}
