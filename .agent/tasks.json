@@ -281,13 +281,13 @@
 ,
 {
   "sprint": "Sprint 5 — Platform Maturity & Ecosystem",
-  "status": "in_progress",
+  "status": "completed",
   "tasks": [
     {
       "id": 34,
       "title": "Feature 20: Automated Test Suite (Vitest + Playwright)",
-      "status": "pending",
-      "committed": false,
+      "status": "completed",
+      "committed": true,
       "acceptance": [
         "Vitest unit tests for utility functions and hooks",
         "Component smoke tests for all major panels",
@@ -299,8 +299,8 @@
     {
       "id": 35,
       "title": "Feature 21: Dark/Light Theme Toggle",
-      "status": "pending",
-      "committed": false,
+      "status": "completed",
+      "committed": true,
       "acceptance": [
         "Theme toggle button in header",
         "Light theme variant of all CSS (inverted from dark)",
@@ -312,8 +312,8 @@
     {
       "id": 36,
       "title": "Feature 22: Multi-Language i18n (English + French)",
-      "status": "pending",
-      "committed": false,
+      "status": "completed",
+      "committed": true,
       "acceptance": [
         "Language toggle in header (EN/FR)",
         "All UI strings externalized to translation JSON files",
@@ -325,8 +325,8 @@
     {
       "id": 37,
       "title": "Feature 23: CI/CD Pipeline (GitHub Actions)",
-      "status": "pending",
-      "committed": false,
+      "status": "completed",
+      "committed": true,
       "acceptance": [
         "GitHub Actions workflow for frontend build + test",
         "GitHub Actions workflow for backend (ops-api) build + test",
@@ -338,8 +338,8 @@
     {
       "id": 38,
       "title": "Feature 24: Mobile Adaptive Layout",
-      "status": "pending",
-      "committed": false,
+      "status": "completed",
+      "committed": true,
       "acceptance": [
         "Responsive layout collapses to single-column on mobile",
         "Touch-friendly controls (larger buttons, swipe gestures)",
@@ -351,8 +351,8 @@
     {
       "id": 39,
       "title": "Feature 25: Kiosk Mode / Factory Floor Video Wall",
-      "status": "pending",
-      "committed": false,
+      "status": "completed",
+      "committed": true,
       "acceptance": [
         "Dedicated kiosk URL parameter (?kiosk=true)",
         "Full-screen auto-launch, no login required",
@@ -364,14 +364,113 @@
     {
       "id": 40,
       "title": "Feature 26: Time-Machine Mode (Historical Comparison)",
-      "status": "pending",
-      "committed": false,
+      "status": "completed",
+      "committed": true,
       "acceptance": [
         "Date/time picker to load historical telemetry snapshot",
         "Side-by-side comparison view (now vs. selected time)",
         "Diff indicators on KPI gauges (delta from historical)",
         "Historical timeline scrubber extended with date range selection",
         "Animated transition between current and historical state"
+      ]
+    }
+  ]
+}
+,
+{
+  "sprint": "Sprint 6 — Backend Intelligence & Infrastructure",
+  "status": "in_progress",
+  "tasks": [
+    {
+      "id": 41,
+      "title": "Feature 27: Backend API Rate Limiting & Security",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "Rate limiting middleware on ops-api (100 req/min per IP)",
+        "CORS hardening with explicit allowed origins",
+        "Security headers (Helmet-style: X-Content-Type-Options, CSP, HSTS)",
+        "Input validation on all POST endpoints",
+        "API key authentication option alongside JWT"
+      ]
+    },
+    {
+      "id": 42,
+      "title": "Feature 28: Audit Logging Service",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "Structured audit log for all robot operations (start, stop, task, e-stop)",
+        "Audit log stored in PostgreSQL with auto-cleanup (30-day retention)",
+        "Audit log viewer panel in frontend (new panel)",
+        "Filterable by robot, action type, date range, and user role",
+        "CSV export of audit logs"
+      ]
+    },
+    {
+      "id": 43,
+      "title": "Feature 29: Webhook Integration System",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "Webhook configuration API (CRUD endpoints for webhooks)",
+        "Webhook triggers: on_alert_critical, on_robot_error, on_robot_start, on_robot_stop",
+        "HTTP POST to configured URLs with JSON payload",
+        "Retry with exponential backoff (3 attempts)",
+        "Webhook management UI in frontend"
+      ]
+    },
+    {
+      "id": 44,
+      "title": "Feature 30: Real-time Telemetry Streaming Analytics",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "Rolling 1-hour window analytics on telemetry stream",
+        "Calculated metrics: avg/max/min uptime, alert rate, robot utilization",
+        "Redis-backed time-series buffer (not persistent storage)",
+        "New analytics WebSocket channel with 5-second update interval",
+        "Analytics dashboard widget showing trend lines"
+      ]
+    },
+    {
+      "id": 45,
+      "title": "Feature 31: Service Health Monitoring Dashboard",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "Health check aggregation across all services (core, ai, api, agent, redis, db)",
+        "Service status indicator (up/down/degraded) with latency",
+        "Uptime tracking since last restart",
+        "New frontend panel showing service health grid",
+        "Auto-refresh every 10 seconds"
+      ]
+    },
+    {
+      "id": 46,
+      "title": "Feature 32: PDF Report Generation",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "Backend endpoint generates PDF report of current factory state",
+        "Report includes: KPI summary, per-robot status, alert log, OEE",
+        "Frontend download button in header",
+        "Report filename includes timestamp",
+        "Uses weasyprint or reportlab (server-side rendering)"
+      ]
+    },
+    {
+      "id": 47,
+      "title": "Feature 33: Docker Compose Production Profile",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "Production docker-compose profile with resource limits",
+        "Healthcheck improvements on all services",
+        "Readiness and liveness probes",
+        "Volume mounts for persistent data (PostgreSQL, Redis)",
+        "Reverse proxy (Caddy/Nginx) for unified ingress",
+        "Environment-specific override files (dev/prod profiles)"
       ]
     }
   ]
