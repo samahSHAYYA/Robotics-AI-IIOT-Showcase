@@ -556,13 +556,13 @@
 ,
 {
   "sprint": "Sprint 8 — Edge & Advanced Robotics",
-  "status": "in_progress",
+  "status": "completed",
   "tasks": [
     {
       "id": 55,
       "title": "Feature 41: Edge Device Simulator (IoT Sensor Grid)",
-      "status": "pending",
-      "committed": false,
+      "status": "completed",
+      "committed": true,
       "acceptance": [
         "New edge-sim service simulating 10 IoT sensors (temperature, vibration, humidity, power)",
         "Sensors publish MQTT-style events to Redis streams",
@@ -574,8 +574,8 @@
     {
       "id": 56,
       "title": "Feature 42: Robot Fleet Auto-Discovery",
-      "status": "pending",
-      "committed": false,
+      "status": "completed",
+      "committed": true,
       "acceptance": [
         "New robots register via HTTP POST to /api/v1/robots/register",
         "Auto-assigned robot IDs with configurable prefix",
@@ -587,8 +587,8 @@
     {
       "id": 57,
       "title": "Feature 43: gRPC Service Definitions",
-      "status": "pending",
-      "committed": false,
+      "status": "completed",
+      "committed": true,
       "acceptance": [
         "Proto definitions for core services (telemetry, command, analytics)",
         "gRPC server implementation for ops-api alongside HTTP",
@@ -600,8 +600,8 @@
     {
       "id": 58,
       "title": "Feature 44: Digital Twin State Reconciliation",
-      "status": "pending",
-      "committed": false,
+      "status": "completed",
+      "committed": true,
       "acceptance": [
         "State version vector for conflict detection",
         "Digital twin state diff visualization in frontend",
@@ -613,8 +613,8 @@
     {
       "id": 59,
       "title": "Feature 45: OpenTelemetry Distributed Tracing",
-      "status": "pending",
-      "committed": false,
+      "status": "completed",
+      "committed": true,
       "acceptance": [
         "OpenTelemetry SDK integration in ops-api, ai-service, ai-agent",
         "Trace context propagation across HTTP calls",
@@ -626,8 +626,8 @@
     {
       "id": 60,
       "title": "Feature 46: Kubernetes Helm Chart",
-      "status": "pending",
-      "committed": false,
+      "status": "completed",
+      "committed": true,
       "acceptance": [
         "Helm chart for all services (ops-api, ai-service, ai-agent, core, redis, postgres, frontend)",
         "Values.yaml with configurable replicas, resources, ingress",
@@ -639,14 +639,112 @@
     {
       "id": 61,
       "title": "Feature 47: Multi-Factory / Site Management",
-      "status": "pending",
-      "committed": false,
+      "status": "completed",
+      "committed": true,
       "acceptance": [
         "Site entity with name, location, timezone, robot fleet",
         "Site switcher in dashboard header (dropdown)",
         "Per-site telemetry isolation (different Redis channels)",
         "Multi-site aggregate dashboard view",
         "Site configuration API (CRUD)"
+      ]
+    }
+  ]
+}
+,
+{
+  "sprint": "Sprint 9 — AI & Advanced Simulation",
+  "status": "pending",
+  "tasks": [
+    {
+      "id": 62,
+      "title": "Feature 48: Federated Learning Control Panel",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "New panel showing simulated federated learning rounds across edge devices",
+        "Each edge node (10 IoT sensors) runs a local training round",
+        "Global model aggregation with FedAvg visualized as a tree",
+        "Accuracy/loss chart per round",
+        "Start/stop training controls with configurable rounds"
+      ]
+    },
+    {
+      "id": 63,
+      "title": "Feature 49: Predictive Quality Control",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "Predict product defect probability from real-time sensor readings",
+        "Per-station quality score with color-coded indicators",
+        "Defect trend chart over time (last 100 products)",
+        "Red highlight on stations with >15% predicted defect rate",
+        "Integration with ai-agent for root-cause analysis queries"
+      ]
+    },
+    {
+      "id": 64,
+      "title": "Feature 50: Supply Chain Visibility Dashboard",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "Simulated inventory levels for 6 part types (widgets, boards, cables, etc.)",
+        "Animated supply chain flow from supplier → warehouse → line",
+        "Reorder alerts when inventory drops below threshold",
+        "Lead time display per part type",
+        "Stock-out risk indicator (green/amber/red)"
+      ]
+    },
+    {
+      "id": 65,
+      "title": "Feature 51: Worker Safety Zone Monitor",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "Simulated worker positions on factory floor map",
+        "Safety zone boundaries rendered as semi-transparent overlays",
+        "Alert when worker enters restricted robot zone (proximity < 2m)",
+        "Worker count per zone displayed in sidebar",
+        "Incident log with timestamps for safety violations"
+      ]
+    },
+    {
+      "id": 66,
+      "title": "Feature 52: Energy Optimization AI Advisor",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "AI-driven energy optimization suggestions based on sensor data",
+        "What-if analysis: 'reduce line speed by 10% → save 15% energy'",
+        "Energy cost projection chart (current vs optimized)",
+        "Apply optimization button that adjusts simulated parameters",
+        "Integration with ai-agent for natural-language energy queries"
+      ]
+    },
+    {
+      "id": 67,
+      "title": "Feature 53: Advanced Digital Twin Simulator",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "What-if scenario runner: modify parameters and preview outcomes",
+        "Scenario templates: 'Add robot', 'Increase throughput', 'Reduce energy'",
+        "Side-by-side comparison of baseline vs simulated scenario",
+        "Scenario impact report with KPI deltas",
+        "Save/load named scenarios with localStorage persistence"
+      ]
+    },
+    {
+      "id": 68,
+      "title": "Feature 54: Real-time Collaboration Annotations",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "Users can place annotations on the factory floor map",
+        "Annotation types: note, alert pin, measurement line, area highlight",
+        "Annotations persisted in localStorage and synced via BroadcastChannel API",
+        "Author name and timestamp shown on each annotation",
+        "Annotation filter by author and type"
       ]
     }
   ]
