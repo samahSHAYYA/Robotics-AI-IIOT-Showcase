@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Alert, Event } from '../types/telemetry'
+import useAlertNotifications from '../hooks/useAlertNotifications'
 
 interface AlertBoardProps {
   alerts: Alert[]
@@ -20,6 +21,7 @@ function severityClass(s: string) {
 
 export default function AlertBoard({ alerts, events, error }: AlertBoardProps) {
   const [filters, setFilters] = useState<Set<string>>(new Set(SEVERITIES.map(s => s.key)))
+  const { notifEnabled, setNotifEnabled } = useAlertNotifications(alerts)
 
   const toggleFilter = (key: string) => {
     const next = new Set(filters)
@@ -50,7 +52,7 @@ export default function AlertBoard({ alerts, events, error }: AlertBoardProps) {
       <div className="alert-board">
         <h3>Alerts & Events</h3>
         <div className="empty-state empty-state--success">
-          <div className="empty-state-icon">✓</div>
+          <div className="empty-state-icon">&#10003;</div>
           <div className="empty-state-text">No active alerts</div>
         </div>
       </div>
@@ -59,7 +61,19 @@ export default function AlertBoard({ alerts, events, error }: AlertBoardProps) {
 
   return (
     <div className="alert-board">
-      <h3>Alerts & Events</h3>
+      <h3>
+        Alerts & Events
+        <button
+          className={`notif-toggle-btn${notifEnabled ? ' notif-toggle-btn--on' : ''}`}
+          onClick={() => setNotifEnabled(!notifEnabled)}
+          title={notifEnabled ? 'Disable notifications' : 'Enable notifications'}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+          </svg>
+        </button>
+      </h3>
       <div className="alert-legend">
         {SEVERITIES.map(s => (
           <button

@@ -386,7 +386,7 @@ html, body, #root {
   min-height: 0;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
   gap: 0.35rem;
 }
 
@@ -479,6 +479,33 @@ html, body, #root {
 }
 
 .panel-fleet h3 {
+  flex-shrink: 0;
+}
+
+.panel-head-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  margin-bottom: 0.35rem;
+}
+
+.panel-head-row h3 {
+  margin-bottom: 0;
+}
+
+.panel-fleet .panel-head-row h3 {
+  margin-bottom: 0;
+}
+
+/* ===== Shift Scheduler Panel ===== */
+.panel-shift {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.panel-shift h3 {
   flex-shrink: 0;
 }
 
@@ -1362,6 +1389,18 @@ html, body, #root {
   border-radius: 0.5rem;
 }
 
+/* ===== 2D / 3D View Toggle ===== */
+.map-view-toggle {
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.map-view-toggle:hover {
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+}
+
 /* ===== Timeline Scrubber ===== */
 .timeline-bar {
   display: flex;
@@ -1924,4 +1963,408 @@ html, body, #root {
 
 .panel-oee h3 {
   flex-shrink: 0;
+}
+
+/* ===== Production Line Panel ===== */
+.panel-production {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.panel-production h3 {
+  flex-shrink: 0;
+}
+
+.production-line {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.production-line h3 {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text2);
+  margin-bottom: 0.35rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.production-line h3::before {
+  content: '';
+  width: 3px;
+  height: 12px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+.production-line canvas {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.production-throughput {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.5rem;
+  font-size: 0.65rem;
+  color: var(--text2);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ===== Feature 15: Ambient Audio Panel ===== */
+.ambient-audio {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.ambient-audio-btn {
+  background: transparent;
+  border: 1px solid var(--surface2);
+  color: var(--text2);
+  padding: 0.2rem 0.35rem;
+  border-radius: 0.3rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ambient-audio-btn:hover {
+  border-color: var(--accent);
+  color: var(--text);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.ambient-audio-btn--active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.ambient-audio-popup {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.4rem;
+  z-index: 100;
+  background: var(--surface);
+  border: 1px solid var(--surface2);
+  border-radius: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  min-width: 160px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.ambient-audio-label {
+  font-size: 0.6rem;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ambient-audio-slider {
+  width: 100%;
+  accent-color: var(--accent);
+  height: 4px;
+  cursor: pointer;
+}
+
+.ambient-audio-mute-btn {
+  background: rgba(59,130,246,0.1);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: 0.3rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.6rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.12s;
+}
+
+.ambient-audio-mute-btn:hover {
+  background: rgba(59,130,246,0.2);
+}
+
+/* ===== Feature 16: Telemetry Export ===== */
+.export-btn-group {
+  display: inline-flex;
+  gap: 0.25rem;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.export-btn {
+  background: transparent;
+  border: 1px solid var(--surface2);
+  color: var(--text2);
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.25rem;
+  font-size: 0.55rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  transition: all 0.12s;
+}
+
+.export-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(59,130,246,0.08);
+}
+
+.export-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  border-color: var(--surface2);
+  color: var(--text2);
+  background: transparent;
+}
+
+/* ===== Feature 17: Inline Chart ===== */
+.chat-chart {
+  margin-top: 0.35rem;
+  background: rgba(0,0,0,0.25);
+  border-radius: 0.4rem;
+  padding: 0.4rem;
+}
+
+.chat-chart-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.chat-chart-title {
+  font-size: 0.6rem;
+  color: var(--text2);
+  margin-bottom: 0.2rem;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ===== Feature 18: Notification Toggle ===== */
+.notif-toggle-btn {
+  background: transparent;
+  border: 1px solid var(--surface2);
+  color: var(--text2);
+  padding: 0.15rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.notif-toggle-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(59,130,246,0.08);
+}
+
+.notif-toggle-btn--on {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(59,130,246,0.1);
+}
+
+.notif-header-btn {
+  background: transparent;
+  border: 1px solid var(--surface2);
+  color: var(--text2);
+  padding: 0.2rem 0.35rem;
+  border-radius: 0.3rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notif-header-btn:hover {
+  border-color: var(--accent);
+  color: var(--text);
+  background: rgba(59,130,246,0.08);
+}
+
+.notif-header-btn--on {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(59,130,246,0.1);
+}
+
+/* ===== Feature 19: Shift Scheduler ===== */
+.shift-scheduler {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.shift-scheduler h3 {
+  flex-shrink: 0;
+}
+
+.shift-columns {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.3rem;
+  min-height: 0;
+}
+
+.shift-column {
+  display: flex;
+  flex-direction: column;
+  background: rgba(255,255,255,0.02);
+  border-radius: 0.4rem;
+  padding: 0.3rem;
+  border: 1px solid var(--surface2);
+  min-height: 0;
+  transition: border-color 0.3s;
+}
+
+.shift-column--active {
+  border-color: var(--accent);
+  background: rgba(59,130,246,0.04);
+}
+
+.shift-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  margin-bottom: 0.3rem;
+  flex-shrink: 0;
+}
+
+.shift-title {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.shift-hours {
+  font-size: 0.55rem;
+  color: var(--text2);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.shift-badge {
+  font-size: 0.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: var(--accent);
+  color: #fff;
+  padding: 0.075rem 0.3rem;
+  border-radius: 0.2rem;
+  letter-spacing: 0.04em;
+  margin-top: 0.1rem;
+}
+
+.shift-robot-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.shift-empty {
+  font-size: 0.6rem;
+  color: var(--text2);
+  text-align: center;
+  padding: 0.5rem 0;
+}
+
+.shift-robot-card {
+  background: rgba(255,255,255,0.03);
+  border-radius: 0.3rem;
+  padding: 0.25rem 0.35rem;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.shift-robot-card--animating {
+  transform: translateX(8px);
+  opacity: 0.6;
+}
+
+.shift-robot-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.2rem;
+}
+
+.shift-robot-name {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.shift-robot-info .robot-status {
+  font-size: 0.5rem;
+  padding: 0.075rem 0.25rem;
+}
+
+.shift-robot-actions {
+  display: flex;
+  gap: 0.2rem;
+}
+
+.shift-move-btn {
+  flex: 1;
+  background: rgba(59,130,246,0.08);
+  border: 1px solid var(--surface2);
+  color: var(--text2);
+  border-radius: 0.2rem;
+  padding: 0.1rem 0;
+  font-size: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.12s;
+}
+
+.shift-move-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(59,130,246,0.15);
+}
+
+/* ===== Shift Scheduler responsive ===== */
+@media (max-width: 1200px) {
+  .shift-columns {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
 }

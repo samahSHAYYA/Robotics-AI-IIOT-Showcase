@@ -11,6 +11,7 @@ export interface MapSettings {
   showZoneLabels: boolean
   showGridLines: boolean
   robotColors: Record<string, string>
+  showHeatmap: boolean
 }
 
 const DEFAULT_COLORS: Record<string, string> = {
@@ -34,6 +35,7 @@ function loadSettings(): MapSettings {
         showGlowRings: !!parsed.showGlowRings,
         showZoneLabels: !!parsed.showZoneLabels,
         showGridLines: !!parsed.showGridLines,
+        showHeatmap: !!parsed.showHeatmap,
         robotColors: { ...DEFAULT_COLORS, ...parsed.robotColors } as Record<string, string>,
       }
     }
@@ -53,6 +55,7 @@ function defaultSettings(): MapSettings {
     showGlowRings: true,
     showZoneLabels: true,
     showGridLines: true,
+    showHeatmap: false,
     robotColors: { ...DEFAULT_COLORS },
   }
 }
@@ -61,6 +64,7 @@ interface MapSettingsContextType {
   settings: MapSettings
   updateSetting: <K extends keyof MapSettings>(key: K, value: MapSettings[K]) => void
   resetSettings: () => void
+  resetHeatmap: () => void
 }
 
 const MapSettingsContext = createContext<MapSettingsContextType | null>(null)
@@ -82,8 +86,12 @@ export function MapSettingsProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('mapSettings', JSON.stringify(def))
   }, [])
 
+  const resetHeatmap = useCallback(() => {
+    window.dispatchEvent(new CustomEvent('heatmap-reset'))
+  }, [])
+
   return (
-    <MapSettingsContext.Provider value={{ settings, updateSetting, resetSettings }}>
+    <MapSettingsContext.Provider value={{ settings, updateSetting, resetSettings, resetHeatmap }}>
       {children}
     </MapSettingsContext.Provider>
   )

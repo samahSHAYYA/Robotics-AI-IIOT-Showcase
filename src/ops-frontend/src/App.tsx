@@ -11,10 +11,15 @@ import ChatPanel from './components/ChatPanel'
 import EnergyWidget from './components/EnergyWidget'
 import PredictiveMaintenance from './components/PredictiveMaintenance'
 import OEEWidget from './components/OEEWidget'
+import ProductionLine from './components/ProductionLine'
 import ScreenshotExport from './components/ScreenshotExport'
 import VoiceCommand from './components/VoiceCommand'
+import AmbientAudio from './components/AmbientAudio'
+import TelemetryExport from './components/TelemetryExport'
+import ShiftScheduler from './components/ShiftScheduler'
 import LoginPage from './components/LoginPage'
 import LayoutSettingsPanel, { loadLayout, saveLayout } from './components/LayoutSettingsPanel'
+import useAlertNotifications from './hooks/useAlertNotifications'
 import type { TelemetrySnapshot, RobotStatus, Alert, Event } from './types/telemetry'
 import './App.css'
 
@@ -37,6 +42,7 @@ export default function App() {
   const [showShortcuts, setShowShortcuts] = useState(false)
   const [voiceResult, setVoiceResult] = useState<{ text: string; ok: boolean } | null>(null)
   const voiceTimeoutRef = useRef<number>(0)
+  const { notifEnabled, setNotifEnabled } = useAlertNotifications(alerts)
 
   useEffect(() => {
     saveLayout(panelVisibility)
@@ -72,7 +78,9 @@ export default function App() {
         case '3': {
           const idx = parseInt(e.key) - 1
           if (idx < robots.length) {
-            setSelectedRobotId(robots[idx].robot_id)
+            const robotId = robots[idx].robot_id
+            setSelectedRobotId(robotId)
+            window.dispatchEvent(new CustomEvent('select-robot', { detail: { robotId } }))
           }
           break
         }
@@ -248,6 +256,17 @@ export default function App() {
         </div>
         <div className="header-right">
           <VoiceCommand />
+          <AmbientAudio robots={robots} />
+          <button
+            className={`notif-header-btn${notifEnabled ? ' notif-header-btn--on' : ''}`}
+            onClick={() => setNotifEnabled(!notifEnabled)}
+            title={notifEnabled ? 'Disable notifications' : 'Enable notifications'}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+          </button>
           <ScreenshotExport />
           <span className={`role-badge role-badge--${role}`}>{role}</span>
           {role === 'admin' && <button className="layout-settings-btn" onClick={() => setShowLayoutSettings(true)}>Layout</button>}
@@ -265,6 +284,10 @@ export default function App() {
         <section className="grid-main">
           {panelVisibility.fleet !== false && (
             <div className="panel panel-fleet">
+              <div className="panel-head-row">
+                <h3>Robot Fleet</h3>
+                <TelemetryExport robots={robots} />
+              </div>
               <RobotFleet robots={robots} error={error} highlightedRobotId={selectedRobotId} />
               <EnergyWidget robots={robots} />
               <PredictiveMaintenance robots={robots} />
@@ -277,6 +300,7 @@ export default function App() {
                   robots={robots}
                   error={error}
                   role={role}
+                  selectedRobotId={selectedRobotId}
                   onRobotStart={handleRobotStart}
                   onRobotStop={handleRobotStop}
                 />
@@ -302,6 +326,16 @@ export default function App() {
           {panelVisibility.oee !== false && (
             <div className="panel panel-oee">
               <OEEWidget robots={robots} />
+            </div>
+          )}
+          {panelVisibility.shift !== false && (
+            <div className="panel panel-shift">
+              <ShiftScheduler robots={robots} onAssignTask={handleAssignTask} />
+            </div>
+          )}
+          {panelVisibility.production !== false && (
+            <div className="panel panel-production">
+              <ProductionLine robots={robots} />
             </div>
           )}
           {panelVisibility.camera !== false && (

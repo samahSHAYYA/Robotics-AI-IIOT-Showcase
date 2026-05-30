@@ -8,6 +8,9 @@ const PANELS = [
   { key: 'map', label: 'Factory Floor' },
   { key: 'alerts', label: 'Alert Board' },
   { key: 'console', label: 'Command Console' },
+  { key: 'oee', label: 'OEE Widget' },
+  { key: 'shift', label: 'Shift Scheduler' },
+  { key: 'production', label: 'Production Line' },
   { key: 'camera', label: 'Robot Camera' },
   { key: 'chat', label: 'AI Chat' },
 ] as const
@@ -20,6 +23,9 @@ const DEFAULTS: Record<string, boolean> = {
   map: true,
   alerts: true,
   console: true,
+  oee: true,
+  shift: true,
+  production: true,
   camera: true,
   chat: true,
 }

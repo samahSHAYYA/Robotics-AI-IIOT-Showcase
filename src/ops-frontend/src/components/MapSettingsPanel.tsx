@@ -19,7 +19,7 @@ interface MapSettingsPanelProps {
 }
 
 export default function MapSettingsPanel({ onClose }: MapSettingsPanelProps) {
-  const { settings, updateSetting, resetSettings } = useMapSettings()
+  const { settings, updateSetting, resetSettings, resetHeatmap } = useMapSettings()
 
   const toggleRobot = (id: string) => {
     updateSetting('robotVisibility', {
@@ -151,6 +151,25 @@ export default function MapSettingsPanel({ onClose }: MapSettingsPanelProps) {
               />
               Show Grid Lines
             </label>
+            <label className="map-settings-row">
+              <input
+                type="checkbox"
+                checked={settings.showHeatmap}
+                onChange={() => updateSetting('showHeatmap', !settings.showHeatmap)}
+              />
+              Show Heatmap
+            </label>
+            {settings.showHeatmap && (
+              <div className="map-settings-row" style={{ justifyContent: 'flex-end' }}>
+                <button
+                  className="map-settings-reset"
+                  style={{ width: 'auto', padding: '0.25rem 0.6rem', fontSize: '0.65rem' }}
+                  onClick={resetHeatmap}
+                >
+                  Reset Heatmap
+                </button>
+              </div>
+            )}
           </section>
 
           <section className="map-settings-section">

@@ -1,5 +1,0 @@
-fastapi
-uvicorn
-pydantic
-pydantic-ai-slim[openai]
-httpx

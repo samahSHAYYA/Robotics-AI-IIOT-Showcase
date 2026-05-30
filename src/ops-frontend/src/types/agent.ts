@@ -18,8 +18,16 @@ export interface ChatResponse {
   chart: ChartConfig | null
 }
 
+export interface InlineChartData {
+  chart: true
+  type: 'line' | 'bar'
+  data: { label: string; value: number }[]
+  title: string
+}
+
 export interface ChatMessage {
   role: 'user' | 'agent'
   text: string
   chart?: ChartConfig
+  inlineChart?: InlineChartData
 }

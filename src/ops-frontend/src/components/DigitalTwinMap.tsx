@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import type { RobotStatus } from '../types/telemetry'
 import { useMapSettings } from '../contexts/MapSettingsContext'
 import MapSettingsPanel, { ContextMenu } from './MapSettingsPanel'
+import ThreeDView from './ThreeDView'
 
 const FACTORY_W = 600
 const FACTORY_H = 400
@@ -11,6 +12,7 @@ interface DigitalTwinMapProps {
   robots: RobotStatus[]
   error?: string | null
   role?: string
+  selectedRobotId?: string | null
   onRobotStart?: (id: string) => void
   onRobotStop?: (id: string) => void
 }
@@ -305,10 +307,45 @@ function renderLabel(
   ctx.textBaseline = 'alphabetic'
 }
 
+function heatmapColor(t: number): string {
+  const h = Math.round(240 - t * 240)
+  const s = 70 + Math.round(t * 20)
+  const l = 25 + Math.round(t * 25)
+  const a = 0.12 + t * 0.38
+  return `hsla(${h}, ${s}%, ${l}%, ${a})`
+}
+
+function renderSelectionRing(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  timeMs: number,
+) {
+  const pulse = 0.7 + 0.3 * Math.sin(timeMs / 180)
+  const radius = 14 * pulse
+  ctx.save()
+  ctx.beginPath()
+  ctx.arc(x, y, radius, 0, Math.PI * 2)
+  ctx.strokeStyle = '#22d3ee'
+  ctx.lineWidth = 3
+  ctx.shadowColor = '#22d3ee'
+  ctx.shadowBlur = 14
+  ctx.stroke()
+  // Second brighter ring
+  ctx.beginPath()
+  ctx.arc(x, y, radius + 4, 0, Math.PI * 2)
+  ctx.strokeStyle = '#67e8f9'
+  ctx.lineWidth = 1.5
+  ctx.shadowBlur = 8
+  ctx.stroke()
+  ctx.restore()
+}
+
 export default function DigitalTwinMap({
   robots,
   error,
   role,
+  selectedRobotId,
   onRobotStart,
   onRobotStop,
 }: DigitalTwinMapProps) {
@@ -319,12 +356,18 @@ export default function DigitalTwinMap({
 
   const trailsRef = useRef<Record<string, Array<{ x: number; y: number }>>>({})
 
+  const heatmapRef = useRef<number[][]>(Array.from({ length: 40 }, () => new Array(60).fill(0)))
+  const lastHeatmapAccRef = useRef<number>(0)
+
+  const highlightedRef = useRef<string | null>(null)
+
   const [selectedRobot, setSelectedRobot] = useState<InterpRobot | null>(null)
   const [popupPos, setPopupPos] = useState({ x: 0, y: 0 })
   const [showSettings, setShowSettings] = useState(false)
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
   const [fullscreen, setFullscreen] = useState(false)
   const [currentTime, setCurrentTime] = useState('')
+  const [is3D, setIs3D] = useState(false)
 
   const [timeline, setTimeline] = useState<{
     history: InterpRobot[][]
@@ -406,6 +449,34 @@ export default function DigitalTwinMap({
   }, [fullscreen])
 
   useEffect(() => {
+    const handler = () => {
+      const grid = heatmapRef.current
+      for (let y = 0; y < 40; y++) {
+        for (let x = 0; x < 60; x++) {
+          grid[y][x] = 0
+        }
+      }
+    }
+    window.addEventListener('heatmap-reset', handler)
+    return () => window.removeEventListener('heatmap-reset', handler)
+  }, [])
+
+  useEffect(() => {
+    if (selectedRobotId !== undefined) {
+      highlightedRef.current = selectedRobotId ?? null
+    }
+  }, [selectedRobotId])
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { robotId: string | null }
+      highlightedRef.current = detail.robotId ?? null
+    }
+    window.addEventListener('select-robot', handler)
+    return () => window.removeEventListener('select-robot', handler)
+  }, [])
+
+  useEffect(() => {
     const LERP_FACTOR = 0.08
 
     const render = () => {
@@ -482,6 +553,22 @@ export default function DigitalTwinMap({
             delete trails[rid]
           }
         }
+
+        if (settings.showHeatmap) {
+          const n = Date.now()
+          if (n - lastHeatmapAccRef.current > 100) {
+            lastHeatmapAccRef.current = n
+            const grid = heatmapRef.current
+            for (const r of interp) {
+              const gx = Math.floor((r.x / 10) * 60)
+              const gy = Math.floor((r.y / 10) * 40)
+              if (gx >= 0 && gx < 60 && gy >= 0 && gy < 40) {
+                grid[gy][gx]++
+                if (grid[gy][gx] > 1e9) grid[gy][gx] = 0
+              }
+            }
+          }
+        }
       }
 
       const warningPairs = new Set<string>()
@@ -519,6 +606,33 @@ export default function DigitalTwinMap({
       ctx.beginPath()
       ctx.roundRect(sx(0.5), sy(0.5), sx(9), sy(8.5), 4)
       ctx.stroke()
+
+      if (settings.showHeatmap) {
+        const grid = heatmapRef.current
+        let maxVal = 0
+        for (let y = 0; y < 40; y++) {
+          for (let x = 0; x < 60; x++) {
+            if (grid[y][x] > maxVal) maxVal = grid[y][x]
+          }
+        }
+        if (maxVal > 0) {
+          const cellW = sx(9) / 60
+          const cellH = sy(8.5) / 40
+          const offX = sx(0.5)
+          const offY = sy(0.5)
+          ctx.save()
+          for (let y = 0; y < 40; y++) {
+            for (let x = 0; x < 60; x++) {
+              const v = grid[y][x] / maxVal
+              if (v > 0.01) {
+                ctx.fillStyle = heatmapColor(v)
+                ctx.fillRect(offX + x * cellW, offY + y * cellH, cellW + 0.5, cellH + 0.5)
+              }
+            }
+          }
+          ctx.restore()
+        }
+      }
 
       if (settings.showGridLines) {
         ctx.strokeStyle = '#334155'
@@ -590,6 +704,10 @@ export default function DigitalTwinMap({
 
         if (settings.showLabels) {
           renderLabel(ctx, cx, cy, r.robot_id, r.status)
+        }
+
+        if (highlightedRef.current === r.robot_id) {
+          renderSelectionRing(ctx, cx, cy, now)
         }
       }
 
@@ -680,6 +798,14 @@ export default function DigitalTwinMap({
       if (idx >= max) return { ...prev, currentIndex: -1, playing: false }
       return { ...prev, currentIndex: idx, playing: false }
     })
+  }, [])
+
+  const handle3DRobotSelect = useCallback((robotId: string, clientX: number, clientY: number) => {
+    const target = targetRef.current.find((r) => r.robot_id === robotId)
+    if (target) {
+      setSelectedRobot(target)
+      setPopupPos({ x: clientX, y: clientY })
+    }
   }, [])
 
   if (error) {
@@ -875,7 +1001,16 @@ export default function DigitalTwinMap({
           </button>
         </div>
         <div className="fullscreen-map-canvas">
-          {canvasElement}
+          {is3D ? (
+            <ThreeDView
+              active={true}
+              robots={robots}
+              customColors={settings.robotColors}
+              onRobotSelect={handle3DRobotSelect}
+            />
+          ) : (
+            canvasElement
+          )}
         </div>
         {timelineBar}
         {overlays}
@@ -888,6 +1023,14 @@ export default function DigitalTwinMap({
     <div className="digital-twin" style={{ position: 'relative' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
         <h3 style={{ marginBottom: 0 }}>Factory Floor</h3>
+        <button
+          className="map-view-toggle"
+          style={settingsButtonStyle}
+          onClick={() => setIs3D((p) => !p)}
+          title={is3D ? 'Switch to 2D view' : 'Switch to 3D view'}
+        >
+          {is3D ? '2D' : '3D'}
+        </button>
         <button style={settingsButtonStyle} onClick={() => setShowSettings(true)} title="Map Settings">
           ⚙ Settings
         </button>
@@ -899,7 +1042,18 @@ export default function DigitalTwinMap({
           ⛶ Fullscreen
         </button>
       </div>
-      {canvasElement}
+      {is3D ? (
+        <div style={{ flex: 1, minHeight: 0, borderRadius: '0.5rem', overflow: 'hidden' }}>
+          <ThreeDView
+            active={true}
+            robots={robots}
+            customColors={settings.robotColors}
+            onRobotSelect={handle3DRobotSelect}
+          />
+        </div>
+      ) : (
+        canvasElement
+      )}
       {timelineBar}
       {overlays}
     </div>

@@ -20,7 +20,6 @@ export default function RobotFleet({ robots, error, highlightedRobotId }: RobotF
   if (error) {
     return (
       <div className="robot-fleet">
-        <h3>Robot Fleet</h3>
         <div className="error-banner">
           <span className="error-text">{error}</span>
         </div>
@@ -31,7 +30,6 @@ export default function RobotFleet({ robots, error, highlightedRobotId }: RobotF
   if (robots.length === 0) {
     return (
       <div className="robot-fleet">
-        <h3>Robot Fleet</h3>
         <div className="empty-state">
           <div className="empty-state-icon">🤖</div>
           <div className="empty-state-text">No robots connected</div>
@@ -42,7 +40,6 @@ export default function RobotFleet({ robots, error, highlightedRobotId }: RobotF
 
   return (
     <div className="robot-fleet">
-      <h3>Robot Fleet</h3>
       <div className="fleet-grid">
         {robots.map((r) => (
           <div
