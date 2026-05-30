@@ -1,109 +1,93 @@
 {
-  "sprint": "Showcase Polish Sprint",
+  "sprint": "Sprint 2 — Innovative Features",
   "status": "completed",
   "tasks": [
     {
-      "id": 1,
-      "title": "Phase 1: Add Redis to docker-compose + update env templates",
-      "status": "completed",
-      "committed": true
-    },
-    {
-      "id": 2,
-      "title": "Phase 2: Create shared schemas (Pydantic models for events)",
-      "status": "completed",
-      "committed": true
-    },
-    {
-      "id": 3,
-      "title": "Phase 3: Build ai-service (Python, FastAPI, Redis consumer, mock ML)",
-      "status": "completed",
-      "committed": true
-    },
-    {
-      "id": 4,
-      "title": "Phase 4: Build ops-api (FastAPI, Redis consumer, REST + WebSocket)",
-      "status": "completed",
-      "committed": true
-    },
-    {
-      "id": 5,
-      "title": "Phase 5: Build core-platform Dockerfile (real C++ build)",
-      "status": "completed",
-      "committed": true
-    },
-    {
-      "id": 6,
-      "title": "Phase 6: Build ops-frontend (React dashboard)",
-      "status": "completed",
-      "committed": true
-    },
-    {
-      "id": 7,
-      "title": "Phase 7: Wire full stack + end-to-end validation",
-      "status": "completed",
-      "committed": true
-    },
-    {
-      "id": 8,
-      "title": "Phase 8: Fix Frontend↔Backend Data Pipeline",
+      "id": 13,
+      "title": "Feature 1: Robot Legend & Map Controls Panel",
       "status": "completed",
       "committed": true,
       "acceptance": [
-        "WebSocket broadcast wraps payload with type field",
-        "TelemetrySnapshot type matches backend store shape",
-        "RobotStatus type matches store robot shape",
-        "Robot fleet data wired from WebSocket snapshot",
-        "KPI cards show live data, not fallback defaults",
-        "DigitalTwinMap renders robots with pose data",
-        "AlertBoard renders alerts from backend store"
+        "Right-click on factory floor opens context menu with 'Legend & Settings' option",
+        "Advanced button in map title bar opens settings panel",
+        "Panel allows per-robot visibility toggle",
+        "Panel allows global trajectory toggle",
+        "Panel allows trail/history toggle",
+        "Panel shows status color legend (moving→blue, idle→gray, error→red, etc.)",
+        "Panel allows toggling robot labels, radar beacons, and glow rings",
+        "Panel allows toggling factory zone labels and grid lines",
+        "Settings persist in localStorage",
+        "Settings are applied immediately to canvas rendering"
       ]
     },
     {
-      "id": 9,
-      "title": "Phase 9: Remove dead event_logger.hpp",
+      "id": 14,
+      "title": "Feature 2: Full-Screen Map Mode",
       "status": "completed",
       "committed": true,
       "acceptance": [
-        "event_logger.hpp removed",
-        "No compilation errors from removal"
+        "Expand button in map header toggles full-screen mode",
+        "Full-screen mode hides all other panels",
+        "Mini HUD overlay shows time and active robot count",
+        "Escape key or close button exits full-screen mode",
+        "Canvas fills entire viewport"
       ]
     },
     {
-      "id": 10,
-      "title": "Phase 10: Refactor ai-agent with PydanticAI",
+      "id": 15,
+      "title": "Feature 3: Historical Timeline Scrubber",
       "status": "completed",
       "committed": true,
       "acceptance": [
-        "prompt.md file with system prompt",
-        "tools.py with telemetry fetch tools",
-        "agent.py with PydanticAI Agent wired to tools",
-        "router.py uses agent.py instead of old llm.py",
-        "Old llm.py and telemetry.py removed",
-        "Dockerfile + requirements.txt updated for pydantic-ai",
-        "Works with any OpenAI-compatible LLM",
-        "Mock fallback preserved for no-LLM mode"
+        "Timeline bar below map shows recent snapshots",
+        "User can scrub backward through history",
+        "Play/pause button with speed control (1x, 2x, 5x, 10x)",
+        "Replay animates robot movements in the map canvas"
       ]
     },
     {
-      "id": 11,
-      "title": "Phase 11: Quality Cleanup",
+      "id": 16,
+      "title": "Feature 4: Customizable Dashboard Layout",
       "status": "completed",
       "committed": true,
       "acceptance": [
-        "Root .dockerignore created (excludes node_modules, __pycache__, .venv, data, logs)",
-        "event_logger.hpp removed as dead code",
-        "All existing tests still pass"
+        "Settings menu allows choosing which panels to show",
+        "Panel visibility preferences saved to localStorage",
+        "Layout persists across page reloads"
       ]
     },
     {
-      "id": 12,
-      "title": "Phase 12: Commit and push all changes",
+      "id": 17,
+      "title": "Feature 5: Energy & Efficiency Widget",
       "status": "completed",
       "committed": true,
       "acceptance": [
-        "All changes committed with descriptive messages",
-        "Pushed to remote"
+        "New widget showing simulated energy consumption per robot",
+        "Bar chart or gauge display",
+        "Updates in real-time with telemetry"
+      ]
+    },
+    {
+      "id": 18,
+      "title": "Feature 6: Keyboard Shortcuts / Hotkeys",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        "F toggles full-screen map mode",
+        "1,2,3 selects respective robot",
+        "Escape closes popups and exits full-screen",
+        "R resets map view"
+      ]
+    },
+    {
+      "id": 19,
+      "title": "Feature 7: Screenshot / Report Export",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        "Camera icon button captures dashboard as PNG",
+        "Map canvas is captured natively via toDataURL",
+        "Downloaded file includes timestamp in filename"
       ]
     }
   ]

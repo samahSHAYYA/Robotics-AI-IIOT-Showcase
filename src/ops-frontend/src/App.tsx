@@ -5,9 +5,13 @@ import AlertBoard from './components/AlertBoard'
 import RobotFleet from './components/RobotFleet'
 import CommandConsole from './components/CommandConsole'
 import DigitalTwinMap from './components/DigitalTwinMap'
+import { MapSettingsProvider } from './contexts/MapSettingsContext'
 import RobotCamera from './components/RobotCamera'
 import ChatPanel from './components/ChatPanel'
+import EnergyWidget from './components/EnergyWidget'
+import ScreenshotExport from './components/ScreenshotExport'
 import LoginPage from './components/LoginPage'
+import LayoutSettingsPanel, { loadLayout, saveLayout } from './components/LayoutSettingsPanel'
 import type { TelemetrySnapshot, RobotStatus, Alert, Event } from './types/telemetry'
 import './App.css'
 
@@ -22,6 +26,55 @@ export default function App() {
   const [clock, setClock] = useState(new Date())
   const [error, setError] = useState<string | null>(null)
   const maxRetriesReached = useRef(false)
+
+  const [panelVisibility, setPanelVisibility] = useState<Record<string, boolean>>(() => loadLayout())
+  const [showLayoutSettings, setShowLayoutSettings] = useState(false)
+  const [selectedRobotId, setSelectedRobotId] = useState<string | null>(null)
+  const [showShortcuts, setShowShortcuts] = useState(false)
+
+  useEffect(() => {
+    saveLayout(panelVisibility)
+  }, [panelVisibility])
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement
+      if (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable) return
+      switch (e.key) {
+        case '?':
+          e.preventDefault()
+          setShowShortcuts((p) => !p)
+          break
+        case 'Escape':
+          setShowLayoutSettings(false)
+          setShowShortcuts(false)
+          setSelectedRobotId(null)
+          window.dispatchEvent(new CustomEvent('fullscreen-toggle'))
+          break
+        case 'f':
+        case 'F':
+          e.preventDefault()
+          window.dispatchEvent(new CustomEvent('fullscreen-toggle'))
+          break
+        case 'r':
+        case 'R':
+          e.preventDefault()
+          window.dispatchEvent(new CustomEvent('map-reset'))
+          break
+        case '1':
+        case '2':
+        case '3': {
+          const idx = parseInt(e.key) - 1
+          if (idx < robots.length) {
+            setSelectedRobotId(robots[idx].robot_id)
+          }
+          break
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [robots])
 
   useEffect(() => {
     const id = setInterval(() => setClock(new Date()), 1000)
@@ -105,6 +158,10 @@ export default function App() {
     setError(null)
   }, [])
 
+  const togglePanel = useCallback((key: string) => {
+    setPanelVisibility((prev) => ({ ...prev, [key]: !(prev[key] ?? true) }))
+  }, [])
+
   const bannerClass =
     status === 'failed'
       ? 'reconnect-banner--error'
@@ -134,45 +191,89 @@ export default function App() {
           <span className="app-subtitle">Industrial Humanoid Robotics IIoT Showcase</span>
         </div>
         <div className="header-right">
+          <ScreenshotExport />
+          <button className="layout-settings-btn" onClick={() => setShowLayoutSettings(true)}>Layout</button>
+          <button className="layout-settings-btn" onClick={() => setShowShortcuts((p) => !p)}>?</button>
           <span className="header-clock">{clock.toLocaleTimeString()}</span>
           <button className="logout-btn" onClick={handleLogout}>Logout</button>
         </div>
       </header>
       <main className="app-main">
-        <section className="grid-kpi">
-          <KpiBoard telemetry={telemetry} error={error} onRetry={handleRetry} />
-        </section>
+        {panelVisibility.kpi !== false && (
+          <section className="grid-kpi">
+            <KpiBoard telemetry={telemetry} error={error} onRetry={handleRetry} />
+          </section>
+        )}
         <section className="grid-main">
-          <div className="panel panel-fleet">
-            <RobotFleet robots={robots} error={error} />
-          </div>
-          <div className="panel panel-map">
-            <DigitalTwinMap
-              robots={robots}
-              error={error}
-              onRobotStart={handleRobotStart}
-              onRobotStop={handleRobotStop}
-            />
-          </div>
-          <div className="panel panel-alerts">
-            <AlertBoard alerts={alerts} events={events} error={error} />
-          </div>
-          <div className="panel panel-console">
-            <CommandConsole
-              onStartRobot={handleRobotStart}
-              onStopRobot={handleRobotStop}
-              onAssignTask={handleAssignTask}
-              onEmergencyStop={handleEmergencyStop}
-            />
-          </div>
-          <div className="panel panel-camera">
-            <RobotCamera robots={robots} />
-          </div>
-          <div className="panel panel-agent">
-            <ChatPanel />
-          </div>
+          {panelVisibility.fleet !== false && (
+            <div className="panel panel-fleet">
+              <RobotFleet robots={robots} error={error} highlightedRobotId={selectedRobotId} />
+              <EnergyWidget robots={robots} />
+            </div>
+          )}
+          {panelVisibility.map !== false && (
+            <div className="panel panel-map">
+              <MapSettingsProvider>
+                <DigitalTwinMap
+                  robots={robots}
+                  error={error}
+                  onRobotStart={handleRobotStart}
+                  onRobotStop={handleRobotStop}
+                />
+              </MapSettingsProvider>
+            </div>
+          )}
+          {panelVisibility.alerts !== false && (
+            <div className="panel panel-alerts">
+              <AlertBoard alerts={alerts} events={events} error={error} />
+            </div>
+          )}
+          {panelVisibility.console !== false && (
+            <div className="panel panel-console">
+              <CommandConsole
+                onStartRobot={handleRobotStart}
+                onStopRobot={handleRobotStop}
+                onAssignTask={handleAssignTask}
+                onEmergencyStop={handleEmergencyStop}
+              />
+            </div>
+          )}
+          {panelVisibility.camera !== false && (
+            <div className="panel panel-camera">
+              <RobotCamera robots={robots} />
+            </div>
+          )}
+          {panelVisibility.chat !== false && (
+            <div className="panel panel-agent">
+              <ChatPanel />
+            </div>
+          )}
         </section>
       </main>
+      {showLayoutSettings && (
+        <LayoutSettingsPanel
+          visible={panelVisibility}
+          onToggle={togglePanel}
+          onClose={() => setShowLayoutSettings(false)}
+        />
+      )}
+      {showShortcuts && (
+        <div className="shortcuts-toast">
+          <h4>Keyboard Shortcuts</h4>
+          <div className="shortcuts-grid">
+            <span className="shortcuts-key">F</span>
+            <span className="shortcuts-desc">Toggle full-screen map</span>
+            <span className="shortcuts-key">1-3</span>
+            <span className="shortcuts-desc">Select robot</span>
+            <span className="shortcuts-key">R</span>
+            <span className="shortcuts-desc">Reset map view</span>
+            <span className="shortcuts-key">Esc</span>
+            <span className="shortcuts-desc">Close popups / exit full-screen</span>
+            <span className="shortcuts-key">?</span>
+            <span className="shortcuts-desc">Toggle this help</span>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

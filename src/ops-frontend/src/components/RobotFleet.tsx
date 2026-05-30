@@ -3,6 +3,7 @@ import type { RobotStatus } from '../types/telemetry'
 interface RobotFleetProps {
   robots: RobotStatus[]
   error?: string | null
+  highlightedRobotId?: string | null
 }
 
 const statusColors: Record<string, string> = {
@@ -14,7 +15,7 @@ const statusColors: Record<string, string> = {
   offline: '#9ca3af',
 }
 
-export default function RobotFleet({ robots, error }: RobotFleetProps) {
+export default function RobotFleet({ robots, error, highlightedRobotId }: RobotFleetProps) {
   if (error) {
     return (
       <div className="robot-fleet">
@@ -43,7 +44,11 @@ export default function RobotFleet({ robots, error }: RobotFleetProps) {
       <h3>Robot Fleet</h3>
       <div className="fleet-grid">
         {robots.map((r) => (
-          <div key={r.robot_id} className="robot-card">
+          <div
+            key={r.robot_id}
+            className="robot-card"
+            style={r.robot_id === highlightedRobotId ? { borderColor: '#3b82f6', borderWidth: '2px', background: 'rgba(59,130,246,0.08)' } : undefined}
+          >
             <div className="robot-header">
               <span className="robot-name">{r.name}</span>
               <span className="robot-status" style={{ backgroundColor: statusColors[r.status] ?? '#6b7280' }}>

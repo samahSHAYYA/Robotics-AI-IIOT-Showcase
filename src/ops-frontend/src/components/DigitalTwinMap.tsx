@@ -1,5 +1,11 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import type { RobotStatus } from '../types/telemetry'
+import { useMapSettings } from '../contexts/MapSettingsContext'
+import MapSettingsPanel, { ContextMenu } from './MapSettingsPanel'
+
+const FACTORY_W = 600
+const FACTORY_H = 400
 
 interface DigitalTwinMapProps {
   robots: RobotStatus[]
@@ -7,9 +13,6 @@ interface DigitalTwinMapProps {
   onRobotStart?: (id: string) => void
   onRobotStop?: (id: string) => void
 }
-
-const FACTORY_W = 600
-const FACTORY_H = 400
 
 interface InterpRobot {
   robot_id: string
@@ -22,32 +25,18 @@ interface InterpRobot {
   current_task: string | null
 }
 
-/** Maximum trail positions to store per robot */
 const MAX_TRAIL = 20
-
-/** Proximity warning threshold (robot centers, in world coords) */
 const PROXIMITY_THRESHOLD = 2.0
-
-/** Collision threshold (robot centers, in world coords) */
 const COLLISION_THRESHOLD = 0.8
 
-/** Robot waypoint paths (matching backend store.py) — organic smooth loops */
 const ROBOT_PATHS: Record<string, Array<{ x: number; y: number }>> = {
   C3: [{ x: 3, y: 1.5 }, { x: 7, y: 1.5 }, { x: 7.5, y: 3 }, { x: 6, y: 5.5 }, { x: 3.5, y: 5.5 }, { x: 2.5, y: 3.5 }],
   W2: [{ x: 6.5, y: 2 }, { x: 7.5, y: 4 }, { x: 5, y: 5.5 }, { x: 3.5, y: 4 }, { x: 5, y: 2 }],
   Q1: [{ x: 4, y: 3 }, { x: 5.5, y: 3 }, { x: 6, y: 4.5 }, { x: 5, y: 5 }, { x: 4, y: 5 }, { x: 3.5, y: 4.5 }],
 }
 
-/** Robot identity colors (each robot has a unique base hue) */
-const ROBOT_COLORS: Record<string, string> = {
-  C3: '#3b82f6',
-  W2: '#f59e0b',
-  Q1: '#8b5cf6',
-}
-
-/** Map status → color, using robot identity base for normal states */
-function robotColor(robotId: string, status: string): string {
-  const base = ROBOT_COLORS[robotId] ?? '#6b7280'
+function robotColor(robotId: string, status: string, customColors?: Record<string, string>): string {
+  const base = (customColors && customColors[robotId]) ?? '#6b7280'
   switch (status) {
     case 'moving':
     case 'active':
@@ -67,27 +56,16 @@ function robotColor(robotId: string, status: string): string {
   }
 }
 
-/**
- * Compute a blink alpha multiplier based on status and time.
- * - active/moving: slow pulse (green)
- * - idle: solid (no blink)
- * - error/critical: fast pulse (red)
- * - warning/maintenance: medium pulse (orange)
- * - offline: dimmed static
- */
 function blinkAlpha(status: string, timeMs: number): number {
   switch (status) {
     case 'moving':
     case 'active':
-      // Slow pulse ~1s period, prominent (0.4→1.0)
       return 0.4 + 0.6 * Math.sin(timeMs / 500)
     case 'error':
     case 'critical':
-      // Fast pulse ~0.3s period, sharp (0.3→1.0)
       return 0.3 + 0.7 * Math.sin(timeMs / 150)
     case 'maintenance':
     case 'warning':
-      // Medium pulse ~0.6s period (0.4→1.0)
       return 0.4 + 0.6 * Math.sin(timeMs / 300)
     case 'offline':
       return 0.4
@@ -97,7 +75,6 @@ function blinkAlpha(status: string, timeMs: number): number {
   }
 }
 
-/** Draw robot as circular disk + direction arrow blinking in robot's color */
 function renderRobotShape(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -114,7 +91,6 @@ function renderRobotShape(
   ctx.globalAlpha = alpha
   ctx.translate(x, y)
 
-  // Collision glow ring (two levels)
   if (glowLevel === 'critical') {
     ctx.beginPath()
     ctx.arc(0, 0, radius * 2.2, 0, Math.PI * 2)
@@ -133,7 +109,6 @@ function renderRobotShape(
     ctx.setLineDash([])
   }
 
-  // Circular disk with subtle gradient
   const grad = ctx.createRadialGradient(-2, -2, 0, 0, 0, radius)
   grad.addColorStop(0, '#ffffff')
   grad.addColorStop(0.3, color)
@@ -146,7 +121,6 @@ function renderRobotShape(
   ctx.lineWidth = 1
   ctx.stroke()
 
-  // Direction arrow — same color as robot, blinks with it
   ctx.save()
   ctx.rotate(theta)
   ctx.beginPath()
@@ -158,7 +132,6 @@ function renderRobotShape(
   ctx.fill()
   ctx.restore()
 
-  // Center dot
   ctx.beginPath()
   ctx.arc(0, 0, 2, 0, Math.PI * 2)
   ctx.fillStyle = '#ffffff'
@@ -167,7 +140,6 @@ function renderRobotShape(
   ctx.restore()
 }
 
-/** Draw a radar beacon pulse — expanding concentric rings */
 function renderBeacon(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -176,12 +148,12 @@ function renderBeacon(
   timeMs: number,
 ) {
   const numRings = 3
-  const period = 1500 // ms for full cycle
+  const period = 1500
   const maxRadius = 22
 
   for (let i = 0; i < numRings; i++) {
     const phase = (i / numRings) * period
-    const t = ((timeMs + phase) % period) / period // 0 → 1
+    const t = ((timeMs + phase) % period) / period
     const radius = t * maxRadius
     const opacity = 0.4 * (1 - t)
 
@@ -195,7 +167,6 @@ function renderBeacon(
   ctx.globalAlpha = 1
 }
 
-/** Draw a dotted trail of recent positions */
 function renderTrail(
   ctx: CanvasRenderingContext2D,
   trail: Array<{ x: number; y: number }>,
@@ -207,7 +178,7 @@ function renderTrail(
   if (trail.length < 2) return
 
   for (let i = 1; i < trail.length; i++) {
-    const t = i / maxTrail // 0→1
+    const t = i / maxTrail
     const alpha = 0.2 + 0.8 * t
     const cx = sxFn(trail[i].x)
     const cy = syFn(trail[i].y)
@@ -221,10 +192,6 @@ function renderTrail(
   ctx.globalAlpha = 1
 }
 
-/**
- * Quadratic B-spline through points. Stays strictly within the convex hull
- * of the control points (no overshoot). Returns a smooth closed path.
- */
 function bsplineClosedPath(points: Array<{ x: number; y: number }>, samples = 12): Array<{ x: number; y: number }> {
   const n = points.length
   if (n < 3) return [...points]
@@ -248,7 +215,6 @@ function bsplineClosedPath(points: Array<{ x: number; y: number }>, samples = 12
   return result
 }
 
-/** Draw a smooth dotted trajectory showing the future path through waypoints */
 function renderTrajectoryAhead(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -261,7 +227,6 @@ function renderTrajectoryAhead(
   const path = ROBOT_PATHS[robotId]
   if (!path || path.length < 2) return
 
-  // Find nearest waypoint ahead
   let minDist = Infinity
   let nearestIdx = 0
   for (let i = 0; i < path.length; i++) {
@@ -272,17 +237,14 @@ function renderTrajectoryAhead(
     }
   }
 
-  // Build ordered list from nearest waypoint forward (wrap around)
   const ahead: Array<{ x: number; y: number }> = [{ x, y }]
   for (let offset = 0; offset <= path.length; offset++) {
     const idx = (nearestIdx + offset) % path.length
     ahead.push(path[idx])
   }
 
-  // Generate smooth curve through the ahead points (B-spline stays within convex hull)
   const smooth = bsplineClosedPath(ahead, 10)
 
-  // Clamp all trajectory points to the safe zone (gray box limits)
   for (const p of smooth) {
     p.x = Math.max(0.5, Math.min(9.5, p.x))
     p.y = Math.max(0.5, Math.min(9.0, p.y))
@@ -306,7 +268,6 @@ function renderTrajectoryAhead(
   ctx.restore()
 }
 
-/** Draw robot label with subtle background box */
 function renderLabel(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -322,13 +283,11 @@ function renderLabel(
   const bx = x - tw / 2 - 4
   const by = y - 24
 
-  // Background box
   ctx.fillStyle = 'rgba(11, 17, 33, 0.75)'
   ctx.beginPath()
   ctx.roundRect(bx, by, tw + 8, th + 4, 3)
   ctx.fill()
 
-  // Border color matches robot identity
   const borderColor = robotColor(robotId, status)
   ctx.strokeStyle = borderColor
   ctx.lineWidth = 1
@@ -338,7 +297,6 @@ function renderLabel(
   ctx.stroke()
   ctx.globalAlpha = 1
 
-  // Text
   ctx.fillStyle = '#e2e8f0'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
@@ -357,16 +315,33 @@ export default function DigitalTwinMap({
   const interpRef = useRef<InterpRobot[]>([])
   const targetRef = useRef<InterpRobot[]>([])
 
-  /** Trail storage: robot_id → array of {x, y} positions */
   const trailsRef = useRef<Record<string, Array<{ x: number; y: number }>>>({})
 
   const [selectedRobot, setSelectedRobot] = useState<InterpRobot | null>(null)
   const [popupPos, setPopupPos] = useState({ x: 0, y: 0 })
+  const [showSettings, setShowSettings] = useState(false)
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
+  const [fullscreen, setFullscreen] = useState(false)
+  const [currentTime, setCurrentTime] = useState('')
+
+  const [timeline, setTimeline] = useState<{
+    history: InterpRobot[][]
+    currentIndex: number
+    playing: boolean
+    speed: number
+  }>({ history: [], currentIndex: -1, playing: false, speed: 1 })
+
+  const { settings } = useMapSettings()
 
   const sx = useCallback((v: number) => (v / 10) * FACTORY_W, [])
   const sy = useCallback((v: number) => (v / 10) * FACTORY_H, [])
 
-  // Sync target robots from props
+  const renderTimelineRef = useRef<{ history: InterpRobot[][]; currentIndex: number }>({ history: [], currentIndex: -1 })
+
+  useEffect(() => {
+    renderTimelineRef.current = { history: timeline.history, currentIndex: timeline.currentIndex }
+  }, [timeline.history, timeline.currentIndex])
+
   useEffect(() => {
     targetRef.current = robots.map((r) => ({
       robot_id: r.robot_id,
@@ -380,83 +355,133 @@ export default function DigitalTwinMap({
     }))
   }, [robots])
 
-  // Render loop
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
+    const interval = setInterval(() => {
+      const snapshot = interpRef.current.map((r) => ({ ...r }))
+      setTimeline((prev) => {
+        const history = [...prev.history, snapshot]
+        if (history.length > 30) history.splice(0, history.length - 30)
+        return { ...prev, history }
+      })
+    }, 2000)
+    return () => clearInterval(interval)
+  }, [])
 
+  useEffect(() => {
+    if (!timeline.playing || timeline.currentIndex < 0 || timeline.history.length === 0) return
+
+    const interval = setInterval(() => {
+      setTimeline((prev) => {
+        if (!prev.playing) return prev
+        if (prev.currentIndex >= prev.history.length - 1) {
+          return { ...prev, playing: false, currentIndex: -1 }
+        }
+        return { ...prev, currentIndex: prev.currentIndex + 1 }
+      })
+    }, 2000 / timeline.speed)
+
+    return () => clearInterval(interval)
+  }, [timeline.playing, timeline.currentIndex, timeline.speed])
+
+  useEffect(() => {
+    if (!fullscreen) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setFullscreen(false)
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [fullscreen])
+
+  useEffect(() => {
+    if (!fullscreen) {
+      setCurrentTime('')
+      return
+    }
+    const update = () => setCurrentTime(new Date().toLocaleTimeString())
+    update()
+    const interval = setInterval(update, 1000)
+    return () => clearInterval(interval)
+  }, [fullscreen])
+
+  useEffect(() => {
     const LERP_FACTOR = 0.08
 
     const render = () => {
+      const canvas = canvasRef.current
+      const ctx = canvas?.getContext('2d')
+      if (!canvas || !ctx) {
+        rafRef.current = requestAnimationFrame(render)
+        return
+      }
       const w = canvas.width
       const h = canvas.height
       const now = Date.now()
 
-      // Interpolate positions
-      const interp = interpRef.current
-      const target = targetRef.current
+      const tl = renderTimelineRef.current
+      const isReplay = tl.currentIndex >= 0 && tl.history.length > 0
 
-      for (const t of target) {
-        let existing = interp.find((i) => i.robot_id === t.robot_id)
-        if (existing) {
-          existing.x += (t.x - existing.x) * LERP_FACTOR
-          existing.y += (t.y - existing.y) * LERP_FACTOR
-          existing.theta += (t.theta - existing.theta) * LERP_FACTOR
-          existing.status = t.status
-          existing.current_task = t.current_task
-          existing.uptime_pct = t.uptime_pct
-        } else {
-          interp.push({ ...t })
+      let interp: InterpRobot[]
+
+      if (isReplay) {
+        interp = tl.history[tl.currentIndex] || []
+      } else {
+        interp = interpRef.current
+        const target = targetRef.current
+
+        for (const t of target) {
+          let existing = interp.find((i) => i.robot_id === t.robot_id)
+          if (existing) {
+            existing.x += (t.x - existing.x) * LERP_FACTOR
+            existing.y += (t.y - existing.y) * LERP_FACTOR
+            existing.theta += (t.theta - existing.theta) * LERP_FACTOR
+            existing.status = t.status
+            existing.current_task = t.current_task
+            existing.uptime_pct = t.uptime_pct
+          } else {
+            interp.push({ ...t })
+          }
         }
-      }
 
-      // Clamp positions to safe zone (gray box: x 0.5-9.5, y 0.5-9.0)
-      const CLAMP_MIN = 0.5
-      const CLAMP_MAX_Y = 9.0
-      const CLAMP_MAX_X = 9.5
-      for (const r of interp) {
-        r.x = Math.max(CLAMP_MIN, Math.min(CLAMP_MAX_X, r.x))
-        r.y = Math.max(CLAMP_MIN, Math.min(CLAMP_MAX_Y, r.y))
-      }
-
-      // Remove robots no longer in target
-      const targetIds = new Set(target.map((t) => t.robot_id))
-      for (let i = interp.length - 1; i >= 0; i--) {
-        if (!targetIds.has(interp[i].robot_id)) {
-          interp.splice(i, 1)
+        const CLAMP_MIN = 0.5
+        const CLAMP_MAX_Y = 9.0
+        const CLAMP_MAX_X = 9.5
+        for (const r of interp) {
+          r.x = Math.max(CLAMP_MIN, Math.min(CLAMP_MAX_X, r.x))
+          r.y = Math.max(CLAMP_MIN, Math.min(CLAMP_MAX_Y, r.y))
         }
-      }
 
-      // Update trails — append interpolated position for each robot
-      const trails = trailsRef.current
-      for (const r of interp) {
-        if (!trails[r.robot_id]) {
-          trails[r.robot_id] = []
+        const targetIds = new Set(target.map((t) => t.robot_id))
+        for (let i = interp.length - 1; i >= 0; i--) {
+          if (!targetIds.has(interp[i].robot_id)) {
+            interp.splice(i, 1)
+          }
         }
-        const trail = trails[r.robot_id]
-        // Only add if position changed significantly to avoid dense clusters
-        const last = trail[trail.length - 1]
-        if (
-          !last ||
-          Math.abs(r.x - last.x) > 0.02 ||
-          Math.abs(r.y - last.y) > 0.02
-        ) {
-          trail.push({ x: r.x, y: r.y })
-          if (trail.length > MAX_TRAIL) {
-            trail.splice(0, trail.length - MAX_TRAIL)
+
+        const trails = trailsRef.current
+        for (const r of interp) {
+          if (!trails[r.robot_id]) {
+            trails[r.robot_id] = []
+          }
+          const trail = trails[r.robot_id]
+          const last = trail[trail.length - 1]
+          if (
+            !last ||
+            Math.abs(r.x - last.x) > 0.02 ||
+            Math.abs(r.y - last.y) > 0.02
+          ) {
+            trail.push({ x: r.x, y: r.y })
+            if (trail.length > MAX_TRAIL) {
+              trail.splice(0, trail.length - MAX_TRAIL)
+            }
+          }
+        }
+        for (const rid of Object.keys(trails)) {
+          if (!targetIds.has(rid)) {
+            delete trails[rid]
           }
         }
       }
-      // Clean up trails for robots no longer present
-      for (const rid of Object.keys(trails)) {
-        if (!targetIds.has(rid)) {
-          delete trails[rid]
-        }
-      }
 
-      // Detect collisions (two levels: warning at distance, critical at close)
       const warningPairs = new Set<string>()
       const closePairs = new Set<string>()
       for (let i = 0; i < interp.length; i++) {
@@ -475,92 +500,104 @@ export default function DigitalTwinMap({
         }
       }
 
-      // Draw everything
       ctx.clearRect(0, 0, w, h)
 
-      // Outer margin area (outside safe zone) — darker
       ctx.fillStyle = '#0b1121'
       ctx.beginPath()
       ctx.roundRect(0, 0, w, h, 8)
       ctx.fill()
 
-      // Safe operating zone fill — lighter gray
       ctx.fillStyle = '#1a2a40'
       ctx.beginPath()
       ctx.roundRect(sx(0.5), sy(0.5), sx(9), sy(8.5), 4)
       ctx.fill()
 
-      // Safe zone border (subtle inner glow)
       ctx.strokeStyle = 'rgba(59,130,246,0.08)'
       ctx.lineWidth = 1.5
       ctx.beginPath()
       ctx.roundRect(sx(0.5), sy(0.5), sx(9), sy(8.5), 4)
       ctx.stroke()
 
-      // Grid lines
-      ctx.strokeStyle = '#334155'
-      ctx.lineWidth = 1
-      ctx.setLineDash([8, 4])
-      ctx.beginPath()
-      for (let i = 1; i < 3; i++) {
-        const x = (w / 3) * i
-        ctx.moveTo(x, 0)
-        ctx.lineTo(x, h)
-      }
-      ctx.stroke()
-      ctx.setLineDash([])
-
-      // Zone labels
-      ctx.fillStyle = '#475569'
-      ctx.font = '11px sans-serif'
-      ctx.textAlign = 'center'
-      const zones = ['Assembly A', 'Welding Bay', 'Inspection']
-      for (let i = 0; i < 3; i++) {
-        ctx.fillText(zones[i], (w / 6) + (w / 3) * i, h - 8)
+      if (settings.showGridLines) {
+        ctx.strokeStyle = '#334155'
+        ctx.lineWidth = 1
+        ctx.setLineDash([8, 4])
+        ctx.beginPath()
+        for (let i = 1; i < 3; i++) {
+          const x = (w / 3) * i
+          ctx.moveTo(x, 0)
+          ctx.lineTo(x, h)
+        }
+        ctx.stroke()
+        ctx.setLineDash([])
       }
 
-      // Operating zone boundary (robots clamped to 1.5-8.0, boundary at 0.5-9.0 bottom)
+      if (settings.showZoneLabels) {
+        ctx.fillStyle = '#475569'
+        ctx.font = '11px sans-serif'
+        ctx.textAlign = 'center'
+        const zones = ['Assembly A', 'Welding Bay', 'Inspection']
+        for (let i = 0; i < 3; i++) {
+          ctx.fillText(zones[i], (w / 6) + (w / 3) * i, h - 8)
+        }
+      }
+
       ctx.strokeStyle = 'rgba(59,130,246,0.15)'
       ctx.lineWidth = 1.5
       ctx.setLineDash([4, 6])
       ctx.strokeRect(sx(0.5), sy(0.5), sx(9), sy(8.5))
       ctx.setLineDash([])
 
-      // Draw trails first (behind robots)
-      for (const r of interp) {
-        const trail = trails[r.robot_id]
-        if (trail && trail.length >= 2) {
-          const color = robotColor(r.robot_id, r.status)
-          renderTrail(ctx, trail, sx, sy, color, MAX_TRAIL)
+      if (settings.showTrails && !isReplay) {
+        for (const r of interp) {
+          const trail = trailsRef.current[r.robot_id]
+          if (trail && trail.length >= 2) {
+            const color = robotColor(r.robot_id, r.status)
+            renderTrail(ctx, trail, sx, sy, color, settings.trailLength > MAX_TRAIL ? settings.trailLength : MAX_TRAIL)
+          }
         }
       }
 
-      // Draw future trajectory ahead for each robot
-      for (const r of interp) {
-        const color = robotColor(r.robot_id, r.status)
-        renderTrajectoryAhead(ctx, r.x, r.y, r.robot_id, sx, sy, color)
+      if (settings.showTrajectories && !isReplay) {
+        for (const r of interp) {
+          const color = robotColor(r.robot_id, r.status, settings.robotColors)
+          renderTrajectoryAhead(ctx, r.x, r.y, r.robot_id, sx, sy, color)
+        }
       }
 
-      // Draw beacons + robots
       for (const r of interp) {
         const cx = sx(r.x)
         const cy = sy(r.y)
-        const color = robotColor(r.robot_id, r.status)
+        const robotVis = settings.robotVisibility[r.robot_id]
+        if (robotVis === false) continue
+
+        const color = robotColor(r.robot_id, r.status, settings.robotColors)
         const glowLevel = closePairs.has(r.robot_id) ? 'critical' : warningPairs.has(r.robot_id) ? 'warning' : 'none'
 
-        // Beacon pulse for active/moving robots
-        if (r.status === 'moving' || r.status === 'active') {
+        if (settings.showBeacons && (r.status === 'moving' || r.status === 'active')) {
           renderBeacon(ctx, cx, cy, color, now)
         }
 
-        // Blink alpha
         const alpha = blinkAlpha(r.status, now)
 
-        // Render robot shape (disk + arrow in identity color)
-        renderRobotShape(ctx, cx, cy, r.theta, r.robot_id, r.status, alpha, glowLevel)
+        if (settings.showGlowRings) {
+          renderRobotShape(ctx, cx, cy, r.theta, r.robot_id, r.status, alpha, glowLevel)
+        } else {
+          renderRobotShape(ctx, cx, cy, r.theta, r.robot_id, r.status, alpha, 'none')
+        }
 
-        // Robot ID label with background box
-        renderLabel(ctx, cx, cy, r.robot_id, r.status)
+        if (settings.showLabels) {
+          renderLabel(ctx, cx, cy, r.robot_id, r.status)
+        }
+      }
+
+      if (isReplay) {
+        ctx.save()
+        ctx.fillStyle = '#eab308'
+        ctx.font = 'bold 14px sans-serif'
+        ctx.textAlign = 'left'
+        ctx.fillText('REPLAY', 8, 20)
+        ctx.restore()
       }
 
       rafRef.current = requestAnimationFrame(render)
@@ -584,7 +621,9 @@ export default function DigitalTwinMap({
       const my = ((e.clientY - rect.top) / rect.height) * canvas.height
 
       let found: InterpRobot | null = null
-      for (const r of interpRef.current) {
+      const tl = renderTimelineRef.current
+      const robotData = tl.currentIndex >= 0 && tl.history[tl.currentIndex] ? tl.history[tl.currentIndex] : interpRef.current
+      for (const r of robotData) {
         const cx = sx(r.x)
         const cy = sy(r.y)
         const dx = mx - cx
@@ -604,6 +643,42 @@ export default function DigitalTwinMap({
     },
     [sx, sy],
   )
+
+  const handleCanvasContextMenu = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      e.preventDefault()
+      setContextMenu({ x: e.clientX, y: e.clientY })
+    },
+    [],
+  )
+
+  const handleOpenSettings = useCallback(() => {
+    setContextMenu(null)
+    setShowSettings(true)
+  }, [])
+
+  const handleTimelinePlay = useCallback(() => {
+    setTimeline((prev) => {
+      if (prev.playing) return { ...prev, playing: false }
+      if (prev.currentIndex === -1 && prev.history.length > 0) {
+        return { ...prev, playing: true, currentIndex: 0 }
+      }
+      return { ...prev, playing: true }
+    })
+  }, [])
+
+  const handleTimelineSpeed = useCallback((speed: number) => {
+    setTimeline((prev) => ({ ...prev, speed }))
+  }, [])
+
+  const handleTimelineSlider = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const idx = Number(e.target.value)
+    setTimeline((prev) => {
+      const max = Math.max(0, prev.history.length - 1)
+      if (idx >= max) return { ...prev, currentIndex: -1, playing: false }
+      return { ...prev, currentIndex: idx, playing: false }
+    })
+  }, [])
 
   if (error) {
     return (
@@ -627,23 +702,84 @@ export default function DigitalTwinMap({
     )
   }
 
-  return (
-    <div className="digital-twin" style={{ position: 'relative' }}>
-      <h3>Factory Floor</h3>
-      <canvas
-        ref={canvasRef}
-        width={FACTORY_W}
-        height={FACTORY_H}
-        onClick={handleCanvasClick}
-        style={{
-          width: '100%',
-          height: '100%',
-          borderRadius: '0.5rem',
-          cursor: 'pointer',
-          display: 'block',
-          objectFit: 'contain',
-        }}
+  const settingsButtonStyle: React.CSSProperties = {
+    background: 'transparent',
+    border: '1px solid var(--surface2, #1e2d4a)',
+    color: 'var(--text2, #7e93b4)',
+    padding: '0.15rem 0.4rem',
+    borderRadius: '0.25rem',
+    fontSize: '0.65rem',
+    cursor: 'pointer',
+    marginLeft: 'auto',
+    lineHeight: 1,
+  }
+
+  const sliderMax = Math.max(0, timeline.history.length - 1)
+  const sliderValue = timeline.currentIndex === -1 ? sliderMax : timeline.currentIndex
+
+  const timelineBar = (
+    <div className="timeline-bar">
+      <button
+        className={`timeline-btn ${timeline.playing ? 'active' : ''}`}
+        onClick={handleTimelinePlay}
+        title={timeline.playing ? 'Pause' : 'Play'}
+      >
+        {timeline.playing ? '||' : 'Play'}
+      </button>
+      {[1, 2, 5, 10].map((speed) => (
+        <button
+          key={speed}
+          className={`timeline-btn ${timeline.speed === speed ? 'active' : ''}`}
+          onClick={() => handleTimelineSpeed(speed)}
+        >
+          {speed}x
+        </button>
+      ))}
+      <input
+        type="range"
+        className="timeline-slider"
+        min={0}
+        max={sliderMax}
+        value={sliderValue}
+        onChange={handleTimelineSlider}
       />
+      <span className="timeline-label">
+        {timeline.currentIndex === -1 ? 'LIVE' : `HIST ${timeline.currentIndex + 1}/${timeline.history.length}`}
+      </span>
+    </div>
+  )
+
+  const canvasElement = (
+    <canvas
+      ref={canvasRef}
+      width={FACTORY_W}
+      height={FACTORY_H}
+      onClick={handleCanvasClick}
+      onContextMenu={handleCanvasContextMenu}
+      style={{
+        width: '100%',
+        height: '100%',
+        borderRadius: '0.5rem',
+        cursor: 'pointer',
+        display: 'block',
+        objectFit: 'contain',
+      }}
+    />
+  )
+
+  const overlays = (
+    <>
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onOpenSettings={handleOpenSettings}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
+      {showSettings && (
+        <MapSettingsPanel onClose={() => setShowSettings(false)} />
+      )}
       {selectedRobot && (
         <div
           className="robot-popup"
@@ -714,6 +850,54 @@ export default function DigitalTwinMap({
           </div>
         </div>
       )}
+    </>
+  )
+
+  if (fullscreen) {
+    return createPortal(
+      <div className="fullscreen-map-overlay">
+        <div className="fullscreen-map-header">
+          <h3>Factory Floor</h3>
+          <div className="fullscreen-map-hud">
+            <span>{currentTime}</span>
+            <span>{robots.length} active</span>
+          </div>
+          <button
+            style={{ ...settingsButtonStyle, marginLeft: 0 }}
+            onClick={() => setFullscreen(false)}
+            title="Close Fullscreen"
+          >
+            ✕ Close
+          </button>
+        </div>
+        <div className="fullscreen-map-canvas">
+          {canvasElement}
+        </div>
+        {timelineBar}
+        {overlays}
+      </div>,
+      document.body,
+    )
+  }
+
+  return (
+    <div className="digital-twin" style={{ position: 'relative' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+        <h3 style={{ marginBottom: 0 }}>Factory Floor</h3>
+        <button style={settingsButtonStyle} onClick={() => setShowSettings(true)} title="Map Settings">
+          ⚙ Settings
+        </button>
+        <button
+          style={{ ...settingsButtonStyle, marginLeft: undefined }}
+          onClick={() => setFullscreen(true)}
+          title="Fullscreen Map"
+        >
+          ⛶ Fullscreen
+        </button>
+      </div>
+      {canvasElement}
+      {timelineBar}
+      {overlays}
     </div>
   )
 }
