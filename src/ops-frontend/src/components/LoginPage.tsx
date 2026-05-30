@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import { useI18n } from '../contexts/I18nContext'
 
 interface LoginPageProps {
   onLogin: (role: string) => void
 }
 
 export default function LoginPage({ onLogin }: LoginPageProps) {
+  const { t } = useI18n()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [role, setRole] = useState('admin')
@@ -15,7 +17,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
     e.preventDefault()
     setError('')
     if (!username || !password) {
-      setError('Enter credentials')
+      setError(t('login.error.credentials'))
       return
     }
     setLoading(true)
@@ -26,7 +28,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
         body: JSON.stringify({ username, password }),
       })
       if (!resp.ok) {
-        setError('Invalid credentials')
+        setError(t('login.error.invalid'))
         return
       }
       const data = await resp.json()
@@ -34,7 +36,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
       localStorage.setItem('sf_role', role)
       onLogin(role)
     } catch {
-      setError('Connection error')
+      setError(t('login.error.connection'))
     } finally {
       setLoading(false)
     }
@@ -61,11 +63,11 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
             <line x1="34" y1="24" x2="44" y2="24" stroke="#3b82f6" strokeWidth="2" />
           </svg>
         </div>
-        <h1 className="login-title">Smart Factory</h1>
-        <p className="login-sub">Industrial Humanoid Robotics IIoT</p>
+        <h1 className="login-title">{t('login.title')}</h1>
+        <p className="login-sub">{t('login.subtitle')}</p>
         {error && <div className="login-error">{error}</div>}
         <div className="login-field">
-          <label>Username</label>
+          <label>{t('login.username')}</label>
           <input
             value={username}
             onChange={(e) => setUsername(e.target.value)}
@@ -74,7 +76,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
           />
         </div>
         <div className="login-field">
-          <label>Password</label>
+          <label>{t('login.password')}</label>
           <input
             type="password"
             value={password}
@@ -84,20 +86,20 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
           />
         </div>
         <div className="login-field">
-          <label>Role</label>
+          <label>{t('login.role')}</label>
           <select
             className="login-select"
             value={role}
             onChange={(e) => setRole(e.target.value)}
             disabled={loading}
           >
-            <option value="admin">Admin</option>
-            <option value="operator">Operator</option>
-            <option value="viewer">Viewer</option>
+            <option value="admin">{t('login.admin')}</option>
+            <option value="operator">{t('login.operator')}</option>
+            <option value="viewer">{t('login.viewer')}</option>
           </select>
         </div>
         <button className="login-btn" type="submit" disabled={loading}>
-          {loading ? 'Authenticating...' : 'Enter Control Room'}
+          {loading ? t('login.loading') : t('login.signIn')}
         </button>
       </form>
     </div>

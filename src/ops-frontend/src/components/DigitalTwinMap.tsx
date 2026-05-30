@@ -378,6 +378,100 @@ export default function DigitalTwinMap({
 
   const { settings } = useMapSettings()
 
+  /* ===== Time-Machine Mode (Feature 26) ===== */
+  const historicalCanvasRef = useRef<HTMLCanvasElement>(null)
+  const historicalRef = useRef<InterpRobot[]>([])
+  const [historicalEnabled, setHistoricalEnabled] = useState(false)
+  const [historicalTimestamp, setHistoricalTimestamp] = useState('')
+  const historicalEnabledRef = useRef(false)
+  const bookmarkRef = useRef<Array<{ timestamp: string; robots: InterpRobot[] }>>([])
+
+  useEffect(() => {
+    historicalEnabledRef.current = historicalEnabled
+  }, [historicalEnabled])
+
+  /* Seeded PRNG for deterministic dummy data from a timestamp string */
+  function seededRandom(seed: string) {
+    let hash = 0
+    for (let i = 0; i < seed.length; i++) {
+      hash = ((hash << 5) - hash) + seed.charCodeAt(i)
+      hash = hash & hash
+    }
+    let state = Math.abs(hash) || 1
+    return () => {
+      state = (state * 16807) % 2147483647
+      return state / 2147483647
+    }
+  }
+
+  const generateHistoricalSnapshot = useCallback((timestamp: string) => {
+    const liveData = interpRef.current
+    if (liveData.length === 0) return
+    const rng = seededRandom(timestamp)
+    const hist: InterpRobot[] = liveData.map((r) => ({
+      ...r,
+      x: Math.max(0.5, Math.min(9.5, r.x + (rng() - 0.5) * 1.8)),
+      y: Math.max(0.5, Math.min(9.0, r.y + (rng() - 0.5) * 1.8)),
+      theta: r.theta + (rng() - 0.5) * 0.8,
+      uptime_pct: Math.max(0, Math.min(100, r.uptime_pct + (rng() - 0.5) * 12)),
+      status: rng() > 0.7 ? (rng() > 0.5 ? 'idle' : 'error') : r.status,
+    }))
+    historicalRef.current = hist
+  }, [])
+
+  /* Dispatch diff event for KPI board */
+  const dispatchDiffEvent = useCallback(() => {
+    const live = interpRef.current
+    const hist = historicalRef.current
+    if (hist.length === 0) return
+
+    const liveActive = live.filter((r) => r.status === 'active' || r.status === 'moving').length
+    const histActive = hist.filter((r) => r.status === 'active' || r.status === 'moving').length
+    const robotDiff = liveActive - histActive
+
+    const liveErrors = live.filter((r) => r.status === 'error' || r.status === 'critical').length
+    const histErrors = hist.filter((r) => r.status === 'error' || r.status === 'critical').length
+
+    const liveUptime = live.length > 0 ? live.reduce((s, r) => s + r.uptime_pct, 0) / live.length : 0
+    const histUptime = hist.length > 0 ? hist.reduce((s, r) => s + r.uptime_pct, 0) / hist.length : 0
+    const uptimeDiff = liveUptime - histUptime
+
+    /* Dummy throughput/defect diffs based on robot count */
+    const baseThroughput = live.length * 250
+    const histThroughput = hist.length * 250
+    const throughputDiff = baseThroughput - histThroughput
+
+    const baseDefect = live.length > 0 ? (liveErrors / live.length) * 5 : 2
+    const histDefect = hist.length > 0 ? (histErrors / hist.length) * 5 : 2
+    const defectDiff = baseDefect - histDefect
+
+    const detail: Record<string, { value: number; direction: 'up' | 'down' }> = {
+      'Throughput': { value: Math.abs(throughputDiff), direction: throughputDiff >= 0 ? 'up' : 'down' },
+      'Defect Rate': { value: Math.abs(Math.round(defectDiff * 10) / 10), direction: defectDiff <= 0 ? 'up' : 'down' },
+      'Robot Uptime': { value: Math.abs(Math.round(uptimeDiff * 10) / 10), direction: uptimeDiff >= 0 ? 'up' : 'down' },
+      'Active Robots': { value: Math.abs(robotDiff), direction: robotDiff >= 0 ? 'up' : 'down' },
+    }
+    window.dispatchEvent(new CustomEvent('time-machine-diff', { detail }))
+  }, [])
+
+  /* Generate historical data when timestamp or compare toggle changes */
+  useEffect(() => {
+    if (!historicalEnabled || !historicalTimestamp) {
+      if (!historicalEnabled) {
+        window.dispatchEvent(new CustomEvent('time-machine-diff', { detail: {} }))
+      }
+      return
+    }
+    generateHistoricalSnapshot(historicalTimestamp)
+  }, [historicalEnabled, historicalTimestamp, generateHistoricalSnapshot])
+
+  /* Dispatch diffs after historical data is ready */
+  useEffect(() => {
+    if (historicalEnabled && historicalRef.current.length > 0) {
+      dispatchDiffEvent()
+    }
+  }, [historicalEnabled, historicalTimestamp, dispatchDiffEvent])
+
   const sx = useCallback((v: number) => (v / 10) * FACTORY_W, [])
   const sy = useCallback((v: number) => (v / 10) * FACTORY_H, [])
 
@@ -720,6 +814,97 @@ export default function DigitalTwinMap({
         ctx.restore()
       }
 
+      /* ---- Time-machine historical canvas ---- */
+      const hCanvas = historicalCanvasRef.current
+      const hCtx = hCanvas?.getContext('2d')
+      if (hCanvas && hCtx && historicalEnabledRef.current) {
+        const hw = hCanvas.width
+        const hh = hCanvas.height
+        const histData = historicalRef.current
+
+        hCtx.clearRect(0, 0, hw, hh)
+
+        /* Background */
+        hCtx.fillStyle = '#0b1121'
+        hCtx.beginPath()
+        hCtx.roundRect(0, 0, hw, hh, 8)
+        hCtx.fill()
+
+        hCtx.fillStyle = '#1a2a40'
+        hCtx.beginPath()
+        hCtx.roundRect(sx(0.5), sy(0.5), sx(9), sy(8.5), 4)
+        hCtx.fill()
+
+        hCtx.strokeStyle = 'rgba(59,130,246,0.08)'
+        hCtx.lineWidth = 1.5
+        hCtx.beginPath()
+        hCtx.roundRect(sx(0.5), sy(0.5), sx(9), sy(8.5), 4)
+        hCtx.stroke()
+
+        /* Grid lines */
+        if (settings.showGridLines) {
+          hCtx.strokeStyle = '#334155'
+          hCtx.lineWidth = 1
+          hCtx.setLineDash([8, 4])
+          hCtx.beginPath()
+          for (let i = 1; i < 3; i++) {
+            const x = (hw / 3) * i
+            hCtx.moveTo(x, 0)
+            hCtx.lineTo(x, hh)
+          }
+          hCtx.stroke()
+          hCtx.setLineDash([])
+        }
+
+        /* Zone labels */
+        if (settings.showZoneLabels) {
+          hCtx.fillStyle = '#475569'
+          hCtx.font = '11px sans-serif'
+          hCtx.textAlign = 'center'
+          const zones = ['Assembly A', 'Welding Bay', 'Inspection']
+          for (let i = 0; i < 3; i++) {
+            hCtx.fillText(zones[i], (hw / 6) + (hw / 3) * i, hh - 8)
+          }
+        }
+
+        /* Border */
+        hCtx.strokeStyle = 'rgba(59,130,246,0.15)'
+        hCtx.lineWidth = 1.5
+        hCtx.setLineDash([4, 6])
+        hCtx.strokeRect(sx(0.5), sy(0.5), sx(9), sy(8.5))
+        hCtx.setLineDash([])
+
+        /* Render historical robots */
+        for (const r of histData) {
+          const cx = sx(r.x)
+          const cy = sy(r.y)
+          const robotVis = settings.robotVisibility[r.robot_id]
+          if (robotVis === false) continue
+
+          const color = robotColor(r.robot_id, r.status, settings.robotColors)
+
+          if (settings.showBeacons && (r.status === 'moving' || r.status === 'active')) {
+            renderBeacon(hCtx, cx, cy, color, now)
+          }
+
+          const alpha = blinkAlpha(r.status, now)
+
+          if (settings.showGlowRings) {
+            renderRobotShape(hCtx, cx, cy, r.theta, r.robot_id, r.status, alpha, 'none')
+          } else {
+            renderRobotShape(hCtx, cx, cy, r.theta, r.robot_id, r.status, alpha, 'none')
+          }
+
+          if (settings.showLabels) {
+            renderLabel(hCtx, cx, cy, r.robot_id, r.status)
+          }
+
+          if (highlightedRef.current === r.robot_id) {
+            renderSelectionRing(hCtx, cx, cy, now)
+          }
+        }
+      }
+
       rafRef.current = requestAnimationFrame(render)
     }
 
@@ -800,6 +985,42 @@ export default function DigitalTwinMap({
     })
   }, [])
 
+  const handleHistoricalDateChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value
+    setHistoricalTimestamp(val)
+    if (val) {
+      generateHistoricalSnapshot(val)
+      /* After generating, dispatch diffs on next tick so ref is settled */
+      setTimeout(() => dispatchDiffEvent(), 0)
+    }
+  }, [generateHistoricalSnapshot, dispatchDiffEvent])
+
+  const handleBookmark = useCallback(() => {
+    const snapshot = interpRef.current.map((r) => ({ ...r }))
+    const ts = new Date().toISOString().slice(0, 19)
+    bookmarkRef.current.push({ timestamp: ts, robots: snapshot })
+    if (bookmarkRef.current.length > 20) {
+      bookmarkRef.current.splice(0, bookmarkRef.current.length - 20)
+    }
+    /* Pre-fill date picker with this timestamp and load it as historical */
+    const localTs = new Date().toISOString().slice(0, 16)
+    setHistoricalTimestamp(localTs)
+    /* Generate historical data offset from the bookmark */
+    const rng = seededRandom(ts)
+    const hist: InterpRobot[] = snapshot.map((r) => ({
+      ...r,
+      x: Math.max(0.5, Math.min(9.5, r.x + (rng() - 0.5) * 1.8)),
+      y: Math.max(0.5, Math.min(9.0, r.y + (rng() - 0.5) * 1.8)),
+      theta: r.theta + (rng() - 0.5) * 0.8,
+      uptime_pct: Math.max(0, Math.min(100, r.uptime_pct + (rng() - 0.5) * 12)),
+      status: rng() > 0.7 ? (rng() > 0.5 ? 'idle' : 'error') : r.status,
+    }))
+    historicalRef.current = hist
+    if (historicalEnabled) {
+      setTimeout(() => dispatchDiffEvent(), 0)
+    }
+  }, [historicalEnabled, dispatchDiffEvent])
+
   const handle3DRobotSelect = useCallback((robotId: string, clientX: number, clientY: number) => {
     const target = targetRef.current.find((r) => r.robot_id === robotId)
     if (target) {
@@ -874,10 +1095,102 @@ export default function DigitalTwinMap({
       <span className="timeline-label">
         {timeline.currentIndex === -1 ? 'LIVE' : `HIST ${timeline.currentIndex + 1}/${timeline.history.length}`}
       </span>
+      <span className="timeline-label" style={{ minWidth: 'auto', color: '#475569' }}>|</span>
+      <button
+        className="tm-bookmark-btn"
+        onClick={handleBookmark}
+        title="Bookmark current state as comparison point"
+      >
+        📌
+      </button>
+      <input
+        type="datetime-local"
+        className="tm-date-picker"
+        value={historicalTimestamp}
+        onChange={handleHistoricalDateChange}
+        step={1}
+      />
+      <button
+        className={`tm-toggle-btn ${historicalEnabled ? 'active' : ''}`}
+        onClick={() => {
+          setHistoricalEnabled((p) => {
+            if (!p && !historicalTimestamp) {
+              const now = new Date().toISOString().slice(0, 16)
+              setHistoricalTimestamp(now)
+              const rng = seededRandom(now)
+              const liveData = interpRef.current
+              if (liveData.length > 0) {
+                const hist: InterpRobot[] = liveData.map((r) => ({
+                  ...r,
+                  x: Math.max(0.5, Math.min(9.5, r.x + (rng() - 0.5) * 1.8)),
+                  y: Math.max(0.5, Math.min(9.0, r.y + (rng() - 0.5) * 1.8)),
+                  theta: r.theta + (rng() - 0.5) * 0.8,
+                  uptime_pct: Math.max(0, Math.min(100, r.uptime_pct + (rng() - 0.5) * 12)),
+                  status: rng() > 0.7 ? (rng() > 0.5 ? 'idle' : 'error') : r.status,
+                }))
+                historicalRef.current = hist
+                setTimeout(() => dispatchDiffEvent(), 0)
+              }
+            }
+            return !p
+          })
+        }}
+        title="Compare live vs historical"
+      >
+        {historicalEnabled ? '⛶ Live' : '⛶ Compare'}
+      </button>
     </div>
   )
 
-  const canvasElement = (
+  const formatTimestamp = (isoLocal: string) => {
+    if (!isoLocal) return ''
+    const d = new Date(isoLocal)
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  }
+
+  /* Build the label for the historical panel */
+  const histLabel = historicalTimestamp ? `HISTORICAL: ${formatTimestamp(historicalTimestamp)}` : 'HISTORICAL'
+
+  const canvasElement = historicalEnabled ? (
+    <div className="tm-comparison-container">
+      <div className="tm-canvas-wrapper">
+        <canvas
+          ref={canvasRef}
+          width={FACTORY_W}
+          height={FACTORY_H}
+          onClick={handleCanvasClick}
+          onContextMenu={handleCanvasContextMenu}
+          style={{
+            width: '100%',
+            height: '100%',
+            borderRadius: '0.5rem',
+            cursor: 'pointer',
+            display: 'block',
+            objectFit: 'contain',
+          }}
+        />
+        <div className="tm-label tm-label--live">LIVE</div>
+      </div>
+      <div className="tm-canvas-wrapper">
+        <canvas
+          ref={historicalCanvasRef}
+          width={FACTORY_W}
+          height={FACTORY_H}
+          onClick={handleCanvasClick}
+          onContextMenu={handleCanvasContextMenu}
+          style={{
+            width: '100%',
+            height: '100%',
+            borderRadius: '0.5rem',
+            cursor: 'pointer',
+            display: 'block',
+            objectFit: 'contain',
+          }}
+        />
+        <div className="tm-label tm-label--hist">{histLabel}</div>
+      </div>
+    </div>
+  ) : (
     <canvas
       ref={canvasRef}
       width={FACTORY_W}

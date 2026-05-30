@@ -1,0 +1,14 @@
+name: Deploy
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'src/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "Deployment trigger — add your registry push steps here"

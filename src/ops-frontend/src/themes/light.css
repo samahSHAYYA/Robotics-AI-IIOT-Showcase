@@ -1,0 +1,97 @@
+[data-theme="light"] {
+  --bg: #f1f5f9;
+  --surface: #ffffff;
+  --surface2: #e2e8f0;
+  --text: #0f172a;
+  --text2: #64748b;
+  --accent: #2563eb;
+  --accent2: #7c3aed;
+  --warning: #d97706;
+  --critical: #dc2626;
+  --ok: #16a34a;
+}
+
+[data-theme="light"] .login-bg {
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(37,99,235,0.1) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 50%, rgba(124,58,237,0.1) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 20%, rgba(22,163,74,0.08) 0%, transparent 50%);
+}
+
+[data-theme="light"] .login-grid {
+  background-image:
+    linear-gradient(rgba(37,99,235,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37,99,235,0.06) 1px, transparent 1px);
+}
+
+[data-theme="light"] .login-ring {
+  border-color: rgba(37,99,235,0.12);
+}
+
+[data-theme="light"] .login-ring:nth-child(2) {
+  border-color: rgba(124,58,237,0.12);
+}
+
+[data-theme="light"] .login-ring:nth-child(3) {
+  border-color: rgba(22,163,74,0.12);
+}
+
+[data-theme="light"] .login-card {
+  background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(241,245,249,0.95));
+  border-color: #cbd5e1;
+}
+
+[data-theme="light"] .login-field input,
+[data-theme="light"] .login-select {
+  background: rgba(0,0,0,0.04);
+  border-color: #cbd5e1;
+  color: var(--text);
+}
+
+[data-theme="light"] .login-field input::placeholder {
+  color: #94a3b8;
+}
+
+[data-theme="light"] .login-field input:focus,
+[data-theme="light"] .login-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+}
+
+[data-theme="light"] .gauge-card {
+  background: linear-gradient(135deg, var(--surface), rgba(248,250,252,0.6));
+}
+
+[data-theme="light"] .robot-card,
+[data-theme="light"] .pm-robot-row,
+[data-theme="light"] .shift-column,
+[data-theme="light"] .oee-robot-row,
+[data-theme="light"] .shift-robot-card,
+[data-theme="light"] .energy-bar-track {
+  background: rgba(0,0,0,0.02);
+}
+
+[data-theme="light"] .alert-item {
+  background: rgba(0,0,0,0.02);
+}
+
+[data-theme="light"] .chat-bubble {
+  background: rgba(0,0,0,0.04);
+}
+
+[data-theme="light"] .panel::before {
+  background: linear-gradient(90deg, transparent, rgba(37,99,235,0.2), transparent);
+}
+
+[data-theme="light"] .gauge-card::before {
+  background: linear-gradient(90deg, var(--accent), var(--accent2), transparent);
+  opacity: 0.3;
+}
+
+[data-theme="light"] .map-context-menu,
+[data-theme="light"] .layout-settings-panel,
+[data-theme="light"] .map-settings-panel,
+[data-theme="light"] .shortcuts-toast,
+[data-theme="light"] .ambient-audio-popup {
+  box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+}

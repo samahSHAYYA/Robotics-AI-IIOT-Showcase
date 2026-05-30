@@ -6,6 +6,7 @@ interface GaugeCardProps {
   max?: number
   threshold_warn?: number
   threshold_crit?: number
+  diff?: { value: number; direction: 'up' | 'down' } | null
 }
 
 function polarToCartesian(cx: number, cy: number, r: number, deg: number) {
@@ -35,6 +36,7 @@ function valueColor(val: number): string {
 export default function GaugeCard({
   label, value, unit, min = 0, max = 100,
   threshold_warn = 70, threshold_crit = 90,
+  diff,
 }: GaugeCardProps) {
   const pct = Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100))
   const color = valueColor(pct)
@@ -75,7 +77,15 @@ export default function GaugeCard({
         </text>
         <text x={cx} y={cy + 14} textAnchor="middle" fill="#94a3b8" fontSize="11">{unit}</text>
       </svg>
-      <div className="gauge-label">{label}</div>
+      <div className="gauge-label">
+        {label}
+        {diff && (
+          <span className={`tm-diff-badge tm-diff-badge--${diff.direction}`}>
+            <span className="tm-diff-arrow">{diff.direction === 'up' ? '↑' : '↓'}</span>
+            {diff.value.toFixed(1)}
+          </span>
+        )}
+      </div>
     </div>
   )
 }

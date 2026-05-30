@@ -5,9 +5,10 @@ interface KpiBoardProps {
   telemetry?: TelemetrySnapshot
   error?: string | null
   onRetry?: () => void
+  diffs?: Record<string, { value: number; direction: 'up' | 'down' }>
 }
 
-export default function KpiBoard({ telemetry, error, onRetry }: KpiBoardProps) {
+export default function KpiBoard({ telemetry, error, onRetry, diffs }: KpiBoardProps) {
   if (error) {
     return (
       <div className="kpi-board">
@@ -39,10 +40,10 @@ export default function KpiBoard({ telemetry, error, onRetry }: KpiBoardProps) {
 
   return (
     <div className="kpi-board">
-      <GaugeCard label="Throughput" value={throughput} unit="units" max={5000} threshold_warn={3000} threshold_crit={1000} />
-      <GaugeCard label="Defect Rate" value={defectRate} unit="%" max={10} threshold_warn={3} threshold_crit={7} />
-      <GaugeCard label="Robot Uptime" value={uptime} unit="%" threshold_warn={90} threshold_crit={80} />
-      <GaugeCard label="Active Robots" value={robotCount} unit="bots" max={20} threshold_warn={5} threshold_crit={2} />
+      <GaugeCard label="Throughput" value={throughput} unit="units" max={5000} threshold_warn={3000} threshold_crit={1000} diff={diffs?.['Throughput'] ?? null} />
+      <GaugeCard label="Defect Rate" value={defectRate} unit="%" max={10} threshold_warn={3} threshold_crit={7} diff={diffs?.['Defect Rate'] ?? null} />
+      <GaugeCard label="Robot Uptime" value={uptime} unit="%" threshold_warn={90} threshold_crit={80} diff={diffs?.['Robot Uptime'] ?? null} />
+      <GaugeCard label="Active Robots" value={robotCount} unit="bots" max={20} threshold_warn={5} threshold_crit={2} diff={diffs?.['Active Robots'] ?? null} />
     </div>
   )
 }
