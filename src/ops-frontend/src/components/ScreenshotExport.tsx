@@ -9,7 +9,7 @@ function timestampFilename(): string {
   const hh = String(d.getHours()).padStart(2, '0')
   const min = String(d.getMinutes()).padStart(2, '0')
   const ss = String(d.getSeconds()).padStart(2, '0')
-  return `dashboard-${yyyy}-${mm}-${dd}-${hh}${min}${ss}.png`
+  return `dashboard-${yyyy}-${mm}-${dd}-${hh}${min}${ss}.jpg`
 }
 
 export default function ScreenshotExport() {
@@ -29,7 +29,7 @@ export default function ScreenshotExport() {
       })
       const link = document.createElement('a')
       link.download = timestampFilename()
-      link.href = canvas.toDataURL('image/png')
+      link.href = canvas.toDataURL('image/jpeg', 0.92)
       link.click()
       setToast(true)
       setTimeout(() => setToast(false), 2000)
@@ -44,7 +44,10 @@ export default function ScreenshotExport() {
   return (
     <>
       <button className="screenshot-btn" onClick={handleCapture} title="Capture full-page screenshot">
-        📷
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+          <circle cx="12" cy="13" r="4" />
+        </svg>
       </button>
       {toast && <div className="screenshot-toast">Captured!</div>}
     </>
