@@ -386,9 +386,41 @@ html, body, #root {
   min-height: 0;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  grid-template-rows: 1fr 1fr 1fr;
+  grid-auto-rows: minmax(0, auto);
   gap: 0.35rem;
+  overflow-y: auto;
 }
+
+/* Explicit grid assignments for major panels */
+.panel-map {
+  grid-column: 1 / 3;
+  grid-row: span 2;
+  min-height: 350px;
+}
+
+.panel-fleet {
+  grid-column: 3;
+  grid-row: span 2;
+}
+
+.panel-alerts { grid-column: 1; }
+.panel-console { grid-column: 2; }
+.panel-agent { grid-column: 3; }
+
+.panel-oee { grid-column: 1; }
+.panel-shift { grid-column: 2; }
+.panel-production { grid-column: 3; }
+
+.panel-sensors { grid-column: 1; }
+.panel-health { grid-column: 2; }
+.panel-robots { grid-column: 3; }
+
+.panel-reconcile { grid-column: 1; }
+.panel-sites { grid-column: 2; }
+.panel-webhooks { grid-column: 3; }
+
+.panel-audit { grid-column: 1 / 4; }
+.panel-camera { grid-column: auto; }
 
 .panel {
   background: var(--surface);
@@ -1703,11 +1735,18 @@ html, body, #root {
   .grid-main {
     grid-template-columns: 1fr 1fr;
   }
-  .panel-agent {
-    grid-column: auto;
+  .panel-map {
+    grid-column: 1 / 3;
+    grid-row: span 2;
+  }
+  .panel-fleet {
+    grid-column: 1 / 3;
     grid-row: auto;
   }
-  .panel-camera {
+  .panel-agent, .panel-camera, .panel-alerts, .panel-console,
+  .panel-oee, .panel-shift, .panel-production,
+  .panel-sensors, .panel-health, .panel-robots,
+  .panel-reconcile, .panel-sites, .panel-webhooks, .panel-audit {
     grid-column: auto;
     grid-row: auto;
   }
@@ -1717,9 +1756,13 @@ html, body, #root {
   .grid-main {
     grid-template-columns: 1fr;
   }
-  .panel-map { grid-row: auto; }
-  .panel-agent { grid-row: auto; }
-  .panel-camera { grid-row: auto; }
+  .panel-map, .panel-fleet, .panel-agent, .panel-camera,
+  .panel-alerts, .panel-console, .panel-oee, .panel-shift,
+  .panel-production, .panel-sensors, .panel-health, .panel-robots,
+  .panel-reconcile, .panel-sites, .panel-webhooks, .panel-audit {
+    grid-column: auto;
+    grid-row: auto;
+  }
   .app-header { flex-direction: column; gap: 0.5rem; text-align: center; }
 }
 
@@ -2669,15 +2712,11 @@ html, body, #root {
     gap: 0.35rem;
   }
 
-  .panel-map {
-    grid-row: auto;
-  }
-
-  .panel-agent {
-    grid-row: auto;
-  }
-
-  .panel-camera {
+  .panel-map, .panel-fleet, .panel-agent, .panel-camera,
+  .panel-alerts, .panel-console, .panel-oee, .panel-shift,
+  .panel-production, .panel-sensors, .panel-health, .panel-robots,
+  .panel-reconcile, .panel-sites, .panel-webhooks, .panel-audit {
+    grid-column: auto;
     grid-row: auto;
   }
 
