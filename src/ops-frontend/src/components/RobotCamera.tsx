@@ -39,7 +39,6 @@ function renderCameraFeed(
 
   ctx.clearRect(0, 0, W, H)
 
-  // Background based on view type
   switch (viewId) {
     case 'depth':
       ctx.fillStyle = '#0a1a10'
@@ -55,7 +54,6 @@ function renderCameraFeed(
   }
   ctx.fillRect(0, 0, W, H)
 
-  // Grid lines
   if (viewId === 'left' || viewId === 'right') {
     ctx.strokeStyle = 'rgba(59, 130, 246, 0.06)'
     ctx.lineWidth = 1
@@ -126,7 +124,6 @@ function renderCameraFeed(
       ctx.strokeRect(bx, by, bw, bh)
     }
 
-    // Distance markers for depth view
     if (viewId === 'depth') {
       for (let i = 0; i < 4; i++) {
         const dy = 40 + i * (H / 5)
@@ -145,7 +142,6 @@ function renderCameraFeed(
       }
     }
 
-    // Thermal scale for infrared view
     if (viewId === 'infrared') {
       const grad = ctx.createLinearGradient(0, 0, W, 0)
       grad.addColorStop(0, 'rgba(0, 0, 255, 0.3)')
@@ -163,7 +159,6 @@ function renderCameraFeed(
       ctx.fillText('Hot', W - 4, H - 14)
     }
 
-    // Task-specific visuals
     const task = robot.current_task ?? ''
     if (viewId === 'left' || viewId === 'right') {
       if (task.toLowerCase().includes('assembly') || task.toLowerCase().includes('packaging')) {
@@ -188,7 +183,6 @@ function renderCameraFeed(
       }
     }
 
-    // Scanning line for infrared (heat scan)
     if (viewId === 'infrared') {
       const lx = ((now / 1500) * W) % W
       ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)'
@@ -201,7 +195,6 @@ function renderCameraFeed(
       ctx.fillRect(lx - 1, 0, 3, H)
     }
 
-    // Depth scanning
     if (viewId === 'depth') {
       const lx = ((now / 2500) * W) % W
       ctx.strokeStyle = 'rgba(34, 197, 94, 0.3)'
@@ -213,7 +206,6 @@ function renderCameraFeed(
     }
   }
 
-  // Scan-line overlay
   if (viewId === 'left' || viewId === 'right') {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.03)'
     for (let i = 0; i < H; i += 3) {
@@ -229,14 +221,12 @@ function renderCameraFeed(
     ctx.fillRect(0, scanY - 15, W, 30)
   }
 
-  // Vignette
   const vignette = ctx.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, H * 0.7)
   vignette.addColorStop(0, 'rgba(0,0,0,0)')
   vignette.addColorStop(1, 'rgba(0,0,0,0.4)')
   ctx.fillStyle = vignette
   ctx.fillRect(0, 0, W, H)
 
-  // Corner brackets
   ctx.strokeStyle = viewId === 'depth' ? 'rgba(34, 197, 94, 0.5)' :
     viewId === 'infrared' ? 'rgba(239, 68, 68, 0.5)' :
     'rgba(59, 130, 246, 0.5)'
@@ -258,24 +248,23 @@ function renderCameraFeed(
 }
 
 export default function RobotCamera({ robots }: RobotCameraProps) {
-  const [selectedId, setSelectedId] = useState<string>(
-    robots.length > 0 ? robots[0].robot_id : '',
-  )
+  const [selectedRobots, setSelectedRobots] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {}
+    CAMERA_VIEWS.forEach(v => { init[v.id] = robots.length > 0 ? robots[0].robot_id : '' })
+    return init
+  })
 
   const canvasRefs = useRef<Record<string, HTMLCanvasElement | null>>({})
   const rafRef = useRef<number>(0)
   const scrollRef = useRef(0)
 
-  const selectedRobot = useMemo(
-    () => robots.find((r) => r.robot_id === selectedId) ?? null,
-    [robots, selectedId],
-  )
-
-  useEffect(() => {
-    if (!robots.find((r) => r.robot_id === selectedId) && robots.length > 0) {
-      setSelectedId(robots[0].robot_id)
+  const selectedRobotsMap = useMemo(() => {
+    const map: Record<string, RobotStatus | null> = {}
+    for (const view of CAMERA_VIEWS) {
+      map[view.id] = robots.find((r) => r.robot_id === selectedRobots[view.id]) ?? null
     }
-  }, [robots, selectedId])
+    return map
+  }, [robots, selectedRobots])
 
   useEffect(() => {
     const W = 240
@@ -295,7 +284,7 @@ export default function RobotCamera({ robots }: RobotCameraProps) {
         if (!canvas) return
         const ctx = canvas.getContext('2d')
         if (!ctx) return
-        renderCameraFeed(ctx, canvas, view.id, scrollRef.current, selectedRobot)
+        renderCameraFeed(ctx, canvas, view.id, scrollRef.current, selectedRobotsMap[view.id])
       })
       rafRef.current = requestAnimationFrame(render)
     }
@@ -305,7 +294,7 @@ export default function RobotCamera({ robots }: RobotCameraProps) {
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
     }
-  }, [selectedRobot])
+  }, [selectedRobotsMap])
 
   if (robots.length === 0) {
     return (
@@ -320,24 +309,24 @@ export default function RobotCamera({ robots }: RobotCameraProps) {
 
   return (
     <div className="robot-camera">
-      <div className="camera-tab-select-row">
-        <label htmlFor="camera-select">Robot:</label>
-        <select
-          id="camera-select"
-          value={selectedId}
-          onChange={(e) => setSelectedId(e.target.value)}
-        >
-          {robots.map((r) => (
-            <option key={r.robot_id} value={r.robot_id}>
-              {r.name} ({r.robot_id})
-            </option>
-          ))}
-        </select>
-      </div>
+      <h3>Robot Camera Feed</h3>
       <div className="camera-grid-4">
         {CAMERA_VIEWS.map((view) => (
           <div key={view.id} className="camera-feed">
-            <div className="camera-feed-label">{view.label}</div>
+            <div className="camera-feed-header">
+              <span className="camera-feed-label">{view.label}</span>
+              <select
+                className="camera-feed-select"
+                value={selectedRobots[view.id] ?? ''}
+                onChange={(e) => setSelectedRobots(prev => ({ ...prev, [view.id]: e.target.value }))}
+              >
+                {robots.map((r) => (
+                  <option key={r.robot_id} value={r.robot_id}>
+                    {r.name}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="camera-feed-canvas-wrap">
               <canvas
                 ref={(el) => { canvasRefs.current[view.id] = el }}

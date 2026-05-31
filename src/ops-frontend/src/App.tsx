@@ -477,6 +477,7 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
                       <div className="panel panel-console">
                         <CommandConsole
                           role={role}
+                          robots={robots}
                           onStartRobot={handleRobotStart}
                           onStopRobot={handleRobotStop}
                           onAssignTask={handleAssignTask}

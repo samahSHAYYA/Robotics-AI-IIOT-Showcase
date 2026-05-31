@@ -4,6 +4,15 @@ import TelemetryChart from './TelemetryChart'
 
 const CHART_RE = /\{("chart":\s*true\s*,.*?)\}/g
 
+const SUGGESTED_PROMPTS = [
+  'What is the current factory status?',
+  'Show me temperature trends',
+  'Which robots are active?',
+  'Any critical alerts?',
+  'Energy consumption summary',
+  'Compare robot performance',
+]
+
 function tryParseChart(text: string): { clean: string; chart?: InlineChartData } {
   let clean = text
   let chart: InlineChartData | undefined
@@ -116,11 +125,11 @@ export default function ChatPanel() {
     return () => window.removeEventListener('chat-pre-fill', handlePreFill)
   }, [handlePreFill])
 
-  const send = async () => {
-    const msg = input.trim()
+  const send = async (msgOverride?: string) => {
+    const msg = (msgOverride ?? input).trim()
     if (!msg || loading) return
     setInput('')
-    setMessages((prev) => [...prev, { role: 'user', text: msg }])
+    setMessages((prev) => [...prev, { role: 'user', text: msg, ts: Date.now() }])
     setLoading(true)
 
     try {
@@ -136,22 +145,58 @@ export default function ChatPanel() {
       setMessages((prev) => [...prev, {
         role: 'agent',
         text: clean || replyText,
+        ts: Date.now(),
         chart: data.chart ?? undefined,
         inlineChart: chart,
       }])
     } catch {
-      setMessages((prev) => [...prev, { role: 'agent', text: 'Error contacting AI Agent service.' }])
+      setMessages((prev) => [...prev, { role: 'agent', text: 'Error contacting AI Agent service.', ts: Date.now() }])
     }
     setLoading(false)
   }
 
+  const clearChat = () => {
+    setMessages([{ role: 'agent', text: 'Conversation cleared. Ask me anything about the factory.', ts: Date.now() }])
+  }
+
+  const exportChat = () => {
+    const text = messages.map(m => {
+      const role = m.role === 'user' ? 'You' : 'AI'
+      const ts = m.ts ? new Date(m.ts).toLocaleTimeString() : ''
+      return `[${ts}] ${role}: ${m.text}`
+    }).join('\n')
+    const blob = new Blob([text], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `chat-${new Date().toISOString().slice(0, 10)}.txt`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="chat-panel">
-      <h3>AI Agent</h3>
+      <div className="chat-header">
+        <h3>AI Agent</h3>
+        <div className="chat-header-actions">
+          <button className="chat-action-btn" onClick={exportChat} title="Export chat">📥</button>
+          <button className="chat-action-btn" onClick={clearChat} title="Clear conversation">🗑</button>
+        </div>
+      </div>
       <div className="chat-messages" ref={listRef}>
+        {messages.length <= 1 && (
+          <div className="chat-suggested">
+            {SUGGESTED_PROMPTS.map(p => (
+              <button key={p} className="chat-chip" onClick={() => send(p)} disabled={loading}>
+                {p}
+              </button>
+            ))}
+          </div>
+        )}
         {messages.map((m, i) => (
           <div key={i} className={`chat-msg chat-msg--${m.role}`}>
             <div className="chat-bubble">{m.text}</div>
+            {m.ts && <div className="chat-ts">{new Date(m.ts).toLocaleTimeString()}</div>}
             {m.chart && <TelemetryChart config={m.chart} />}
             {m.inlineChart && <InlineChartRenderer data={m.inlineChart} />}
           </div>
@@ -167,7 +212,7 @@ export default function ChatPanel() {
           placeholder="Ask about telemetry..."
           disabled={loading}
         />
-        <button className="btn-send" onClick={send} disabled={loading}>Send</button>
+        <button className="btn-send" onClick={() => send()} disabled={loading}>Send</button>
       </div>
     </div>
   )

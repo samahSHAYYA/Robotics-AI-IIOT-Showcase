@@ -748,4 +748,109 @@
       ]
     }
   ]
+},
+{
+  "sprint": "Sprint 10 — Operational Polish (UserTasks.md)",
+  "status": "in_progress",
+  "tasks": [
+    {
+      "id": 69,
+      "title": "PT-1: Fix Legend & Settings panel (robot on/off toggles)",
+      "status": "in_progress",
+      "committed": false,
+      "acceptance": [
+        "Robot visibility toggles in Map Settings Panel actually hide/show robots on canvas",
+        "Color picker changes robot color on canvas in real-time",
+        "All overlay toggles (trajectories, trails, labels, beacons, glow, zone labels, grid, heatmap) work immediately",
+        "Settings persist in localStorage and survive page reload"
+      ]
+    },
+    {
+      "id": 70,
+      "title": "PT-2: Fix robot context menu (Start/Stop by status, dismiss)",
+      "status": "in_progress",
+      "committed": false,
+      "acceptance": [
+        "Right-click near a robot shows robot name, status, and action button",
+        "Shows 'Start Robot' only when robot is idle/stopped/offline",
+        "Shows 'Stop Robot' only when robot is moving/active",
+        "Clicking outside context menu dismisses it",
+        "Start/Stop buttons actually trigger the robot action via API"
+      ]
+    },
+    {
+      "id": 71,
+      "title": "PT-3: Fix Command Console (status-based buttons, feedback)",
+      "status": "in_progress",
+      "committed": false,
+      "acceptance": [
+        "Resume button only enabled if robot is paused/stopped",
+        "Pause button only enabled if robot is moving/active",
+        "Each action shows feedback text (e.g. 'Task Assembly Line A assigned to C3')",
+        "Feedback text describes what was assigned and to which robot",
+        "Custom task input shows assignment confirmation"
+      ]
+    },
+    {
+      "id": 72,
+      "title": "PT-4: Camera tab per-view robot selection",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "Each of the 4 camera feeds (depth, infrared, left, right) has its own robot selector",
+        "Selecting a robot for one feed does not affect others",
+        "Feeds render independently with their selected robot's telemetry",
+        "Elegant UI — compact dropdown or icon-based selector per feed"
+      ]
+    },
+    {
+      "id": 73,
+      "title": "PT-5: AI Chat UX improvements",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "Suggested prompts / quick questions shown as clickable chips",
+        "Message timestamp display",
+        "Chat history export or copy button",
+        "Clear conversation button",
+        "Smooth auto-scroll with reduced flicker"
+      ]
+    },
+    {
+      "id": 74,
+      "title": "PT-6: Dashboard margin/spacing and font size",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "Bottom margin increased (min 2rem) so content doesn't touch viewport edge",
+        "Left/right margins reduced (max 0.5rem) for wider content",
+        "Base font-size increased (min 17px body text)",
+        "All panel headings and labels scale proportionally"
+      ]
+    },
+    {
+      "id": 75,
+      "title": "PT-7: Mock audit — identify mocked vs real implementations",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "Document which backend endpoints return real data vs mock data",
+        "Document which frontend components use simulated vs real data",
+        "Provide a summary table in docs/IMPLEMENTATION_STATUS.md"
+      ]
+    },
+    {
+      "id": 76,
+      "title": "PT-8: ROS 2 + Gazebo simulation environment setup",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "ROS 2 workspace structure created under src/ros2/",
+        "Gazebo world file with factory floor layout",
+        "Robot URDF model(s) for humanoid, welder, inspector",
+        "Launch file to start simulation with all robots",
+        "ROS 2 bridge service to pipe telemetry into ops-api"
+      ]
+    }
+  ]
 }
