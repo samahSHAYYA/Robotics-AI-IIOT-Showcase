@@ -1458,6 +1458,12 @@ html, body, #root {
   min-width: 140px;
 }
 
+.map-context-sep {
+  height: 1px;
+  background: var(--surface2);
+  margin: 0.2rem 0.5rem;
+}
+
 .map-context-item {
   display: block;
   width: 100%;
@@ -1475,6 +1481,16 @@ html, body, #root {
 .map-context-item:hover {
   background: rgba(59, 130, 246, 0.15);
   color: var(--accent);
+}
+
+.map-context-item--start:hover {
+  background: rgba(34, 197, 94, 0.15) !important;
+  color: var(--ok) !important;
+}
+
+.map-context-item--stop:hover {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: var(--critical) !important;
 }
 
 /* ===== Full-Screen Map Mode ===== */
@@ -4042,6 +4058,10 @@ html, body, #root {
   flex-direction: column;
   height: 100%;
   min-height: 0;
+}
+
+.grid-main .panel-camera-tab {
+  grid-column: 1 / -1;
 }
 
 .camera-grid-4 {

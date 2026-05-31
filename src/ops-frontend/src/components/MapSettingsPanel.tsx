@@ -193,15 +193,27 @@ export default function MapSettingsPanel({ onClose }: MapSettingsPanelProps) {
   )
 }
 
+interface ContextMenuRobot {
+  robot_id: string
+  name: string
+  status: string
+}
+
 export function ContextMenu({
   x,
   y,
+  robot,
   onOpenSettings,
+  onRobotStart,
+  onRobotStop,
   onClose,
 }: {
   x: number
   y: number
+  robot?: ContextMenuRobot | null
   onOpenSettings: () => void
+  onRobotStart?: (id: string) => void
+  onRobotStop?: (id: string) => void
   onClose: () => void
 }) {
   return (
@@ -211,7 +223,28 @@ export function ContextMenu({
         className="map-context-menu"
         style={{ left: x, top: y }}
       >
-        <button className="map-context-item" onClick={onOpenSettings}>
+        {robot && (
+          <>
+            <div className="map-context-item" style={{ fontWeight: 700, cursor: 'default', color: 'var(--text)' }}>
+              {robot.name}
+            </div>
+            <div className="map-context-item" style={{ fontSize: '0.65rem', cursor: 'default', color: 'var(--text2)' }}>
+              Status: {robot.status}
+            </div>
+            <div className="map-context-sep" />
+            {robot.status !== 'moving' && robot.status !== 'active' ? (
+              <button className="map-context-item map-context-item--start" onClick={() => { onRobotStart?.(robot.robot_id); onClose() }}>
+                ▶ Start Robot
+              </button>
+            ) : (
+              <button className="map-context-item map-context-item--stop" onClick={() => { onRobotStop?.(robot.robot_id); onClose() }}>
+                ■ Stop Robot
+              </button>
+            )}
+            <div className="map-context-sep" />
+          </>
+        )}
+        <button className="map-context-item" onClick={() => { onOpenSettings(); onClose() }}>
           Legend & Settings
         </button>
       </div>

@@ -77,22 +77,6 @@ function createRobotMesh(
   band.name = 'band'
   group.add(band)
 
-  // Cone direction indicator
-  const coneGeo = new THREE.ConeGeometry(0.15, 0.25, 8)
-  const coneMat = new THREE.MeshStandardMaterial({
-    color: 0xffffff,
-    roughness: 0.2,
-    metalness: 0.1,
-    emissive: 0xffffff,
-    emissiveIntensity: 0.2,
-  })
-  const cone = new THREE.Mesh(coneGeo, coneMat)
-  cone.position.set(0.55, 0.3, 0)
-  cone.rotation.x = Math.PI / 2
-  cone.castShadow = true
-  cone.name = 'cone'
-  group.add(cone)
-
   // Glow ring (shown for warning / critical statuses)
   const ringGeo = new THREE.TorusGeometry(0.5, 0.04, 8, 24)
   const ringMat = new THREE.MeshStandardMaterial({
@@ -128,10 +112,6 @@ function updateRobotColor(
     switch (child.name) {
       case 'body':
         mat.color.copy(color)
-        break
-      case 'cone':
-        mat.color.copy(color)
-        mat.emissive.copy(color)
         break
       case 'ring': {
         const glowLevel =

@@ -88,7 +88,7 @@ function renderRobotShape(
   alpha: number,
   glowLevel: 'none' | 'warning' | 'critical',
 ) {
-  const radius = 8
+  const r = 6
   const color = robotColor(robotId, status)
   ctx.save()
   ctx.globalAlpha = alpha
@@ -96,7 +96,7 @@ function renderRobotShape(
 
   if (glowLevel === 'critical') {
     ctx.beginPath()
-    ctx.arc(0, 0, radius * 2.2, 0, Math.PI * 2)
+    ctx.arc(0, 0, r * 3, 0, Math.PI * 2)
     ctx.strokeStyle = '#ef4444'
     ctx.lineWidth = 2
     ctx.setLineDash([4, 4])
@@ -104,7 +104,7 @@ function renderRobotShape(
     ctx.setLineDash([])
   } else if (glowLevel === 'warning') {
     ctx.beginPath()
-    ctx.arc(0, 0, radius * 2.2, 0, Math.PI * 2)
+    ctx.arc(0, 0, r * 3, 0, Math.PI * 2)
     ctx.strokeStyle = '#f59e0b'
     ctx.lineWidth = 2
     ctx.setLineDash([6, 6])
@@ -112,31 +112,29 @@ function renderRobotShape(
     ctx.setLineDash([])
   }
 
-  const grad = ctx.createRadialGradient(-2, -2, 0, 0, 0, radius)
-  grad.addColorStop(0, '#ffffff')
-  grad.addColorStop(0.3, color)
-  grad.addColorStop(1, '#000000')
+  // Body dot
   ctx.beginPath()
-  ctx.arc(0, 0, radius, 0, Math.PI * 2)
-  ctx.fillStyle = grad
+  ctx.arc(0, 0, r, 0, Math.PI * 2)
+  ctx.fillStyle = color
   ctx.fill()
-  ctx.strokeStyle = 'rgba(255,255,255,0.4)'
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)'
   ctx.lineWidth = 1
   ctx.stroke()
 
+  // Direction line
   ctx.save()
   ctx.rotate(theta)
   ctx.beginPath()
-  ctx.moveTo(radius + 4, 0)
-  ctx.lineTo(radius - 2, -4)
-  ctx.lineTo(radius - 2, 4)
-  ctx.closePath()
-  ctx.fillStyle = color
-  ctx.fill()
+  ctx.moveTo(r + 2, 0)
+  ctx.lineTo(r + 8, 0)
+  ctx.strokeStyle = color
+  ctx.lineWidth = 2
+  ctx.stroke()
   ctx.restore()
 
+  // Center dot
   ctx.beginPath()
-  ctx.arc(0, 0, 2, 0, Math.PI * 2)
+  ctx.arc(0, 0, 1.5, 0, Math.PI * 2)
   ctx.fillStyle = '#ffffff'
   ctx.fill()
 
@@ -307,6 +305,71 @@ function renderLabel(
   ctx.textBaseline = 'alphabetic'
 }
 
+function renderAssemblyArea(
+  ctx: CanvasRenderingContext2D,
+  sxFn: (v: number) => number,
+  syFn: (v: number) => number,
+  timeMs: number,
+) {
+  const ax = sxFn(0.8)
+  const ay = syFn(0.8)
+  const aw = sxFn(2.5)
+  const ah = syFn(3.5)
+
+  // Assembly station platform
+  ctx.fillStyle = 'rgba(34, 197, 94, 0.06)'
+  ctx.beginPath()
+  ctx.roundRect(ax, ay, aw, ah, 4)
+  ctx.fill()
+  ctx.strokeStyle = 'rgba(34, 197, 94, 0.15)'
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.roundRect(ax, ay, aw, ah, 4)
+  ctx.stroke()
+
+  // Conveyor belt
+  const beltY = ay + ah * 0.65
+  ctx.fillStyle = '#1e293b'
+  ctx.fillRect(ax + 4, beltY, aw - 8, 6)
+
+  // Moving segments on conveyor
+  const segSpacing = 14
+  const offset = (timeMs / 40) % segSpacing
+  ctx.fillStyle = 'rgba(59, 130, 246, 0.4)'
+  for (let px = offset; px < aw - 8; px += segSpacing) {
+    ctx.fillRect(ax + 4 + px, beltY + 1, 6, 4)
+  }
+
+  // Workstations as rectangles with detail
+  const ws1 = { x: ax + 6, y: ay + 6, w: aw * 0.4, h: ah * 0.3 }
+  const ws2 = { x: ax + aw * 0.5, y: ay + 6, w: aw * 0.4, h: ah * 0.3 }
+
+  for (const ws of [ws1, ws2]) {
+    ctx.fillStyle = 'rgba(30, 45, 74, 0.7)'
+    ctx.beginPath()
+    ctx.roundRect(ws.x, ws.y, ws.w, ws.h, 3)
+    ctx.fill()
+    ctx.strokeStyle = 'rgba(59, 130, 246, 0.2)'
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    ctx.roundRect(ws.x, ws.y, ws.w, ws.h, 3)
+    ctx.stroke()
+
+    // Pulsing status light
+    const pulse = 0.3 + 0.7 * Math.abs(Math.sin(timeMs / 600 + (ws === ws1 ? 0 : 2)))
+    ctx.beginPath()
+    ctx.arc(ws.x + ws.w - 5, ws.y + 5, 2.5, 0, Math.PI * 2)
+    ctx.fillStyle = `rgba(34, 197, 94, ${pulse})`
+    ctx.fill()
+  }
+
+  // Label
+  ctx.fillStyle = 'rgba(34, 197, 94, 0.5)'
+  ctx.font = 'bold 9px sans-serif'
+  ctx.textAlign = 'center'
+  ctx.fillText('ASSEMBLY LINE', ax + aw / 2, ay - 4)
+}
+
 function heatmapColor(t: number): string {
   const h = Math.round(240 - t * 240)
   const s = 70 + Math.round(t * 20)
@@ -364,7 +427,7 @@ export default function DigitalTwinMap({
   const [selectedRobot, setSelectedRobot] = useState<InterpRobot | null>(null)
   const [popupPos, setPopupPos] = useState({ x: 0, y: 0 })
   const [showSettings, setShowSettings] = useState(false)
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; robot?: InterpRobot } | null>(null)
   const [fullscreen, setFullscreen] = useState(false)
   const [currentTime, setCurrentTime] = useState('')
   const [is3D, setIs3D] = useState(false)
@@ -758,6 +821,8 @@ export default function DigitalTwinMap({
       ctx.strokeRect(sx(0.5), sy(0.5), sx(9), sy(8.5))
       ctx.setLineDash([])
 
+      renderAssemblyArea(ctx, sx, sy, now)
+
       if (settings.showTrails && !isReplay) {
         for (const r of interp) {
           const trail = trailsRef.current[r.robot_id]
@@ -952,9 +1017,28 @@ export default function DigitalTwinMap({
   const handleCanvasContextMenu = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
       e.preventDefault()
-      setContextMenu({ x: e.clientX, y: e.clientY })
+      const canvas = canvasRef.current
+      if (!canvas) { setContextMenu({ x: e.clientX, y: e.clientY }); return }
+      const rect = canvas.getBoundingClientRect()
+      const mx = ((e.clientX - rect.left) / rect.width) * canvas.width
+      const my = ((e.clientY - rect.top) / rect.height) * canvas.height
+
+      let found: InterpRobot | undefined
+      const tl = renderTimelineRef.current
+      const robotData = tl.currentIndex >= 0 && tl.history[tl.currentIndex] ? tl.history[tl.currentIndex] : interpRef.current
+      for (const r of robotData) {
+        const cx = sx(r.x)
+        const cy = sy(r.y)
+        const dx = mx - cx
+        const dy = my - cy
+        if (Math.sqrt(dx * dx + dy * dy) < 20) {
+          found = r
+          break
+        }
+      }
+      setContextMenu({ x: e.clientX, y: e.clientY, robot: found })
     },
-    [],
+    [sx, sy],
   )
 
   const handleOpenSettings = useCallback(() => {
@@ -1214,7 +1298,10 @@ export default function DigitalTwinMap({
         <ContextMenu
           x={contextMenu.x}
           y={contextMenu.y}
+          robot={contextMenu.robot}
           onOpenSettings={handleOpenSettings}
+          onRobotStart={onRobotStart}
+          onRobotStop={onRobotStop}
           onClose={() => setContextMenu(null)}
         />
       )}
