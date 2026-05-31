@@ -68,26 +68,28 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
   const [showLayoutSettings, setShowLayoutSettings] = useState(false)
   const [selectedRobotId, setSelectedRobotId] = useState<string | null>(null)
   const [showShortcuts, setShowShortcuts] = useState(false)
+  const [activeTab, setActiveTab] = useState('factory')
+
+  const TABS = [
+    { key: 'factory', label: '🏭 Factory', panels: ['map', 'fleet', 'alerts', 'console'] },
+    { key: 'analytics', label: '📊 Analytics', panels: ['analytics', 'oee', 'production', 'energy'] },
+    { key: 'maintenance', label: '🔧 Maintenance', panels: ['predictive', 'sensors', 'health', 'shift'] },
+    { key: 'admin', label: '⚙️ Admin', panels: ['audit', 'webhooks', 'robots', 'reconcile', 'sites'] },
+    { key: 'ai', label: '💬 AI', panels: ['chat', 'camera'] },
+  ] as const
+
+  const activePanels: readonly string[] = TABS.find(t => t.key === activeTab)?.panels ?? []
+  const showPanelForTab = (key: string) => activePanels.includes(key) && (panelVisibility[key] ?? true)
   const [kpiDiffs, setKpiDiffs] = useState<Record<string, { value: number; direction: 'up' | 'down' }> | undefined>(undefined)
   const [voiceResult, setVoiceResult] = useState<{ text: string; ok: boolean } | null>(null)
   const voiceTimeoutRef = useRef<number>(0)
   const { notifEnabled, setNotifEnabled } = useAlertNotifications(alerts)
 
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
-  const [mobileTab, setMobileTab] = useState('map')
   const [kioskView, setKioskView] = useState<'map' | 'kpi'>('map')
 
   useEffect(() => {
     saveLayout(panelVisibility)
   }, [panelVisibility])
-
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 767px)')
-    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
-    setIsMobile(mq.matches)
-    mq.addEventListener('change', handler)
-    return () => mq.removeEventListener('change', handler)
-  }, [])
 
   useEffect(() => {
     if (!kioskMode) return
@@ -323,8 +325,6 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
 
   if (!authed) return <LoginPage onLogin={(r) => { setRole(r as 'admin' | 'operator' | 'viewer'); setAuthed(true) }} />
 
-  const showPanel = (key: string) => !isMobile || kioskMode || mobileTab === key
-
   return (
     <div className="app">
       {kioskMode && <div className="kiosk-badge">Kiosk Mode</div>}
@@ -403,151 +403,138 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
                 <AnalyticsWidget />
               </section>
             )}
+            <nav className="tab-bar">
+              {TABS.map(tab => (
+                <button
+                  key={tab.key}
+                  className={`tab-btn${activeTab === tab.key ? ' tab-btn--active' : ''}`}
+                  onClick={() => setActiveTab(tab.key)}
+                >
+                  {tab.label}
+                </button>
+              ))}
+              <button
+                className="tab-btn layout-btn"
+                onClick={() => setShowLayoutSettings(true)}
+                title="Panel visibility"
+              >
+                ⚙️
+              </button>
+            </nav>
             <section className="grid-main">
-              {showPanel('fleet') && panelVisibility.fleet !== false && (
-                <div className="panel panel-fleet">
-                  <div className="panel-head-row">
-                    <h3>{t('fleet.title')}</h3>
-                    <TelemetryExport robots={robots} />
-                  </div>
-                  <RobotFleet robots={robots} error={error} highlightedRobotId={selectedRobotId} />
-                  <EnergyWidget robots={robots} />
-                  <PredictiveMaintenance robots={robots} />
-                </div>
+              {/* Factory tab */}
+              {activeTab === 'factory' && (
+                <>
+                  {showPanelForTab('map') && (
+                    <div className="panel panel-map">
+                      <MapSettingsProvider>
+                        <DigitalTwinMap
+                          robots={robots}
+                          error={error}
+                          role={role}
+                          selectedRobotId={selectedRobotId}
+                          onRobotStart={handleRobotStart}
+                          onRobotStop={handleRobotStop}
+                        />
+                      </MapSettingsProvider>
+                    </div>
+                  )}
+                  {showPanelForTab('fleet') && (
+                    <div className="panel panel-fleet">
+                      <div className="panel-head-row">
+                        <h3>{t('fleet.title')}</h3>
+                        <TelemetryExport robots={robots} />
+                      </div>
+                      <RobotFleet robots={robots} error={error} highlightedRobotId={selectedRobotId} />
+                      <EnergyWidget robots={robots} />
+                      <PredictiveMaintenance robots={robots} />
+                    </div>
+                  )}
+                  {showPanelForTab('alerts') && (
+                    <div className="panel panel-alerts">
+                      <AlertBoard alerts={alerts} events={events} error={error} />
+                    </div>
+                  )}
+                  {showPanelForTab('console') && (
+                    <div className="panel panel-console">
+                      <CommandConsole
+                        role={role}
+                        onStartRobot={handleRobotStart}
+                        onStopRobot={handleRobotStop}
+                        onAssignTask={handleAssignTask}
+                        onEmergencyStop={handleEmergencyStop}
+                      />
+                    </div>
+                  )}
+                </>
               )}
-              {showPanel('map') && panelVisibility.map !== false && (
-                <div className="panel panel-map">
-                  <MapSettingsProvider>
-                    <DigitalTwinMap
-                      robots={robots}
-                      error={error}
-                      role={role}
-                      selectedRobotId={selectedRobotId}
-                      onRobotStart={handleRobotStart}
-                      onRobotStop={handleRobotStop}
-                    />
-                  </MapSettingsProvider>
-                </div>
+              {/* Analytics tab */}
+              {activeTab === 'analytics' && (
+                <>
+                  {showPanelForTab('oee') && (
+                    <div className="panel panel-oee"><OEEWidget robots={robots} /></div>
+                  )}
+                  {showPanelForTab('production') && (
+                    <div className="panel panel-production"><ProductionLine robots={robots} /></div>
+                  )}
+                  {showPanelForTab('energy') && (
+                    <div className="panel" style={{ gridColumn: '1 / -1' }}>
+                      <h3>Energy & Efficiency</h3>
+                      <EnergyWidget robots={robots} />
+                    </div>
+                  )}
+                </>
               )}
-              {showPanel('alerts') && panelVisibility.alerts !== false && (
-                <div className="panel panel-alerts">
-                  <AlertBoard alerts={alerts} events={events} error={error} />
-                </div>
+              {/* Maintenance tab */}
+              {activeTab === 'maintenance' && (
+                <>
+                  {showPanelForTab('sensors') && (
+                    <div className="panel panel-sensors"><SensorGrid /></div>
+                  )}
+                  {showPanelForTab('health') && (
+                    <div className="panel panel-health"><ServiceHealth /></div>
+                  )}
+                  {showPanelForTab('shift') && (
+                    <div className="panel panel-shift"><ShiftScheduler robots={robots} onAssignTask={handleAssignTask} /></div>
+                  )}
+                </>
               )}
-              {showPanel('console') && panelVisibility.console !== false && (
-                <div className="panel panel-console">
-                  <CommandConsole
-                    role={role}
-                    onStartRobot={handleRobotStart}
-                    onStopRobot={handleRobotStop}
-                    onAssignTask={handleAssignTask}
-                    onEmergencyStop={handleEmergencyStop}
-                  />
-                </div>
+              {/* Admin tab */}
+              {activeTab === 'admin' && (
+                <>
+                  {showPanelForTab('audit') && (
+                    <div className="panel panel-audit"><AuditLog /></div>
+                  )}
+                  {showPanelForTab('webhooks') && (
+                    <div className="panel panel-webhooks"><WebhookManager /></div>
+                  )}
+                  {showPanelForTab('robots') && (
+                    <div className="panel panel-robots"><RobotFleetPanel /></div>
+                  )}
+                  {showPanelForTab('reconcile') && (
+                    <div className="panel panel-reconcile"><ReconcilePanel /></div>
+                  )}
+                  {showPanelForTab('sites') && (
+                    <div className="panel panel-sites"><SiteManagerPanel /></div>
+                  )}
+                </>
               )}
-              {!isMobile && panelVisibility.oee !== false && (
-                <div className="panel panel-oee">
-                  <OEEWidget robots={robots} />
-                </div>
-              )}
-              {!isMobile && panelVisibility.shift !== false && (
-                <div className="panel panel-shift">
-                  <ShiftScheduler robots={robots} onAssignTask={handleAssignTask} />
-                </div>
-              )}
-              {!isMobile && panelVisibility.production !== false && (
-                <div className="panel panel-production">
-                  <ProductionLine robots={robots} />
-                </div>
-              )}
-              {!isMobile && panelVisibility.camera !== false && (
-                <div className="panel panel-camera">
-                  <RobotCamera robots={robots} />
-                </div>
-              )}
-              {showPanel('chat') && panelVisibility.chat !== false && (
-                <div className="panel panel-agent">
-                  <ChatPanel />
-                </div>
-              )}
-              {!isMobile && panelVisibility.sensors !== false && (
-                <div className="panel panel-sensors">
-                  <SensorGrid />
-                </div>
-              )}
-              {!isMobile && panelVisibility.health !== false && (
-                <div className="panel panel-health">
-                  <ServiceHealth />
-                </div>
-              )}
-              {!isMobile && panelVisibility.audit !== false && (
-                <div className="panel panel-audit">
-                  <AuditLog />
-                </div>
-              )}
-              {!isMobile && panelVisibility.webhooks !== false && (
-                <div className="panel panel-webhooks">
-                  <WebhookManager />
-                </div>
-              )}
-              {!isMobile && panelVisibility.robots !== false && (
-                <div className="panel panel-robots">
-                  <RobotFleetPanel />
-                </div>
-              )}
-              {!isMobile && panelVisibility.reconcile !== false && (
-                <div className="panel panel-reconcile">
-                  <ReconcilePanel />
-                </div>
-              )}
-              {!isMobile && panelVisibility.sites !== false && (
-                <div className="panel panel-sites">
-                  <SiteManagerPanel />
-                </div>
+              {/* AI tab */}
+              {activeTab === 'ai' && (
+                <>
+                  {showPanelForTab('chat') && (
+                    <div className="panel panel-agent"><ChatPanel /></div>
+                  )}
+                  {showPanelForTab('camera') && (
+                    <div className="panel panel-camera"><RobotCamera robots={robots} /></div>
+                  )}
+                </>
               )}
             </section>
           </>
         )}
       </main>
-      {isMobile && !kioskMode && (
-        <nav className="mobile-nav">
-          <button
-            className={`mobile-nav-btn${mobileTab === 'map' ? ' mobile-nav-btn--active' : ''}`}
-            onClick={() => setMobileTab('map')}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
-            <span>Map</span>
-          </button>
-          <button
-            className={`mobile-nav-btn${mobileTab === 'fleet' ? ' mobile-nav-btn--active' : ''}`}
-            onClick={() => setMobileTab('fleet')}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2" /><polygon points="16 8 20 8 23 11 23 16 16 16 16 8" /><circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" /></svg>
-            <span>Fleet</span>
-          </button>
-          <button
-            className={`mobile-nav-btn${mobileTab === 'alerts' ? ' mobile-nav-btn--active' : ''}`}
-            onClick={() => setMobileTab('alerts')}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
-            <span>Alerts</span>
-          </button>
-          <button
-            className={`mobile-nav-btn${mobileTab === 'console' ? ' mobile-nav-btn--active' : ''}`}
-            onClick={() => setMobileTab('console')}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 17 10 11 4 5" /><line x1="12" y1="19" x2="20" y2="19" /></svg>
-            <span>Console</span>
-          </button>
-          <button
-            className={`mobile-nav-btn${mobileTab === 'chat' ? ' mobile-nav-btn--active' : ''}`}
-            onClick={() => setMobileTab('chat')}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
-            <span>Chat</span>
-          </button>
-        </nav>
-      )}
+
       {showLayoutSettings && (
         <LayoutSettingsPanel
           visible={panelVisibility}

@@ -380,6 +380,44 @@ html, body, #root {
   letter-spacing: 0.04em;
 }
 
+/* ===== Tab Bar ===== */
+.tab-bar {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 0.35rem;
+  flex-shrink: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tab-btn {
+  background: var(--surface);
+  border: 1px solid var(--surface2);
+  color: var(--text2);
+  padding: 0.3rem 0.7rem;
+  border-radius: 0.4rem;
+  font-size: 0.7rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.tab-btn:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.tab-btn--active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.layout-btn {
+  margin-left: auto;
+}
+
 /* ===== Grid Layout ===== */
 .grid-main {
   flex: 1;
@@ -391,36 +429,24 @@ html, body, #root {
   overflow-y: auto;
 }
 
-/* Explicit grid assignments for major panels */
-.panel-map {
+/* Factory tab: map spans 2 cols, fleet right sidebar */
+.tab-content--factory .panel-map,
+.grid-main .panel-map {
   grid-column: 1 / 3;
   grid-row: span 2;
   min-height: 350px;
 }
 
-.panel-fleet {
+.tab-content--factory .panel-fleet,
+.grid-main .panel-fleet {
   grid-column: 3;
   grid-row: span 2;
 }
 
-.panel-alerts { grid-column: 1; }
-.panel-console { grid-column: 2; }
-.panel-agent { grid-column: 3; }
-
-.panel-oee { grid-column: 1; }
-.panel-shift { grid-column: 2; }
-.panel-production { grid-column: 3; }
-
-.panel-sensors { grid-column: 1; }
-.panel-health { grid-column: 2; }
-.panel-robots { grid-column: 3; }
-
-.panel-reconcile { grid-column: 1; }
-.panel-sites { grid-column: 2; }
-.panel-webhooks { grid-column: 3; }
-
-.panel-audit { grid-column: 1 / 4; }
-.panel-camera { grid-column: auto; }
+/* Analytics tab: 3-column evenly */
+/* Maintenance tab: 3-column evenly */
+/* Admin tab: 3-column evenly */
+/* AI tab: center chat in middle */
 
 .panel {
   background: var(--surface);
@@ -1735,18 +1761,16 @@ html, body, #root {
   .grid-main {
     grid-template-columns: 1fr 1fr;
   }
-  .panel-map {
+  .grid-main .panel-map {
     grid-column: 1 / 3;
     grid-row: span 2;
   }
-  .panel-fleet {
+  .grid-main .panel-fleet {
     grid-column: 1 / 3;
     grid-row: auto;
   }
-  .panel-agent, .panel-camera, .panel-alerts, .panel-console,
-  .panel-oee, .panel-shift, .panel-production,
-  .panel-sensors, .panel-health, .panel-robots,
-  .panel-reconcile, .panel-sites, .panel-webhooks, .panel-audit {
+  .grid-main .panel-agent,
+  .grid-main .panel-camera {
     grid-column: auto;
     grid-row: auto;
   }
@@ -1756,10 +1780,10 @@ html, body, #root {
   .grid-main {
     grid-template-columns: 1fr;
   }
-  .panel-map, .panel-fleet, .panel-agent, .panel-camera,
-  .panel-alerts, .panel-console, .panel-oee, .panel-shift,
-  .panel-production, .panel-sensors, .panel-health, .panel-robots,
-  .panel-reconcile, .panel-sites, .panel-webhooks, .panel-audit {
+  .grid-main .panel-map,
+  .grid-main .panel-fleet,
+  .grid-main .panel-agent,
+  .grid-main .panel-camera {
     grid-column: auto;
     grid-row: auto;
   }
@@ -2712,12 +2736,20 @@ html, body, #root {
     gap: 0.35rem;
   }
 
-  .panel-map, .panel-fleet, .panel-agent, .panel-camera,
-  .panel-alerts, .panel-console, .panel-oee, .panel-shift,
-  .panel-production, .panel-sensors, .panel-health, .panel-robots,
-  .panel-reconcile, .panel-sites, .panel-webhooks, .panel-audit {
+  .grid-main .panel-map,
+  .grid-main .panel-fleet,
+  .grid-main .panel-agent,
+  .grid-main .panel-camera {
     grid-column: auto;
     grid-row: auto;
+  }
+
+  .tab-bar {
+    gap: 0.2rem;
+  }
+  .tab-btn {
+    font-size: 0.6rem;
+    padding: 0.2rem 0.45rem;
   }
 
   .kpi-board {
