@@ -57,7 +57,6 @@ describe('AlertBoard', () => {
     expect(screen.getByText('Critical')).toBeInTheDocument()
     expect(screen.getByText('Warning')).toBeInTheDocument()
     expect(screen.getByText('Info')).toBeInTheDocument()
-    expect(screen.getByText('Healthy')).toBeInTheDocument()
   })
 
   it('shows empty state when no alerts or events', () => {

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useI18n } from '../contexts/I18nContext'
 
 interface CommandConsoleProps {
@@ -27,6 +27,9 @@ const QUICK_TASKS = [
   'Maintenance Bay',
 ]
 
+type ActionId = 'resume' | 'pause' | 'estop' | 'return' | 'assign' | null
+const FEEDBACK_MS = 1400
+
 export default function CommandConsole({
   role,
   onStartRobot,
@@ -38,8 +41,22 @@ export default function CommandConsole({
   const [robotId, setRobotId] = useState('C3')
   const [task, setTask] = useState('')
   const [quickTask, setQuickTask] = useState('')
+  const [feedback, setFeedback] = useState<ActionId>(null)
+  const fbTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const act = useCallback((id: ActionId, fn: () => void) => {
+    if (id === null) return
+    if (fbTimer.current) clearTimeout(fbTimer.current)
+    fn()
+    setFeedback(id)
+    fbTimer.current = setTimeout(() => setFeedback(null), FEEDBACK_MS)
+  }, [])
 
   const isViewer = role === 'viewer'
+  const busy = feedback !== null
+
+  const btnClass = (id: ActionId, base: string) =>
+    `${base}${feedback === id ? ` ${base}--done` : ''}${busy && feedback !== id ? ` ${base}--disabled` : ''}`
 
   return (
     <div className={`command-console ${isViewer ? 'command-console--readonly' : ''}`}>
@@ -55,23 +72,23 @@ export default function CommandConsole({
       </label>
 
       <div className="cc-btn-row">
-        <button className="btn-start" onClick={() => onStartRobot(robotId)} title="Resume movement" disabled={isViewer}>
-          ▶ {t('console.resume')}
+        <button className={btnClass('resume', 'btn-start')} onClick={() => act('resume', () => onStartRobot(robotId))} disabled={isViewer || busy}>
+          {feedback === 'resume' ? '✓' : '▶'} {t('console.resume')}
         </button>
-        <button className="btn-stop" onClick={() => onStopRobot(robotId)} title="Pause movement" disabled={isViewer}>
-          ⏸ {t('console.pause')}
+        <button className={btnClass('pause', 'btn-stop')} onClick={() => act('pause', () => onStopRobot(robotId))} disabled={isViewer || busy}>
+          {feedback === 'pause' ? '✓' : '⏸'} {t('console.pause')}
         </button>
-        <button className="btn-danger" onClick={() => onEmergencyStop(robotId)} title="Emergency stop" disabled={isViewer}>
-          ⚠ {t('console.eStop')}
+        <button className={btnClass('estop', 'btn-danger')} onClick={() => act('estop', () => onEmergencyStop(robotId))} disabled={isViewer || busy}>
+          {feedback === 'estop' ? '✓' : '⚠'} {t('console.eStop')}
         </button>
       </div>
 
       <button
-        className="btn-base"
-        onClick={() => onAssignTask(robotId, 'Returning to Base')}
-        disabled={isViewer}
+        className={btnClass('return', 'btn-base')}
+        onClick={() => act('return', () => onAssignTask(robotId, 'Returning to Base'))}
+        disabled={isViewer || busy}
       >
-        ↲ {t('console.returnToBase')}
+        {feedback === 'return' ? '✓' : '↲'} {t('console.returnToBase')}
       </button>
 
       <label className="cc-select-label">
@@ -81,10 +98,10 @@ export default function CommandConsole({
           onChange={(e) => {
             setQuickTask(e.target.value)
             if (e.target.value) {
-              onAssignTask(robotId, e.target.value)
+              act('assign', () => onAssignTask(robotId, e.target.value))
             }
           }}
-          disabled={isViewer}
+          disabled={isViewer || busy}
         >
           <option value="">{t('console.select')}</option>
           {QUICK_TASKS.map((taskName) => (
@@ -98,8 +115,10 @@ export default function CommandConsole({
         onSubmit={(e) => {
           e.preventDefault()
           if (task.trim()) {
-            onAssignTask(robotId, task.trim())
-            setTask('')
+            act('assign', () => {
+              onAssignTask(robotId, task.trim())
+              setTask('')
+            })
           }
         }}
       >
@@ -110,10 +129,12 @@ export default function CommandConsole({
             value={task}
             onChange={(e) => setTask(e.target.value)}
             placeholder={t('console.placeholder')}
-            disabled={isViewer}
+            disabled={isViewer || busy}
           />
         </label>
-        <button type="submit" className="btn-send" disabled={isViewer}>{t('console.assign')}</button>
+        <button type="submit" className={btnClass('assign', 'btn-send')} disabled={isViewer || busy}>
+          {feedback === 'assign' ? '✓' : t('console.assign')}
+        </button>
       </form>
     </div>
   )

@@ -76,7 +76,8 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
     { key: 'analytics', label: `📊 ${t('tab.analytics')}`, panels: ['analytics', 'oee', 'production', 'energy'] },
     { key: 'maintenance', label: `🔧 ${t('tab.maintenance')}`, panels: ['predictive', 'sensors', 'health', 'shift'] },
     { key: 'admin', label: `⚙️ ${t('tab.admin')}`, panels: ['audit', 'webhooks', 'robots', 'reconcile', 'sites'] },
-    { key: 'ai', label: `💬 ${t('tab.ai')}`, panels: ['chat', 'camera'] },
+    { key: 'camera', label: `📷 ${t('tab.camera')}`, panels: ['camera'] },
+    { key: 'ai', label: `💬 ${t('tab.ai')}`, panels: ['chat'] },
   ] as const
 
   const activePanels: readonly string[] = TABS.find(t => t.key === activeTab)?.panels ?? []
@@ -552,14 +553,31 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
                   )}
                 </>
               )}
+              {/* Camera tab */}
+              {activeTab === 'camera' && (
+                <>
+                  {showPanelForTab('camera') && (
+                    <div className="panel panel-camera-tab">
+                      <RobotCamera robots={robots} />
+                    </div>
+                  )}
+                </>
+              )}
               {/* AI tab */}
               {activeTab === 'ai' && (
                 <>
                   {showPanelForTab('chat') && (
-                    <div className="panel panel-agent"><ChatPanel /></div>
-                  )}
-                  {showPanelForTab('camera') && (
-                    <div className="panel panel-camera"><RobotCamera robots={robots} /></div>
+                    <div className="ai-tab-layout">
+                      <div className="panel ai-tab-chat">
+                        <ChatPanel />
+                      </div>
+                      <div className="panel ai-tab-render">
+                        <h3>AI Insights</h3>
+                        <div className="ai-render-content" id="ai-render-content">
+                          <div className="ai-render-empty">Ask the AI agent a question — responses with charts and analysis appear here.</div>
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </>
               )}

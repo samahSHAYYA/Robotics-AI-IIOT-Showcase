@@ -75,7 +75,7 @@ export default function useAlertNotifications(
 ): UseAlertNotificationsReturn {
   const [notifEnabled, setNotifEnabled] = useState(loadPref)
   const [minSeverity, setMinSeverity] = useState<AlertSeverity>(loadMinSeverity)
-  const prevTriggeredCount = useRef(0)
+  const notifiedKeys = useRef(new Set<string>())
 
   useEffect(() => {
     savePref(notifEnabled)
@@ -89,25 +89,23 @@ export default function useAlertNotifications(
     if (!notifEnabled) return
     if (options?.enabled === false) return
     const idx = SEVERITY_LEVELS.indexOf(minSeverity)
-    const matched = alerts.filter(a => {
+    for (const a of alerts) {
       const ai = SEVERITY_LEVELS.indexOf(a.severity as AlertSeverity)
-      return ai >= 0 && ai <= idx
-    })
-    const newCount = matched.length
-    if (newCount > prevTriggeredCount.current) {
+      if (ai < 0 || ai > idx) continue
+      const key = `${a.severity}|${a.message}|${a.timestamp}`
+      if (notifiedKeys.current.has(key)) continue
+      notifiedKeys.current.add(key)
       requestNotifPermission()
       playAlertBeep()
-      const latest = matched[matched.length - 1]
       if ('Notification' in window && Notification.permission === 'granted') {
         try {
-          new Notification(`Alert [${latest.severity}]`, {
-            body: latest.message,
+          new Notification(`Alert [${a.severity}]`, {
+            body: a.message,
             tag: 'factory-alert',
           })
         } catch { }
       }
     }
-    prevTriggeredCount.current = newCount
   }, [alerts, notifEnabled, minSeverity, options?.enabled])
 
   const setEnabled = useCallback((v: boolean) => {
