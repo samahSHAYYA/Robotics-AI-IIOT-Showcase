@@ -34,7 +34,7 @@ import type { TelemetrySnapshot, RobotStatus, Alert, Event } from './types/telem
 import './App.css'
 import './themes/light.css'
 
-const WS_URL = import.meta.env.VITE_WS_URL ?? `${window.location.hostname}:8003/ws`
+const WS_URL = import.meta.env.VITE_WS_URL ?? `${window.location.host}/ws`
 
 export default function App() {
   const kioskMode = new URLSearchParams(window.location.search).get('kiosk') === 'true'
@@ -72,11 +72,11 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
   const [factorySubTab, setFactorySubTab] = useState('alerts')
 
   const TABS = [
-    { key: 'factory', label: '🏭 Factory', panels: ['map', 'fleet', 'alerts', 'console'] },
-    { key: 'analytics', label: '📊 Analytics', panels: ['analytics', 'oee', 'production', 'energy'] },
-    { key: 'maintenance', label: '🔧 Maintenance', panels: ['predictive', 'sensors', 'health', 'shift'] },
-    { key: 'admin', label: '⚙️ Admin', panels: ['audit', 'webhooks', 'robots', 'reconcile', 'sites'] },
-    { key: 'ai', label: '💬 AI', panels: ['chat', 'camera'] },
+    { key: 'factory', label: `🏭 ${t('tab.factory')}`, panels: ['map', 'fleet', 'alerts', 'console'] },
+    { key: 'analytics', label: `📊 ${t('tab.analytics')}`, panels: ['analytics', 'oee', 'production', 'energy'] },
+    { key: 'maintenance', label: `🔧 ${t('tab.maintenance')}`, panels: ['predictive', 'sensors', 'health', 'shift'] },
+    { key: 'admin', label: `⚙️ ${t('tab.admin')}`, panels: ['audit', 'webhooks', 'robots', 'reconcile', 'sites'] },
+    { key: 'ai', label: `💬 ${t('tab.ai')}`, panels: ['chat', 'camera'] },
   ] as const
 
   const activePanels: readonly string[] = TABS.find(t => t.key === activeTab)?.panels ?? []
@@ -455,7 +455,7 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
                           className={`factory-sub-tab${factorySubTab === key ? ' factory-sub-tab--active' : ''}`}
                           onClick={() => setFactorySubTab(key)}
                         >
-                          {key === 'alerts' ? 'Alerts' : key === 'console' ? 'Console' : 'Fleet'}
+                          {t(`factory.${key}`)}
                         </button>
                       ))}
                     </nav>
@@ -498,7 +498,7 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
                   )}
                   {showPanelForTab('energy') && (
                     <div className="panel panel-energy">
-                      <h3>Energy & Efficiency</h3>
+                      <h3>{t('energy.title')}</h3>
                       <EnergyWidget robots={robots} />
                     </div>
                   )}
@@ -509,7 +509,7 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
                 <>
                   {showPanelForTab('predictive') && (
                     <div className="panel panel-predictive">
-                      <h3>Predictive Maintenance</h3>
+                      <h3>{t('predictive.title')}</h3>
                       <PredictiveMaintenance robots={robots} />
                     </div>
                   )}

@@ -89,7 +89,10 @@ export default function useAlertNotifications(
     if (!notifEnabled) return
     if (options?.enabled === false) return
     const idx = SEVERITY_LEVELS.indexOf(minSeverity)
-    const matched = alerts.filter(a => SEVERITY_LEVELS.indexOf(a.severity as AlertSeverity) <= idx)
+    const matched = alerts.filter(a => {
+      const ai = SEVERITY_LEVELS.indexOf(a.severity as AlertSeverity)
+      return ai >= 0 && ai <= idx
+    })
     const newCount = matched.length
     if (newCount > prevTriggeredCount.current) {
       requestNotifPermission()

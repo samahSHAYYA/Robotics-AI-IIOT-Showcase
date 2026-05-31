@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useI18n } from '../contexts/I18nContext'
 
 interface CommandConsoleProps {
   role?: string
@@ -33,17 +34,19 @@ export default function CommandConsole({
   onAssignTask,
   onEmergencyStop,
 }: CommandConsoleProps) {
+  const { t } = useI18n()
   const [robotId, setRobotId] = useState('C3')
   const [task, setTask] = useState('')
+  const [quickTask, setQuickTask] = useState('')
 
   const isViewer = role === 'viewer'
 
   return (
     <div className={`command-console ${isViewer ? 'command-console--readonly' : ''}`}>
-      <h3>Command Console</h3>
+      <h3>{t('console.title')}</h3>
 
       <label className="cc-select-label">
-        Robot
+        {t('console.robot')}
         <select value={robotId} onChange={(e) => setRobotId(e.target.value)} disabled={isViewer}>
           {ROBOTS.map((r) => (
             <option key={r.value} value={r.value}>{r.label}</option>
@@ -53,13 +56,13 @@ export default function CommandConsole({
 
       <div className="cc-btn-row">
         <button className="btn-start" onClick={() => onStartRobot(robotId)} title="Resume movement" disabled={isViewer}>
-          ▶ Resume
+          ▶ {t('console.resume')}
         </button>
         <button className="btn-stop" onClick={() => onStopRobot(robotId)} title="Pause movement" disabled={isViewer}>
-          ⏸ Pause
+          ⏸ {t('console.pause')}
         </button>
         <button className="btn-danger" onClick={() => onEmergencyStop(robotId)} title="Emergency stop" disabled={isViewer}>
-          ⚠ E-Stop
+          ⚠ {t('console.eStop')}
         </button>
       </div>
 
@@ -68,23 +71,24 @@ export default function CommandConsole({
         onClick={() => onAssignTask(robotId, 'Returning to Base')}
         disabled={isViewer}
       >
-        ↲ Return to Base
+        ↲ {t('console.returnToBase')}
       </button>
 
       <label className="cc-select-label">
-        Quick Task
+        {t('console.quickTask')}
         <select
-          value=""
+          value={quickTask}
           onChange={(e) => {
+            setQuickTask(e.target.value)
             if (e.target.value) {
               onAssignTask(robotId, e.target.value)
             }
           }}
           disabled={isViewer}
         >
-          <option value="">— select —</option>
-          {QUICK_TASKS.map((t) => (
-            <option key={t} value={t}>{t}</option>
+          <option value="">{t('console.select')}</option>
+          {QUICK_TASKS.map((taskName) => (
+            <option key={taskName} value={taskName}>{taskName}</option>
           ))}
         </select>
       </label>
@@ -100,16 +104,16 @@ export default function CommandConsole({
         }}
       >
         <label className="cc-input-label">
-          Custom Task
+          {t('console.customTask')}
           <input
             type="text"
             value={task}
             onChange={(e) => setTask(e.target.value)}
-            placeholder="e.g. Zone B inspection"
+            placeholder={t('console.placeholder')}
             disabled={isViewer}
           />
         </label>
-        <button type="submit" className="btn-send" disabled={isViewer}>Assign</button>
+        <button type="submit" className="btn-send" disabled={isViewer}>{t('console.assign')}</button>
       </form>
     </div>
   )
