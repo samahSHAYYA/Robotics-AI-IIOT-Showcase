@@ -69,6 +69,7 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
   const [selectedRobotId, setSelectedRobotId] = useState<string | null>(null)
   const [showShortcuts, setShowShortcuts] = useState(false)
   const [activeTab, setActiveTab] = useState('factory')
+  const [factorySubTab, setFactorySubTab] = useState('alerts')
 
   const TABS = [
     { key: 'factory', label: '🏭 Factory', panels: ['map', 'fleet', 'alerts', 'console'] },
@@ -83,7 +84,7 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
   const [kpiDiffs, setKpiDiffs] = useState<Record<string, { value: number; direction: 'up' | 'down' }> | undefined>(undefined)
   const [voiceResult, setVoiceResult] = useState<{ text: string; ok: boolean } | null>(null)
   const voiceTimeoutRef = useRef<number>(0)
-  const { notifEnabled, setNotifEnabled } = useAlertNotifications(alerts)
+  const { notifEnabled, setNotifEnabled, minSeverity, cycleSeverity } = useAlertNotifications(alerts)
 
   const [kioskView, setKioskView] = useState<'map' | 'kpi'>('map')
 
@@ -342,16 +343,23 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
           <div className="header-right">
             <VoiceCommand />
             <AmbientAudio robots={robots} />
-            <button
-              className={`notif-header-btn${notifEnabled ? ' notif-header-btn--on' : ''}`}
-              onClick={() => setNotifEnabled(!notifEnabled)}
-              title={notifEnabled ? 'Disable notifications' : 'Enable notifications'}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-              </svg>
-            </button>
+            <div className="notif-group">
+              <button
+                className={`notif-header-btn${notifEnabled ? ' notif-header-btn--on' : ''}`}
+                onClick={() => setNotifEnabled(!notifEnabled)}
+                title={notifEnabled ? 'Mute alerts' : 'Unmute alerts'}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
+              </button>
+              {notifEnabled && (
+                <button className="notif-severity-btn" onClick={cycleSeverity} title={`Sound on: ${minSeverity}+`}>
+                  {minSeverity}
+                </button>
+              )}
+            </div>
             <ScreenshotExport />
             <button className="layout-settings-btn" onClick={handleDownloadPdf} title="Download PDF report">📄</button>
             <ThemeToggleButton />
@@ -439,33 +447,44 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
                       </MapSettingsProvider>
                     </div>
                   )}
-                  {showPanelForTab('fleet') && (
-                    <div className="panel panel-fleet">
-                      <div className="panel-head-row">
-                        <h3>{t('fleet.title')}</h3>
-                        <TelemetryExport robots={robots} />
+                  <div className="factory-sidebar">
+                    <nav className="factory-sub-tabs">
+                      {['alerts', 'console', 'fleet'].map(key => (
+                        <button
+                          key={key}
+                          className={`factory-sub-tab${factorySubTab === key ? ' factory-sub-tab--active' : ''}`}
+                          onClick={() => setFactorySubTab(key)}
+                        >
+                          {key === 'alerts' ? 'Alerts' : key === 'console' ? 'Console' : 'Fleet'}
+                        </button>
+                      ))}
+                    </nav>
+                    {showPanelForTab(factorySubTab) && factorySubTab === 'alerts' && (
+                      <div className="panel panel-alerts">
+                        <AlertBoard alerts={alerts} events={events} error={error} />
                       </div>
-                      <RobotFleet robots={robots} error={error} highlightedRobotId={selectedRobotId} />
-                      <EnergyWidget robots={robots} />
-                      <PredictiveMaintenance robots={robots} />
-                    </div>
-                  )}
-                  {showPanelForTab('alerts') && (
-                    <div className="panel panel-alerts">
-                      <AlertBoard alerts={alerts} events={events} error={error} />
-                    </div>
-                  )}
-                  {showPanelForTab('console') && (
-                    <div className="panel panel-console">
-                      <CommandConsole
-                        role={role}
-                        onStartRobot={handleRobotStart}
-                        onStopRobot={handleRobotStop}
-                        onAssignTask={handleAssignTask}
-                        onEmergencyStop={handleEmergencyStop}
-                      />
-                    </div>
-                  )}
+                    )}
+                    {showPanelForTab(factorySubTab) && factorySubTab === 'console' && (
+                      <div className="panel panel-console">
+                        <CommandConsole
+                          role={role}
+                          onStartRobot={handleRobotStart}
+                          onStopRobot={handleRobotStop}
+                          onAssignTask={handleAssignTask}
+                          onEmergencyStop={handleEmergencyStop}
+                        />
+                      </div>
+                    )}
+                    {showPanelForTab(factorySubTab) && factorySubTab === 'fleet' && (
+                      <div className="panel panel-fleet">
+                        <div className="panel-head-row">
+                          <h3>{t('fleet.title')}</h3>
+                          <TelemetryExport robots={robots} />
+                        </div>
+                        <RobotFleet robots={robots} error={error} highlightedRobotId={selectedRobotId} />
+                      </div>
+                    )}
+                  </div>
                 </>
               )}
               {/* Analytics tab */}
@@ -478,7 +497,7 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
                     <div className="panel panel-production"><ProductionLine robots={robots} /></div>
                   )}
                   {showPanelForTab('energy') && (
-                    <div className="panel" style={{ gridColumn: '1 / -1' }}>
+                    <div className="panel panel-energy">
                       <h3>Energy & Efficiency</h3>
                       <EnergyWidget robots={robots} />
                     </div>
@@ -488,6 +507,12 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
               {/* Maintenance tab */}
               {activeTab === 'maintenance' && (
                 <>
+                  {showPanelForTab('predictive') && (
+                    <div className="panel panel-predictive">
+                      <h3>Predictive Maintenance</h3>
+                      <PredictiveMaintenance robots={robots} />
+                    </div>
+                  )}
                   {showPanelForTab('sensors') && (
                     <div className="panel panel-sensors"><SensorGrid /></div>
                   )}

@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import type { Alert } from '../types/telemetry'
 
+const SEVERITY_LEVELS = ['critical', 'warning', 'info'] as const
+export type AlertSeverity = (typeof SEVERITY_LEVELS)[number]
+
 interface UseAlertNotificationsOptions {
   enabled?: boolean
 }
@@ -8,6 +11,8 @@ interface UseAlertNotificationsOptions {
 interface UseAlertNotificationsReturn {
   notifEnabled: boolean
   setNotifEnabled: (v: boolean) => void
+  minSeverity: AlertSeverity
+  cycleSeverity: () => void
 }
 
 function loadPref(): boolean {
@@ -20,6 +25,18 @@ function loadPref(): boolean {
 
 function savePref(v: boolean) {
   try { localStorage.setItem('notifEnabled', v ? 'true' : 'false') } catch { }
+}
+
+function loadMinSeverity(): AlertSeverity {
+  try {
+    const v = localStorage.getItem('notifMinSeverity')
+    if (v === 'critical' || v === 'warning' || v === 'info') return v
+  } catch { }
+  return 'critical'
+}
+
+function saveMinSeverity(v: AlertSeverity) {
+  try { localStorage.setItem('notifMinSeverity', v) } catch { }
 }
 
 function playAlertBeep() {
@@ -57,36 +74,50 @@ export default function useAlertNotifications(
   options?: UseAlertNotificationsOptions,
 ): UseAlertNotificationsReturn {
   const [notifEnabled, setNotifEnabled] = useState(loadPref)
-  const prevCriticalCount = useRef(0)
+  const [minSeverity, setMinSeverity] = useState<AlertSeverity>(loadMinSeverity)
+  const prevTriggeredCount = useRef(0)
 
   useEffect(() => {
     savePref(notifEnabled)
   }, [notifEnabled])
 
   useEffect(() => {
+    saveMinSeverity(minSeverity)
+  }, [minSeverity])
+
+  useEffect(() => {
     if (!notifEnabled) return
     if (options?.enabled === false) return
-    const criticalAlerts = alerts.filter(a => a.severity === 'critical')
-    if (criticalAlerts.length > prevCriticalCount.current) {
+    const idx = SEVERITY_LEVELS.indexOf(minSeverity)
+    const matched = alerts.filter(a => SEVERITY_LEVELS.indexOf(a.severity as AlertSeverity) <= idx)
+    const newCount = matched.length
+    if (newCount > prevTriggeredCount.current) {
       requestNotifPermission()
       playAlertBeep()
-      const latest = criticalAlerts[criticalAlerts.length - 1]
+      const latest = matched[matched.length - 1]
       if ('Notification' in window && Notification.permission === 'granted') {
         try {
-          new Notification('Critical Alert', {
+          new Notification(`Alert [${latest.severity}]`, {
             body: latest.message,
             tag: 'factory-alert',
           })
         } catch { }
       }
     }
-    prevCriticalCount.current = criticalAlerts.length
-  }, [alerts, notifEnabled, options?.enabled])
+    prevTriggeredCount.current = newCount
+  }, [alerts, notifEnabled, minSeverity, options?.enabled])
 
   const setEnabled = useCallback((v: boolean) => {
     setNotifEnabled(v)
     if (v) requestNotifPermission()
   }, [])
 
-  return { notifEnabled, setNotifEnabled: setEnabled }
+  const cycleSeverity = useCallback(() => {
+    setMinSeverity(prev => {
+      const idx = SEVERITY_LEVELS.indexOf(prev)
+      return SEVERITY_LEVELS[(idx + 1) % SEVERITY_LEVELS.length]
+    })
+  }, [])
+
+  return { notifEnabled, setNotifEnabled: setEnabled, minSeverity, cycleSeverity }
 }
