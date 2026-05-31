@@ -7,12 +7,12 @@ interface ServiceStatus {
 }
 
 const SERVICES = [
-  { name: 'ops-api', url: '/health' },
-  { name: 'ai-service', url: 'http://localhost:8002/health' },
-  { name: 'ai-agent', url: 'http://localhost:8004/health' },
+  { name: 'ops-api', url: '/api/v1/health/ops-api' },
+  { name: 'ai-service', url: '/api/v1/health/ai-service' },
+  { name: 'ai-agent', url: '/api/v1/health/ai-agent' },
   { name: 'redis', url: '/api/v1/health/redis' },
   { name: 'postgres', url: '/api/v1/health/postgres' },
-  { name: 'core-platform', url: '/api/v1/health/core' },
+  { name: 'core-platform', url: '/api/v1/health/core-platform' },
 ]
 
 async function checkService(url: string): Promise<Pick<ServiceStatus, 'status' | 'latency'>> {

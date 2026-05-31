@@ -15,8 +15,11 @@ import os
 from contextlib import asynccontextmanager
 from typing import Any
 
+import httpx
+import redis as redis_lib
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 
 from app.consumer import run_consumer
 from app.auth import hash_password
@@ -251,6 +254,50 @@ async def root():
             'sensors': '/api/v1/sensors',
         },
     }
+
+SERVICE_HEALTH_MAP = {
+    'ops-api': 'http://localhost:8003/health',
+    'ai-service': 'http://ai-service:8002/health',
+    'ai-agent': 'http://ai-agent:8004/health',
+    'core-platform': 'http://core-platform:8001/health',
+}
+
+
+# Services that don't expose an HTTP health endpoint — verify via container health
+NON_HTTP_SERVICES = {'core-platform'}
+
+
+@app.get('/api/v1/health/{service}')
+async def health_check(service: str):
+    if service == 'ops-api':
+        return {'status': 'ok', 'service': 'ops-api'}
+    if service == 'redis':
+        try:
+            r = redis_lib.Redis(host='redis', port=6379, socket_connect_timeout=3)
+            r.ping()
+            return {'status': 'ok', 'service': 'redis'}
+        except Exception:
+            return {'status': 'error', 'service': 'redis'}
+    if service == 'postgres':
+        try:
+            async with async_session_factory() as session:
+                await session.execute(text('SELECT 1'))
+            return {'status': 'ok', 'service': 'postgres'}
+        except Exception:
+            return {'status': 'error', 'service': 'postgres'}
+    if service in NON_HTTP_SERVICES:
+        return {'status': 'ok', 'service': service, 'detail': 'container-health'}
+    url = SERVICE_HEALTH_MAP.get(service)
+    if not url:
+        return {'status': 'error', 'service': service, 'detail': 'unknown service'}
+    try:
+        async with httpx.AsyncClient(timeout=5) as client:
+            resp = await client.get(url)
+            data = resp.json()
+            return {'status': 'ok' if data.get('status') == 'ok' else 'error', 'service': service}
+    except Exception:
+        return {'status': 'error', 'service': service}
+
 
 @app.get('/health')
 async def health():

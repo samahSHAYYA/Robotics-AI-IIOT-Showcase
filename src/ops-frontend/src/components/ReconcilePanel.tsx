@@ -3,9 +3,9 @@ import { useState, useEffect, useCallback } from 'react'
 interface ReconcileState {
   version: number
   timestamp: string
-  robots: number
-  alerts: number
-  sensors: number
+  robots: unknown[]
+  alerts: unknown[]
+  sensors: Record<string, unknown>
 }
 
 interface DiffResult {
@@ -132,15 +132,15 @@ export default function ReconcilePanel() {
           </div>
           <div className="reconcile-state-row">
             <span className="reconcile-state-label">Robots</span>
-            <span className="reconcile-state-value">{state.robots}</span>
+            <span className="reconcile-state-value">{state.robots.length}</span>
           </div>
           <div className="reconcile-state-row">
             <span className="reconcile-state-label">Alerts</span>
-            <span className="reconcile-state-value">{state.alerts}</span>
+            <span className="reconcile-state-value">{state.alerts.length}</span>
           </div>
           <div className="reconcile-state-row">
             <span className="reconcile-state-label">Sensors</span>
-            <span className="reconcile-state-value">{state.sensors}</span>
+            <span className="reconcile-state-value">{Object.keys(state.sensors).length}</span>
           </div>
         </div>
       )}
