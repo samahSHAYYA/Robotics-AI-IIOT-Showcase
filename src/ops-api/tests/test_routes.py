@@ -24,22 +24,22 @@ def test_get_telemetry():
 
 
 def test_get_robot_status():
-    resp = client.get("/api/v1/robot/status")
+    resp = client.get("/api/v1/robots")
     assert resp.status_code == 200
     data = resp.json()
     assert "robots" in data
     assert isinstance(data["robots"], list)
 
 
-def test_send_command():
-    resp = client.post("/api/v1/robot/command", json={
-        "command": "safe-stop",
-        "target": "C3",
-        "params": {},
+def test_register_robot():
+    resp = client.post("/api/v1/robots/register", json={
+        "name": "TestBot",
+        "type": "humanoid",
     })
-    assert resp.status_code == 200
-    assert resp.json()["status"] == "acknowledged"
-    assert "trace_id" in resp.json()
+    assert resp.status_code == 201
+    data = resp.json()
+    assert "robot_id" in data
+    assert data["name"] == "TestBot"
 
 
 def test_inspect():
