@@ -42,4 +42,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: docker compose -f src/docker-compose.yaml build --parallel
+      - run: docker compose -f src/docker-compose.yaml build
