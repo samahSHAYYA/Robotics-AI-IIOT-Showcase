@@ -1073,7 +1073,7 @@ export default function DigitalTwinMap({
         cancelAnimationFrame(rafRef.current)
       }
     }
-  }, [sx, sy])
+  }, [sx, sy, settings])
 
   const handleCanvasClick = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {

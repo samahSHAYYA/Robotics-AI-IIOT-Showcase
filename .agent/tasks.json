@@ -880,7 +880,7 @@
       "id": 79,
       "title": "Fix Snyk SARIF output in security-scan.yml",
       "status": "completed",
-      "committed": false,
+      "committed": true,
       "acceptance": [
         "Snyk Dependency Scan job passes (SARIF file generated and uploaded)",
         "Security Scan workflow is fully green"
@@ -890,7 +890,7 @@
       "id": 80,
       "title": "Upgrade deprecated GitHub Actions across all workflows",
       "status": "completed",
-      "committed": false,
+      "committed": true,
       "acceptance": [
         "actions/checkout@v4 → @v6.0.2 in all 3 workflow files (Node.js 20 deprecation)",
         "actions/setup-node@v4 → @v6.4.0 in ci.yml (Node.js 20 deprecation)",
@@ -902,13 +902,13 @@
 },
 {
   "sprint": "Bugs — Registered for Fix",
-  "status": "pending",
+  "status": "completed",
   "tasks": [
     {
       "id": 77,
       "title": "BUG: Legend & Settings panel — buttons/controls not working in factory",
-      "status": "pending",
-      "committed": false,
+      "status": "completed",
+      "committed": true,
       "acceptance": [
         "Settings button in factory map header opens Legend & Settings panel",
         "All toggles in the panel (robot visibility, overlays, colors) actually change the canvas rendering",
@@ -916,7 +916,8 @@
         "Popup/context menu dismisses on Cancel, click outside, or Escape",
         "Context menu 'Legend & Settings' option opens the settings panel",
         "No console errors when interacting with panel controls"
-      ]
+      ],
+      "fix": "Added `settings` to the dependency array of the main render loop useEffect in DigitalTwinMap.tsx (line 1076). The effect had `[sx, sy]` but used `settings` extensively inside; without it in deps, the canvas never refreshed with new settings from the panel."
     }
   ]
 }
