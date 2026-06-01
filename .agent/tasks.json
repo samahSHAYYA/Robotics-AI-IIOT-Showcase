@@ -738,7 +738,7 @@
       "id": 68,
       "title": "Feature 54: Real-time Collaboration Annotations",
       "status": "completed",
-      "committed": false,
+      "committed": true,
       "acceptance": [
         "Users can place annotations on the factory floor map",
         "Annotation types: note, alert pin, measurement line, area highlight",
