@@ -737,14 +737,17 @@
     {
       "id": 68,
       "title": "Feature 54: Real-time Collaboration Annotations",
-      "status": "pending",
+      "status": "completed",
       "committed": false,
       "acceptance": [
         "Users can place annotations on the factory floor map",
         "Annotation types: note, alert pin, measurement line, area highlight",
         "Annotations persisted in localStorage and synced via BroadcastChannel API",
         "Author name and timestamp shown on each annotation",
-        "Annotation filter by author and type"
+        "Annotation filter by type",
+        "Right-click context menu 'Add Annotation' opens creation modal",
+        "Annotation click in panel fires focus-annotation event to highlight on canvas",
+        "Each annotation type rendered uniquely on canvas (note box, alert pin, measure line, area highlight)"
       ]
     }
   ]

@@ -5387,4 +5387,210 @@ html, body, #root {
   font-weight: 600;
 }
 
+/* ===== Annotation Panel ===== */
+.panel-annotations {
+  max-height: 300px;
+  overflow-y: auto;
+}
+.annotation-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.annotation-panel h3 {
+  flex-shrink: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text2);
+  margin-bottom: 0.35rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.annotation-panel h3::before {
+  content: '';
+  width: 3px;
+  height: 12px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+.annotation-filters {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+  flex-shrink: 0;
+}
+.annotation-filter-btn {
+  background: var(--surface2);
+  border: 1px solid transparent;
+  color: var(--text2);
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.65rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+.annotation-filter-btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(59,130,246,0.1);
+}
+.annotation-count {
+  font-size: 0.55rem;
+  font-weight: 700;
+  background: rgba(255,255,255,0.08);
+  padding: 0.05rem 0.3rem;
+  border-radius: 0.25rem;
+  line-height: 1.3;
+  min-width: 1rem;
+  text-align: center;
+}
+.annotation-list {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+.annotation-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  padding: 0.4rem;
+  border-radius: 0.3rem;
+  background: var(--surface);
+  margin-bottom: 0.3rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.annotation-item:hover {
+  background: var(--surface2);
+}
+.annotation-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+  width: 1.5rem;
+  text-align: center;
+}
+.annotation-content {
+  flex: 1;
+  min-width: 0;
+}
+.annotation-text {
+  font-size: 0.75rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.annotation-meta {
+  font-size: 0.6rem;
+  color: var(--text2);
+  margin-top: 0.15rem;
+}
+.annotation-delete {
+  background: none;
+  border: none;
+  color: var(--text2);
+  cursor: pointer;
+  font-size: 0.7rem;
+  padding: 0.1rem;
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+.annotation-delete:hover {
+  opacity: 1;
+  color: var(--critical);
+}
+.annotation-clear {
+  background: transparent;
+  border: 1px solid var(--surface2);
+  color: var(--text2);
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.65rem;
+  cursor: pointer;
+  margin-top: 0.3rem;
+  width: 100%;
+  flex-shrink: 0;
+  font-family: inherit;
+}
+.annotation-clear:hover {
+  border-color: var(--critical);
+  color: var(--critical);
+}
+/* Annotation creation modal */
+.annotation-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.annotation-modal {
+  background: var(--surface);
+  border: 1px solid var(--surface2);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  min-width: 280px;
+  max-width: 360px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+}
+.annotation-modal h4 {
+  margin-bottom: 0.75rem;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+.annotation-modal label {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--text2);
+  margin-bottom: 0.25rem;
+}
+.annotation-modal select,
+.annotation-modal textarea,
+.annotation-modal input[type="color"],
+.annotation-modal input[type="number"] {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--surface2);
+  border-radius: 0.25rem;
+  color: var(--text);
+  padding: 0.35rem 0.5rem;
+  font-size: 0.75rem;
+  margin-bottom: 0.6rem;
+  font-family: inherit;
+}
+.annotation-modal textarea {
+  min-height: 60px;
+  resize: vertical;
+}
+.annotation-modal-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+.annotation-modal-actions button {
+  background: var(--surface2);
+  border: none;
+  color: var(--text);
+  padding: 0.3rem 0.8rem;
+  border-radius: 0.25rem;
+  font-size: 0.7rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+.annotation-modal-actions button.primary {
+  background: var(--accent);
+  color: #fff;
+}
+
 

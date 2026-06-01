@@ -21,6 +21,7 @@ const PANELS = [
   { key: 'robots', label: 'Robot Fleet Panel' },
   { key: 'reconcile', label: 'State Reconciliation' },
   { key: 'sites', label: 'Multi-Factory Sites' },
+  { key: 'annotations', label: 'Annotations' },
 ] as const
 
 export type LayoutKey = (typeof PANELS)[number]['key']
@@ -44,6 +45,7 @@ const DEFAULTS: Record<string, boolean> = {
   robots: true,
   reconcile: true,
   sites: true,
+  annotations: true,
 }
 
 export function loadLayout(): Record<string, boolean> {

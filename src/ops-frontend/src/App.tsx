@@ -18,6 +18,7 @@ import AmbientAudio from './components/AmbientAudio'
 import TelemetryExport from './components/TelemetryExport'
 import ShiftScheduler from './components/ShiftScheduler'
 import WorkerSafetyZone from './components/WorkerSafetyZone'
+import AnnotationPanel from './components/AnnotationPanel'
 import ServiceHealth from './components/ServiceHealth'
 import AuditLog from './components/AuditLog'
 import WebhookManager from './components/WebhookManager'
@@ -78,7 +79,7 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
   const [factorySubTab, setFactorySubTab] = useState('alerts')
 
   const TABS = [
-    { key: 'factory', label: `🏭 ${t('tab.factory')}`, panels: ['map', 'fleet', 'alerts', 'console'] },
+    { key: 'factory', label: `🏭 ${t('tab.factory')}`, panels: ['map', 'fleet', 'alerts', 'console', 'annotations'] },
     { key: 'analytics', label: `📊 ${t('tab.analytics')}`, panels: ['analytics', 'oee', 'production', 'energy', 'supply', 'quality', 'energyopt'] },
     { key: 'maintenance', label: `🔧 ${t('tab.maintenance')}`, panels: ['predictive', 'sensors', 'health', 'shift', 'federated'] },
     { key: 'admin', label: `⚙️ ${t('tab.admin')}`, panels: ['audit', 'webhooks', 'robots', 'reconcile', 'sites'] },
@@ -479,7 +480,7 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
                   )}
                   <div className="factory-sidebar">
                     <nav className="factory-sub-tabs">
-                      {['alerts', 'console', 'fleet', 'safety'].map(key => (
+                      {['alerts', 'console', 'fleet', 'safety', 'annotations'].map(key => (
                         <button
                           key={key}
                           className={`factory-sub-tab${factorySubTab === key ? ' factory-sub-tab--active' : ''}`}
@@ -518,6 +519,11 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
                     {showPanelForTab(factorySubTab) && factorySubTab === 'safety' && (
                       <div className="panel panel-safety">
                         <WorkerSafetyZone workers={workers} robots={robots} onToggleWorker={handleWorkerToggle} />
+                      </div>
+                    )}
+                    {showPanelForTab(factorySubTab) && factorySubTab === 'annotations' && (
+                      <div className="panel panel-annotations">
+                        <AnnotationPanel />
                       </div>
                     )}
                   </div>

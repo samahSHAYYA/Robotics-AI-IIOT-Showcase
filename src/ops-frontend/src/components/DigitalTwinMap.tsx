@@ -1,9 +1,11 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import type { RobotStatus, WorkerStatus } from '../types/telemetry'
+import type { Annotation } from '../types/annotations'
 import { useMapSettings } from '../contexts/MapSettingsContext'
 import MapSettingsPanel, { ContextMenu } from './MapSettingsPanel'
 import ThreeDView from './ThreeDView'
+import useAnnotations from '../hooks/useAnnotations'
 
 const FACTORY_W = 600
 const FACTORY_H = 400
@@ -445,6 +447,125 @@ function renderSafetyZones(ctx: CanvasRenderingContext2D, sxFn: (v: number) => n
   }
 }
 
+function renderAnnotations(
+  ctx: CanvasRenderingContext2D,
+  sxFn: (v: number) => number,
+  syFn: (v: number) => number,
+  annotations: Annotation[],
+  timeMs: number,
+  focusedId: string | null,
+) {
+  for (const a of annotations) {
+    const cx = sxFn(a.x)
+    const cy = syFn(a.y)
+    const isFocused = focusedId === a.id
+    const focusGlow = isFocused ? (0.6 + 0.4 * Math.sin(timeMs / 120)) : 1
+
+    switch (a.type) {
+      case 'note': {
+        const pw = Math.min(80, ctx.measureText(a.content).width + 16)
+        ctx.save()
+        ctx.globalAlpha = focusGlow
+        ctx.fillStyle = a.color + '30'
+        ctx.beginPath()
+        ctx.roundRect(cx, cy - 14, pw, 24, 4)
+        ctx.fill()
+        ctx.strokeStyle = a.color + '80'
+        ctx.lineWidth = 1.5
+        ctx.beginPath()
+        ctx.roundRect(cx, cy - 14, pw, 24, 4)
+        ctx.stroke()
+        ctx.fillStyle = a.color
+        ctx.font = '11px sans-serif'
+        ctx.textAlign = 'left'
+        ctx.textBaseline = 'middle'
+        ctx.fillText('📝 ' + (a.content.length > 12 ? a.content.slice(0, 12) + '…' : a.content), cx + 6, cy - 2)
+        ctx.restore()
+        break
+      }
+      case 'alert-pin': {
+        ctx.save()
+        ctx.globalAlpha = focusGlow
+        const pulse = 0.8 + 0.2 * Math.sin(timeMs / 300)
+        ctx.beginPath()
+        ctx.arc(cx, cy, 8 * pulse, 0, Math.PI * 2)
+        ctx.fillStyle = a.color
+        ctx.fill()
+        ctx.strokeStyle = '#ffffff'
+        ctx.lineWidth = 2
+        ctx.beginPath()
+        ctx.arc(cx, cy, 8 * pulse, 0, Math.PI * 2)
+        ctx.stroke()
+        ctx.fillStyle = '#ffffff'
+        ctx.font = 'bold 10px sans-serif'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText('!', cx, cy + 1)
+        ctx.restore()
+        break
+      }
+      case 'measurement-line': {
+        if (a.endX !== undefined && a.endY !== undefined) {
+          const ex = sxFn(a.endX)
+          const ey = syFn(a.endY)
+          ctx.save()
+          ctx.globalAlpha = focusGlow
+          ctx.strokeStyle = a.color
+          ctx.lineWidth = 2
+          ctx.setLineDash([6, 4])
+          ctx.beginPath()
+          ctx.moveTo(cx, cy)
+          ctx.lineTo(ex, ey)
+          ctx.stroke()
+          ctx.setLineDash([])
+          // Endpoint dots
+          ctx.beginPath()
+          ctx.arc(cx, cy, 3, 0, Math.PI * 2)
+          ctx.fillStyle = a.color
+          ctx.fill()
+          ctx.beginPath()
+          ctx.arc(ex, ey, 3, 0, Math.PI * 2)
+          ctx.fillStyle = a.color
+          ctx.fill()
+          // Length label at midpoint
+          const dist = Math.hypot(a.endX - a.x, a.endY - a.y)
+          const mx = (cx + ex) / 2
+          const my = (cy + ey) / 2
+          ctx.fillStyle = a.color + 'cc'
+          ctx.font = '10px sans-serif'
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'middle'
+          ctx.fillText(dist.toFixed(1) + 'm', mx, my - 10)
+          ctx.restore()
+        }
+        break
+      }
+      case 'area-highlight': {
+        if (a.width !== undefined && a.height !== undefined) {
+          const aw = sxFn(a.x + a.width) - cx
+          const ah = syFn(a.y + a.height) - cy
+          ctx.save()
+          ctx.globalAlpha = 0.25 * focusGlow
+          ctx.fillStyle = a.color
+          ctx.beginPath()
+          ctx.roundRect(cx, cy, aw, ah, 3)
+          ctx.fill()
+          ctx.globalAlpha = 0.7 * focusGlow
+          ctx.strokeStyle = a.color
+          ctx.lineWidth = 2
+          ctx.setLineDash([6, 4])
+          ctx.beginPath()
+          ctx.roundRect(cx, cy, aw, ah, 3)
+          ctx.stroke()
+          ctx.setLineDash([])
+          ctx.restore()
+        }
+        break
+      }
+    }
+  }
+}
+
 function heatmapColor(t: number): string {
   const h = Math.round(240 - t * 240)
   const s = 70 + Math.round(t * 20)
@@ -511,6 +632,20 @@ export default function DigitalTwinMap({
   }>({ history: [], currentIndex: -1, playing: false, speed: 1 })
 
   const { settings } = useMapSettings()
+
+  const { annotations: annoList, addAnnotation } = useAnnotations()
+  const [showAnnotationForm, setShowAnnotationForm] = useState<{ x: number; y: number } | null>(null)
+  const [focusedAnnotation, setFocusedAnnotation] = useState<string | null>(null)
+  const annotationsRef = useRef<Annotation[]>([])
+  const focusedAnnotationRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    annotationsRef.current = annoList
+  }, [annoList])
+
+  useEffect(() => {
+    focusedAnnotationRef.current = focusedAnnotation
+  }, [focusedAnnotation])
 
   /* ===== Time-Machine Mode (Feature 26) ===== */
   const historicalCanvasRef = useRef<HTMLCanvasElement>(null)
@@ -714,6 +849,21 @@ export default function DigitalTwinMap({
   }, [])
 
   useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { id: string }
+      focusedAnnotationRef.current = detail.id ?? null
+      setFocusedAnnotation(detail.id ?? null)
+      const t = setTimeout(() => {
+        focusedAnnotationRef.current = null
+        setFocusedAnnotation(null)
+      }, 2000)
+      return () => clearTimeout(t)
+    }
+    window.addEventListener('focus-annotation', handler)
+    return () => window.removeEventListener('focus-annotation', handler)
+  }, [])
+
+  useEffect(() => {
     const LERP_FACTOR = 0.08
 
     const render = () => {
@@ -902,6 +1052,9 @@ export default function DigitalTwinMap({
       ctx.setLineDash([])
 
       renderAssemblyArea(ctx, sx, sy, now)
+
+      /* ---- Annotations ---- */
+      renderAnnotations(ctx, sx, sy, annotationsRef.current, now, focusedAnnotationRef.current)
 
       if (settings.showZoneLabels) {
         renderSafetyZones(ctx, sx, sy)
@@ -1138,6 +1291,18 @@ export default function DigitalTwinMap({
     setContextMenu(null)
     setShowSettings(true)
   }, [])
+
+  const handleAddAnnotation = useCallback(() => {
+    if (!contextMenu || !canvasRef.current) return
+    const canvas = canvasRef.current
+    const rect = canvas.getBoundingClientRect()
+    const mx = ((contextMenu.x - rect.left) / rect.width) * canvas.width
+    const my = ((contextMenu.y - rect.top) / rect.height) * canvas.height
+    const fx = Math.max(0.2, Math.min(9.8, (mx / FACTORY_W) * 10))
+    const fy = Math.max(0.2, Math.min(9.8, (my / FACTORY_H) * 10))
+    setContextMenu(null)
+    setShowAnnotationForm({ x: fx, y: fy })
+  }, [contextMenu])
 
   const handleTimelinePlay = useCallback(() => {
     setTimeline((prev) => {
@@ -1395,6 +1560,7 @@ export default function DigitalTwinMap({
           onOpenSettings={handleOpenSettings}
           onRobotStart={onRobotStart}
           onRobotStop={onRobotStop}
+          onAddAnnotation={handleAddAnnotation}
           onClose={() => setContextMenu(null)}
         />
       )}
@@ -1518,6 +1684,15 @@ export default function DigitalTwinMap({
           </div>
         </>
       )}
+      {/* ---- Annotation Form Modal ---- */}
+      {showAnnotationForm && (
+        <AnnotationFormModal
+          x={showAnnotationForm.x}
+          y={showAnnotationForm.y}
+          addAnnotation={addAnnotation}
+          onClose={() => setShowAnnotationForm(null)}
+        />
+      )}
     </>
   )
 
@@ -1594,6 +1769,99 @@ export default function DigitalTwinMap({
       )}
       {timelineBar}
       {overlays}
+    </div>
+  )
+}
+
+/* ---- Annotation Creation Form Modal ---- */
+function AnnotationFormModal({
+  x,
+  y,
+  addAnnotation,
+  onClose,
+}: {
+  x: number
+  y: number
+  addAnnotation: (annotation: Omit<Annotation, 'id' | 'createdAt'>) => void
+  onClose: () => void
+}) {
+  const [type, setType] = useState<'note' | 'alert-pin' | 'measurement-line' | 'area-highlight'>('note')
+  const [content, setContent] = useState('')
+  const [color, setColor] = useState('#3b82f6')
+  const [endX, setEndX] = useState(Math.min(9.8, x + 1.5))
+  const [endY, setEndY] = useState(Math.min(9.8, y + 1.5))
+  const [width, setWidth] = useState(2)
+  const [height, setHeight] = useState(2)
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!content.trim()) return
+    const base = {
+      type,
+      x,
+      y,
+      content: content.trim(),
+      author: 'User',
+      color,
+    }
+    if (type === 'measurement-line') {
+      addAnnotation({ ...base, endX, endY })
+    } else if (type === 'area-highlight') {
+      addAnnotation({ ...base, width, height })
+    } else {
+      addAnnotation(base)
+    }
+    onClose()
+  }
+
+  return (
+    <div className="annotation-modal-overlay" onClick={onClose}>
+      <div className="annotation-modal" onClick={(e) => e.stopPropagation()}>
+        <h4>Add Annotation at ({x.toFixed(1)}, {y.toFixed(1)})</h4>
+        <form onSubmit={handleSubmit}>
+          <label>Type</label>
+          <select value={type} onChange={(e) => setType(e.target.value as typeof type)}>
+            <option value="note">Note</option>
+            <option value="alert-pin">Alert Pin</option>
+            <option value="measurement-line">Measurement Line</option>
+            <option value="area-highlight">Area Highlight</option>
+          </select>
+
+          <label>Content</label>
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Annotation text..."
+            required
+          />
+
+          <label>Color</label>
+          <input type="color" value={color} onChange={(e) => setColor(e.target.value)} />
+
+          {type === 'measurement-line' && (
+            <>
+              <label>End X (0-10)</label>
+              <input type="number" min={0} max={10} step={0.1} value={endX} onChange={(e) => setEndX(Number(e.target.value))} />
+              <label>End Y (0-10)</label>
+              <input type="number" min={0} max={10} step={0.1} value={endY} onChange={(e) => setEndY(Number(e.target.value))} />
+            </>
+          )}
+
+          {type === 'area-highlight' && (
+            <>
+              <label>Width (0-10)</label>
+              <input type="number" min={0.1} max={10} step={0.1} value={width} onChange={(e) => setWidth(Number(e.target.value))} />
+              <label>Height (0-10)</label>
+              <input type="number" min={0.1} max={10} step={0.1} value={height} onChange={(e) => setHeight(Number(e.target.value))} />
+            </>
+          )}
+
+          <div className="annotation-modal-actions">
+            <button type="button" onClick={onClose}>Cancel</button>
+            <button type="submit" className="primary">Add</button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }

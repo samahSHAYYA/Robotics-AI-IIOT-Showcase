@@ -206,6 +206,7 @@ export function ContextMenu({
   onOpenSettings,
   onRobotStart,
   onRobotStop,
+  onAddAnnotation,
   onClose,
 }: {
   x: number
@@ -214,6 +215,7 @@ export function ContextMenu({
   onOpenSettings: () => void
   onRobotStart?: (id: string) => void
   onRobotStop?: (id: string) => void
+  onAddAnnotation?: () => void
   onClose: () => void
 }) {
   return (
@@ -242,6 +244,14 @@ export function ContextMenu({
               </button>
             )}
             <div className="map-context-sep" />
+          </>
+        )}
+        {onAddAnnotation && (
+          <>
+            <div className="map-context-sep" />
+            <button className="map-context-item" onClick={() => { onAddAnnotation(); onClose() }}>
+              📌 Add Annotation
+            </button>
           </>
         )}
         <button className="map-context-item" onClick={() => { onOpenSettings(); onClose() }}>
