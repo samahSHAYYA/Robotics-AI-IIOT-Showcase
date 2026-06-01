@@ -1,5 +1,5 @@
 # Snyk (https://snyk.io) policy file for Smart Factory Supervisor.
-# Excludes build artefacts and vendored dependencies from scanning.
+# Excludes build artifacts and vendored dependencies from scanning.
 
 exclude:
   global:

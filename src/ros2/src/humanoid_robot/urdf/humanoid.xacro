@@ -1,0 +1,122 @@
+<?xml version="1.0"?>
+<robot name="humanoid_robot" xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:property name="pi" value="3.14159265359"/>
+
+  <!-- Base link (floating) -->
+  <link name="base_link">
+    <visual>
+      <geometry><box size="0.4 0.3 0.2"/></geometry>
+      <material name="blue">
+        <color rgba="0.2 0.4 1.0 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry><box size="0.4 0.3 0.2"/></geometry>
+    </collision>
+    <inertial>
+      <mass value="20.0"/>
+      <inertia ixx="0.3" ixy="0.0" ixz="0.0" iyy="0.3" iyz="0.0" izz="0.2"/>
+    </inertial>
+  </link>
+
+  <!-- Torso -->
+  <joint name="torso_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="torso"/>
+    <origin xyz="0 0 0.2"/>
+  </joint>
+  <link name="torso">
+    <visual>
+      <geometry><box size="0.3 0.2 0.35"/></geometry>
+      <material name="blue_light">
+        <color rgba="0.3 0.5 1.0 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry><box size="0.3 0.2 0.35"/></geometry>
+    </collision>
+    <inertial>
+      <mass value="15.0"/>
+      <inertia ixx="0.2" ixy="0.0" ixz="0.0" iyy="0.2" iyz="0.0" izz="0.15"/>
+    </inertial>
+  </link>
+
+  <!-- Head -->
+  <joint name="head_joint" type="fixed">
+    <parent link="torso"/>
+    <child link="head"/>
+    <origin xyz="0 0 0.25"/>
+  </joint>
+  <link name="head">
+    <visual>
+      <geometry><sphere radius="0.12"/></geometry>
+      <material name="white">
+        <color rgba="0.9 0.9 0.9 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry><sphere radius="0.12"/></geometry>
+    </collision>
+    <inertial>
+      <mass value="2.0"/>
+      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
+    </inertial>
+  </link>
+
+  <!-- Left arm -->
+  <joint name="left_arm_joint" type="revolute">
+    <parent link="torso"/>
+    <child link="left_upper_arm"/>
+    <origin xyz="-0.15 0 0.1"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="100" velocity="1.0" lower="-2.0" upper="2.0"/>
+  </joint>
+  <link name="left_upper_arm">
+    <visual>
+      <geometry><box size="0.08 0.08 0.25"/></geometry>
+      <material name="blue_arm">
+        <color rgba="0.2 0.4 0.9 1.0"/>
+      </material>
+    </visual>
+    <inertial>
+      <mass value="3.0"/>
+      <inertia ixx="0.02" ixy="0.0" ixz="0.0" iyy="0.02" iyz="0.0" izz="0.01"/>
+    </inertial>
+  </link>
+
+  <!-- Right arm -->
+  <joint name="right_arm_joint" type="revolute">
+    <parent link="torso"/>
+    <child link="right_upper_arm"/>
+    <origin xyz="0.15 0 0.1"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="100" velocity="1.0" lower="-2.0" upper="2.0"/>
+  </joint>
+  <link name="right_upper_arm">
+    <visual>
+      <geometry><box size="0.08 0.08 0.25"/></geometry>
+      <material name="blue_arm">
+        <color rgba="0.2 0.4 0.9 1.0"/>
+      </material>
+    </visual>
+    <inertial>
+      <mass value="3.0"/>
+      <inertia ixx="0.02" ixy="0.0" ixz="0.0" iyy="0.02" iyz="0.0" izz="0.01"/>
+    </inertial>
+  </link>
+
+  <!-- Sensor sphere (simulated LIDAR/camera) -->
+  <joint name="sensor_joint" type="fixed">
+    <parent link="head"/>
+    <child link="sensor"/>
+    <origin xyz="0.08 0 0"/>
+  </joint>
+  <link name="sensor">
+    <visual>
+      <geometry><sphere radius="0.04"/></geometry>
+      <material name="red">
+        <color rgba="1.0 0.2 0.2 1.0"/>
+      </material>
+    </visual>
+  </link>
+</robot>

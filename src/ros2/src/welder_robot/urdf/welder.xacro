@@ -1,0 +1,80 @@
+<?xml version="1.0"?>
+<robot name="welder_robot" xmlns:xacro="http://ros.org/wiki/xacro">
+  <!-- Base pedestal -->
+  <link name="base_link">
+    <visual>
+      <geometry><cylinder radius="0.15" length="0.15"/></geometry>
+      <material name="orange">
+        <color rgba="1.0 0.5 0.0 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry><cylinder radius="0.15" length="0.15"/></geometry>
+    </collision>
+    <inertial>
+      <mass value="25.0"/>
+      <inertia ixx="0.2" ixy="0.0" ixz="0.0" iyy="0.2" iyz="0.0" izz="0.1"/>
+    </inertial>
+  </link>
+
+  <!-- Rotating base joint -->
+  <joint name="base_rot_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="lower_arm"/>
+    <origin xyz="0 0 0.15"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="200" velocity="2.0" lower="-3.14" upper="3.14"/>
+  </joint>
+  <link name="lower_arm">
+    <visual>
+      <geometry><box size="0.1 0.1 0.35"/></geometry>
+      <material name="orange_arm">
+        <color rgba="1.0 0.6 0.1 1.0"/>
+      </material>
+    </visual>
+    <inertial>
+      <mass value="8.0"/>
+      <inertia ixx="0.05" ixy="0.0" ixz="0.0" iyy="0.05" iyz="0.0" izz="0.02"/>
+    </inertial>
+  </link>
+
+  <!-- Elbow joint -->
+  <joint name="elbow_joint" type="revolute">
+    <parent link="lower_arm"/>
+    <child link="upper_arm"/>
+    <origin xyz="0 0 0.35"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="150" velocity="1.5" lower="-2.5" upper="2.5"/>
+  </joint>
+  <link name="upper_arm">
+    <visual>
+      <geometry><box size="0.08 0.08 0.3"/></geometry>
+      <material name="orange_arm_light">
+        <color rgba="1.0 0.7 0.2 1.0"/>
+      </material>
+    </visual>
+    <inertial>
+      <mass value="5.0"/>
+      <inertia ixx="0.03" ixy="0.0" ixz="0.0" iyy="0.03" iyz="0.0" izz="0.01"/>
+    </inertial>
+  </link>
+
+  <!-- Welding torch -->
+  <joint name="torch_joint" type="fixed">
+    <parent link="upper_arm"/>
+    <child link="torch"/>
+    <origin xyz="0 0 0.3"/>
+  </joint>
+  <link name="torch">
+    <visual>
+      <geometry><cylinder radius="0.02" length="0.12"/></geometry>
+      <material name="dark_grey">
+        <color rgba="0.3 0.3 0.3 1.0"/>
+      </material>
+    </visual>
+    <inertial>
+      <mass value="0.5"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+</robot>

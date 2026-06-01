@@ -41,6 +41,16 @@ ROBOT_PATHS: dict[str, list[tuple[float, float]]] = {
 # Priority order for collision avoidance (highest first)
 ROBOT_PRIORITY: list[str] = ['C3', 'W2', 'Q1']
 
+# Worker simulation constants
+WORKER_ZONE_BOUNDS: dict[str, dict[str, float]] = {
+    'assembly': {'x_min': 0.5, 'x_max': 4.0, 'y_min': 0.5, 'y_max': 4.0},
+    'welding': {'x_min': 4.0, 'x_max': 8.0, 'y_min': 3.0, 'y_max': 6.5},
+    'inspection': {'x_min': 2.0, 'x_max': 6.0, 'y_min': 5.0, 'y_max': 9.0},
+}
+WORKER_WAYPOINT_COUNT: int = 3
+WORKER_SPEED: float = 0.12  # units per second (slower than robots)
+WORKER_UPDATE_INTERVAL_S: float = 2.0
+
 
 class TelemetryStore:
     """
@@ -66,6 +76,12 @@ class TelemetryStore:
                 {'robot_id': 'Q1', 'name': 'Q1 Inspector', 'status': 'moving',
                  'uptime_pct': 98.7, 'current_task': 'Visual Inspection',
                  'pose': {'x': 4.0, 'y': 3.0, 'theta': 0.0}},
+            ],
+            'workers': [
+                {'worker_id': 'WKR-01', 'name': 'Alex Chen', 'x': 1.5, 'y': 2.0, 'zone': 'assembly', 'active': True},
+                {'worker_id': 'WKR-02', 'name': 'Maria Garcia', 'x': 5.0, 'y': 4.5, 'zone': 'welding', 'active': True},
+                {'worker_id': 'WKR-03', 'name': 'James Wilson', 'x': 3.0, 'y': 7.0, 'zone': 'inspection', 'active': True},
+                {'worker_id': 'WKR-04', 'name': 'Priya Patel', 'x': 7.5, 'y': 1.0, 'zone': 'assembly', 'active': False},
             ],
             'alerts': [
                 {'severity': 'healthy', 'message': 'Safety gate pass',
@@ -98,6 +114,19 @@ class TelemetryStore:
             'Q1': 'Visual Inspection',
         }
         self._robot_paused_until: dict[str, float] = {rid: 0.0 for rid in ROBOT_PATHS}
+
+        # Worker simulation state
+        self._worker_positions: dict[str, dict[str, Any]] = {
+            'WKR-01': {'x': 1.5, 'y': 2.0, 'zone': 'assembly', 'active': True,
+                       'waypoints': [(1.0, 0.5), (2.0, 3.5), (3.5, 2.0)], 'target_idx': 0},
+            'WKR-02': {'x': 5.0, 'y': 4.5, 'zone': 'welding', 'active': True,
+                       'waypoints': [(5.0, 4.0), (7.0, 5.5), (6.0, 3.5)], 'target_idx': 0},
+            'WKR-03': {'x': 3.0, 'y': 7.0, 'zone': 'inspection', 'active': True,
+                       'waypoints': [(3.0, 7.0), (5.0, 8.0), (4.0, 6.0)], 'target_idx': 0},
+            'WKR-04': {'x': 7.5, 'y': 1.0, 'zone': 'assembly', 'active': False,
+                       'waypoints': [(1.0, 1.0), (3.5, 0.5), (2.0, 2.5)], 'target_idx': 0},
+        }
+        self._last_worker_update: float = 0.0
 
     # --- Public movement control methods ---
 
@@ -438,6 +467,39 @@ class TelemetryStore:
                                     self._robot_speed[rid] = defaults.get(rid, 0.3)
                                     self._robot_speed[f'{rid}_slowed'] = False
 
+                # ---- Worker simulation (every WORKER_UPDATE_INTERVAL_S) ----
+                if now - self._last_worker_update > WORKER_UPDATE_INTERVAL_S:
+                    self._last_worker_update = now
+                    for wkr_id, wkr_state in self._worker_positions.items():
+                        if not wkr_state['active']:
+                            continue
+                        waypoints = wkr_state['waypoints']
+                        if not waypoints:
+                            continue
+                        target_idx = wkr_state['target_idx']
+                        target = waypoints[target_idx % len(waypoints)]
+                        dx = target[0] - wkr_state['x']
+                        dy = target[1] - wkr_state['y']
+                        dist = math.hypot(dx, dy)
+                        if dist < 0.15:
+                            # Reached waypoint — advance to next
+                            target_idx = (target_idx + 1) % len(waypoints)
+                            wkr_state['target_idx'] = target_idx
+                            target = waypoints[target_idx]
+                            dx = target[0] - wkr_state['x']
+                            dy = target[1] - wkr_state['y']
+                            dist = math.hypot(dx, dy)
+                        if dist > 0:
+                            step = WORKER_SPEED * WORKER_UPDATE_INTERVAL_S
+                            wkr_state['x'] += (dx / dist) * min(step, dist)
+                            wkr_state['y'] += (dy / dist) * min(step, dist)
+                        # Clamp position to zone bounds
+                        zone = wkr_state['zone']
+                        bounds = WORKER_ZONE_BOUNDS.get(zone)
+                        if bounds:
+                            wkr_state['x'] = max(bounds['x_min'], min(bounds['x_max'], wkr_state['x']))
+                            wkr_state['y'] = max(bounds['y_min'], min(bounds['y_max'], wkr_state['y']))
+
                 # Write updates into snapshot
                 with self._lock:
                     for r in self._data['robots']:
@@ -453,6 +515,16 @@ class TelemetryStore:
                             r['current_task'] = self._robot_tasks[rid]
                         elif rid in self._robot_tasks and self._robot_tasks[rid] is None:
                             r['current_task'] = None
+
+                    # Sync worker positions into snapshot
+                    for w in self._data['workers']:
+                        wid = w['worker_id']
+                        if wid in self._worker_positions:
+                            wp = self._worker_positions[wid]
+                            w['x'] = wp['x']
+                            w['y'] = wp['y']
+                            w['active'] = wp['active']
+
                     self._data['last_update'] = datetime.now(timezone.utc).isoformat()
 
                 # Feature 42: Update heartbeat for registered robots on each tick
@@ -538,6 +610,37 @@ class TelemetryStore:
 
         with self._lock:
             return copy.deepcopy(self._data.get('robots', []))
+
+    def get_workers(self) -> list[dict[str, Any]]:
+        """
+        Returns the current worker list.
+
+        @return workers: Copy of the workers list.
+        """
+
+        with self._lock:
+            return copy.deepcopy(self._data.get('workers', []))
+
+    def toggle_worker(self, worker_id: str) -> dict[str, Any] | None:
+        """
+        Toggle a worker's active/inactive state.
+
+        @param worker_id: The worker's unique ID.
+
+        @return result: Dict with worker_id and new active state,
+                        or None if the worker was not found.
+        """
+        with self._lock:
+            if worker_id not in self._worker_positions:
+                return None
+            wp = self._worker_positions[worker_id]
+            wp['active'] = not wp['active']
+            new_active = wp['active']
+            for w in self._data['workers']:
+                if w['worker_id'] == worker_id:
+                    w['active'] = new_active
+                    break
+            return {'worker_id': worker_id, 'active': new_active}
 
     # ── Feature 42: Robot Fleet Auto-Discovery ────────────────────────────────
 

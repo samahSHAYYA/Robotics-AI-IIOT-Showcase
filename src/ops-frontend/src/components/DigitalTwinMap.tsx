@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import type { RobotStatus } from '../types/telemetry'
+import type { RobotStatus, WorkerStatus } from '../types/telemetry'
 import { useMapSettings } from '../contexts/MapSettingsContext'
 import MapSettingsPanel, { ContextMenu } from './MapSettingsPanel'
 import ThreeDView from './ThreeDView'
@@ -10,11 +10,13 @@ const FACTORY_H = 400
 
 interface DigitalTwinMapProps {
   robots: RobotStatus[]
+  workers?: WorkerStatus[]
   error?: string | null
   role?: string
   selectedRobotId?: string | null
   onRobotStart?: (id: string) => void
   onRobotStop?: (id: string) => void
+  onToggleWorker?: (id: string) => void
 }
 
 interface InterpRobot {
@@ -370,6 +372,79 @@ function renderAssemblyArea(
   ctx.fillText('ASSEMBLY LINE', ax + aw / 2, ay - 4)
 }
 
+function renderWorkerShape(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number,
+  _workerId: string, active: boolean, zone: string,
+) {
+  const zoneColors: Record<string, string> = {
+    assembly: '#22c55e',
+    welding: '#eab308',
+    inspection: '#8b5cf6',
+  }
+  const color = zoneColors[zone] ?? '#6b7280'
+  ctx.save()
+
+  if (!active) {
+    ctx.globalAlpha = 0.3
+  }
+
+  const r = 4
+  ctx.beginPath()
+  ctx.arc(x, y, r, 0, Math.PI * 2)
+  ctx.fillStyle = color
+  ctx.fill()
+  ctx.strokeStyle = '#ffffff'
+  ctx.lineWidth = 1.5
+  ctx.stroke()
+
+  ctx.beginPath()
+  ctx.arc(x, y - 3, 2, 0, Math.PI * 2)
+  ctx.fillStyle = '#ffffff'
+  ctx.fill()
+
+  if (active) {
+    ctx.beginPath()
+    ctx.arc(x, y, r + 3, 0, Math.PI * 2)
+    ctx.strokeStyle = color
+    ctx.lineWidth = 1
+    ctx.globalAlpha = 0.3 + 0.2 * Math.sin(Date.now() / 800)
+    ctx.stroke()
+  }
+
+  ctx.restore()
+}
+
+const WORKER_ZONES = [
+  { id: 'assembly', label: 'Assembly Zone', color: '#22c55e', x: 0.8, y: 0.5, w: 3.5, h: 4.5 },
+  { id: 'welding', label: 'Welding Bay', color: '#eab308', x: 3.3, y: 0.5, w: 3.5, h: 4.5 },
+  { id: 'inspection', label: 'Inspection Zone', color: '#8b5cf6', x: 5.8, y: 0.5, w: 3.5, h: 4.5 },
+]
+
+function renderSafetyZones(ctx: CanvasRenderingContext2D, sxFn: (v: number) => number, syFn: (v: number) => number) {
+  for (const z of WORKER_ZONES) {
+    const ax = sxFn(z.x)
+    const ay = syFn(z.y)
+    const aw = sxFn(z.w) - ax
+    const ah = syFn(z.h) - ay
+    ctx.fillStyle = z.color + '15'
+    ctx.beginPath()
+    ctx.roundRect(ax, ay, aw, ah, 3)
+    ctx.fill()
+    ctx.strokeStyle = z.color + '30'
+    ctx.lineWidth = 1
+    ctx.setLineDash([6, 4])
+    ctx.beginPath()
+    ctx.roundRect(ax, ay, aw, ah, 3)
+    ctx.stroke()
+    ctx.setLineDash([])
+    ctx.fillStyle = z.color + '60'
+    ctx.font = 'bold 8px sans-serif'
+    ctx.textAlign = 'left'
+    ctx.fillText(z.id.toUpperCase(), ax + 3, ay + 11)
+  }
+}
+
 function heatmapColor(t: number): string {
   const h = Math.round(240 - t * 240)
   const s = 70 + Math.round(t * 20)
@@ -405,12 +480,7 @@ function renderSelectionRing(
 }
 
 export default function DigitalTwinMap({
-  robots,
-  error,
-  role,
-  selectedRobotId,
-  onRobotStart,
-  onRobotStop,
+  robots, workers, error, role, selectedRobotId, onRobotStart, onRobotStop,   onToggleWorker: _onToggleWorker,
 }: DigitalTwinMapProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const rafRef = useRef<number>(0)
@@ -426,6 +496,7 @@ export default function DigitalTwinMap({
 
   const [selectedRobot, setSelectedRobot] = useState<InterpRobot | null>(null)
   const [popupPos, setPopupPos] = useState({ x: 0, y: 0 })
+  const dismissPopup = useCallback(() => setSelectedRobot(null), [])
   const [showSettings, setShowSettings] = useState(false)
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; robot?: InterpRobot } | null>(null)
   const [fullscreen, setFullscreen] = useState(false)
@@ -623,6 +694,15 @@ export default function DigitalTwinMap({
       highlightedRef.current = selectedRobotId ?? null
     }
   }, [selectedRobotId])
+
+  useEffect(() => {
+    if (!selectedRobot) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelectedRobot(null)
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [selectedRobot])
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -823,8 +903,20 @@ export default function DigitalTwinMap({
 
       renderAssemblyArea(ctx, sx, sy, now)
 
+      if (settings.showZoneLabels) {
+        renderSafetyZones(ctx, sx, sy)
+        if (workers && workers.length > 0) {
+          for (const w of workers) {
+            const cx = sx(w.x)
+            const cy = sy(w.y)
+            renderWorkerShape(ctx, cx, cy, w.worker_id, w.active, w.zone)
+          }
+        }
+      }
+
       if (settings.showTrails && !isReplay) {
         for (const r of interp) {
+          if (settings.robotVisibility[r.robot_id] === false) continue
           const trail = trailsRef.current[r.robot_id]
           if (trail && trail.length >= 2) {
             const color = robotColor(r.robot_id, r.status)
@@ -835,6 +927,7 @@ export default function DigitalTwinMap({
 
       if (settings.showTrajectories && !isReplay) {
         for (const r of interp) {
+          if (settings.robotVisibility[r.robot_id] === false) continue
           const color = robotColor(r.robot_id, r.status, settings.robotColors)
           renderTrajectoryAhead(ctx, r.x, r.y, r.robot_id, sx, sy, color)
         }
@@ -1309,76 +1402,121 @@ export default function DigitalTwinMap({
         <MapSettingsPanel onClose={() => setShowSettings(false)} />
       )}
       {selectedRobot && (
-        <div
-          className="robot-popup"
-          style={{
-            position: 'fixed',
-            left: popupPos.x + 12,
-            top: popupPos.y - 80,
-            zIndex: 1000,
-            background: '#131d31',
-            border: '1px solid #1e2d4a',
-            borderRadius: '0.5rem',
-            padding: '0.75rem',
-            minWidth: '160px',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
-          }}
-        >
-          <div style={{ fontWeight: 600, marginBottom: '0.3rem', color: '#e2e8f0' }}>
-            {selectedRobot.name}
-          </div>
-          <div style={{ fontSize: '0.75rem', color: '#7e93b4', marginBottom: '0.2rem' }}>
-            Status: {selectedRobot.status}
-          </div>
-          <div style={{ fontSize: '0.75rem', color: '#7e93b4', marginBottom: '0.2rem' }}>
-            Task: {selectedRobot.current_task ?? 'none'}
-          </div>
-          <div style={{ fontSize: '0.75rem', color: '#7e93b4', marginBottom: '0.5rem' }}>
-            Uptime: {selectedRobot.uptime_pct.toFixed(1)}%
-          </div>
-          {role !== 'viewer' && (
-            <div style={{ display: 'flex', gap: '0.4rem' }}>
+        <>
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 999,
+            }}
+            onClick={dismissPopup}
+          />
+          <div
+            className="robot-popup"
+            style={{
+              position: 'fixed',
+              left: popupPos.x + 12,
+              top: Math.max(10, Math.min(window.innerHeight - 200, popupPos.y - 80)),
+              zIndex: 1000,
+              background: '#131d31',
+              border: '1px solid #1e2d4a',
+              borderRadius: '0.5rem',
+              padding: '0.75rem',
+              minWidth: '180px',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+              <div style={{ fontWeight: 600, color: '#e2e8f0', fontSize: '0.8rem' }}>
+                {selectedRobot.name}
+              </div>
+              <button
+                onClick={dismissPopup}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#7e93b4',
+                  cursor: 'pointer',
+                  fontSize: '0.8rem',
+                  padding: '0 0.2rem',
+                  lineHeight: 1,
+                }}
+                title="Close"
+              >
+                ✕
+              </button>
+            </div>
+            <div style={{ fontSize: '0.75rem', color: '#7e93b4', marginBottom: '0.2rem' }}>
+              Status: {selectedRobot.status}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: '#7e93b4', marginBottom: '0.2rem' }}>
+              Task: {selectedRobot.current_task ?? 'none'}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: '#7e93b4', marginBottom: '0.5rem' }}>
+              Uptime: {selectedRobot.uptime_pct.toFixed(1)}%
+            </div>
+            {role !== 'viewer' && selectedRobot.status !== 'moving' && selectedRobot.status !== 'active' && (
               <button
                 className="robot-popup-btn"
                 onClick={(e) => {
                   e.stopPropagation()
                   onRobotStart?.(selectedRobot.robot_id)
+                  dismissPopup()
                 }}
                 style={{
                   background: '#22c55e',
                   border: 'none',
                   color: '#fff',
-                  padding: '0.2rem 0.6rem',
+                  padding: '0.25rem 0.8rem',
                   borderRadius: '0.25rem',
                   fontSize: '0.7rem',
                   fontWeight: 600,
                   cursor: 'pointer',
+                  marginRight: '0.3rem',
                 }}
               >
-                Start
+                ▶ Start
               </button>
+            )}
+            {role !== 'viewer' && (selectedRobot.status === 'moving' || selectedRobot.status === 'active') && (
               <button
                 className="robot-popup-btn"
                 onClick={(e) => {
                   e.stopPropagation()
                   onRobotStop?.(selectedRobot.robot_id)
+                  dismissPopup()
                 }}
                 style={{
                   background: '#ef4444',
                   border: 'none',
                   color: '#fff',
-                  padding: '0.2rem 0.6rem',
+                  padding: '0.25rem 0.8rem',
                   borderRadius: '0.25rem',
                   fontSize: '0.7rem',
                   fontWeight: 600,
                   cursor: 'pointer',
                 }}
               >
-                Stop
+                ■ Stop
               </button>
-            </div>
-          )}
-        </div>
+            )}
+            <button
+              onClick={dismissPopup}
+              style={{
+                background: 'transparent',
+                border: '1px solid #1e2d4a',
+                color: '#7e93b4',
+                padding: '0.2rem 0.6rem',
+                borderRadius: '0.25rem',
+                fontSize: '0.65rem',
+                cursor: 'pointer',
+                marginLeft: '0.3rem',
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </>
       )}
     </>
   )

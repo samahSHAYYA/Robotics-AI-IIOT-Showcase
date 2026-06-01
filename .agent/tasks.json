@@ -654,12 +654,12 @@
 ,
 {
   "sprint": "Sprint 9 — AI & Advanced Simulation",
-  "status": "pending",
+  "status": "completed",
   "tasks": [
     {
       "id": 62,
       "title": "Feature 48: Federated Learning Control Panel",
-      "status": "pending",
+      "status": "completed",
       "committed": false,
       "acceptance": [
         "New panel showing simulated federated learning rounds across edge devices",
@@ -672,7 +672,7 @@
     {
       "id": 63,
       "title": "Feature 49: Predictive Quality Control",
-      "status": "pending",
+      "status": "completed",
       "committed": false,
       "acceptance": [
         "Predict product defect probability from real-time sensor readings",
@@ -685,7 +685,7 @@
     {
       "id": 64,
       "title": "Feature 50: Supply Chain Visibility Dashboard",
-      "status": "pending",
+      "status": "completed",
       "committed": false,
       "acceptance": [
         "Simulated inventory levels for 6 part types (widgets, boards, cables, etc.)",
@@ -698,7 +698,7 @@
     {
       "id": 65,
       "title": "Feature 51: Worker Safety Zone Monitor",
-      "status": "pending",
+      "status": "completed",
       "committed": false,
       "acceptance": [
         "Simulated worker positions on factory floor map",
@@ -711,7 +711,7 @@
     {
       "id": 66,
       "title": "Feature 52: Energy Optimization AI Advisor",
-      "status": "pending",
+      "status": "completed",
       "committed": false,
       "acceptance": [
         "AI-driven energy optimization suggestions based on sensor data",
@@ -751,12 +751,12 @@
 },
 {
   "sprint": "Sprint 10 — Operational Polish (UserTasks.md)",
-  "status": "in_progress",
+  "status": "completed",
   "tasks": [
     {
       "id": 69,
       "title": "PT-1: Fix Legend & Settings panel (robot on/off toggles)",
-      "status": "in_progress",
+      "status": "completed",
       "committed": false,
       "acceptance": [
         "Robot visibility toggles in Map Settings Panel actually hide/show robots on canvas",
@@ -768,7 +768,7 @@
     {
       "id": 70,
       "title": "PT-2: Fix robot context menu (Start/Stop by status, dismiss)",
-      "status": "in_progress",
+      "status": "completed",
       "committed": false,
       "acceptance": [
         "Right-click near a robot shows robot name, status, and action button",
@@ -781,7 +781,7 @@
     {
       "id": 71,
       "title": "PT-3: Fix Command Console (status-based buttons, feedback)",
-      "status": "in_progress",
+      "status": "completed",
       "committed": false,
       "acceptance": [
         "Resume button only enabled if robot is paused/stopped",
@@ -794,7 +794,7 @@
     {
       "id": 72,
       "title": "PT-4: Camera tab per-view robot selection",
-      "status": "pending",
+      "status": "completed",
       "committed": false,
       "acceptance": [
         "Each of the 4 camera feeds (depth, infrared, left, right) has its own robot selector",
@@ -806,7 +806,7 @@
     {
       "id": 73,
       "title": "PT-5: AI Chat UX improvements",
-      "status": "pending",
+      "status": "completed",
       "committed": false,
       "acceptance": [
         "Suggested prompts / quick questions shown as clickable chips",
@@ -819,7 +819,7 @@
     {
       "id": 74,
       "title": "PT-6: Dashboard margin/spacing and font size",
-      "status": "pending",
+      "status": "completed",
       "committed": false,
       "acceptance": [
         "Bottom margin increased (min 2rem) so content doesn't touch viewport edge",
@@ -831,7 +831,7 @@
     {
       "id": 75,
       "title": "PT-7: Mock audit — identify mocked vs real implementations",
-      "status": "pending",
+      "status": "completed",
       "committed": false,
       "acceptance": [
         "Document which backend endpoints return real data vs mock data",
@@ -842,7 +842,7 @@
     {
       "id": 76,
       "title": "PT-8: ROS 2 + Gazebo simulation environment setup",
-      "status": "pending",
+      "status": "completed",
       "committed": false,
       "acceptance": [
         "ROS 2 workspace structure created under src/ros2/",

@@ -133,6 +133,11 @@ desktop.ini
 
 # ===========================
 # Snapshots and Video Files
-# ========================
+# ===========================
 video-demos/
 snapshots/
+
+# ===========================
+# User Task Related Files
+# ===========================
+UserTasks.md

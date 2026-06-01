@@ -141,6 +141,30 @@ async def get_robot(robot_id: str):
     return info
 
 
+@router.post('/worker/{worker_id}/toggle')
+async def toggle_worker(worker_id: str, request: Request):
+    """Toggle a worker's active/inactive state."""
+    result = store.toggle_worker(worker_id)
+    if not result:
+        raise HTTPException(status_code=404, detail='Worker not found')
+
+    ip = _client_ip(request)
+    log_action(
+        robot_id=worker_id,
+        action='toggle_worker',
+        user_role='operator',
+        details=f'Worker {worker_id} toggled to {"active" if result["active"] else "inactive"}',
+        ip_address=ip,
+    )
+    await trigger_webhooks('worker.toggle', {
+        'worker_id': worker_id,
+        'active': result['active'],
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+    })
+
+    return {'status': 'toggled', 'worker_id': worker_id, 'active': result['active']}
+
+
 @router.post('/inspect')
 async def trigger_inspect(payload: dict[str, Any]):
     """

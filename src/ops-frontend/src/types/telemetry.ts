@@ -24,6 +24,7 @@ export interface TelemetrySnapshot {
   defect_rate_pct: number
   robot_uptime_pct: number
   robots: RobotStatus[]
+  workers?: WorkerStatus[]
   alerts: Alert[]
   events_consumed: number
   predictions_consumed: number
@@ -48,6 +49,15 @@ export interface MLPrediction {
   confidence: number
   predicted_value: number | null
   recommendation: string
+}
+
+export interface WorkerStatus {
+  worker_id: string
+  name: string
+  x: number
+  y: number
+  zone: string
+  active: boolean
 }
 
 export interface CommandPayload {

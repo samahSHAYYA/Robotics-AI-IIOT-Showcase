@@ -37,7 +37,314 @@ function hexToThree(hex: string): THREE.Color {
 }
 
 // ---------------------------------------------------------------------------
-// 3D robot mesh factory
+// Label sprite helper – canvas-based text sprite floating above each robot
+// ---------------------------------------------------------------------------
+
+function drawRoundedRect(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, w: number, h: number, r: number,
+) {
+  ctx.beginPath()
+  ctx.moveTo(x + r, y)
+  ctx.lineTo(x + w - r, y)
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r)
+  ctx.lineTo(x + w, y + h - r)
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h)
+  ctx.lineTo(x + r, y + h)
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r)
+  ctx.lineTo(x, y + r)
+  ctx.quadraticCurveTo(x, y, x + r, y)
+  ctx.closePath()
+}
+
+function createLabelSprite(text: string): THREE.Sprite {
+  const canvas = document.createElement('canvas')
+  canvas.width = 256
+  canvas.height = 128
+  const ctx = canvas.getContext('2d')!
+
+  // Background pill
+  ctx.fillStyle = 'rgba(0,0,0,0.55)'
+  drawRoundedRect(ctx, 16, 16, 224, 96, 16)
+  ctx.fill()
+
+  // Border accent
+  ctx.strokeStyle = 'rgba(148,163,184,0.3)'
+  ctx.lineWidth = 2
+  drawRoundedRect(ctx, 16, 16, 224, 96, 16)
+  ctx.stroke()
+
+  // Text
+  ctx.fillStyle = '#e2e8f0'
+  ctx.font = 'bold 40px monospace'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(text, 128, 64)
+
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.needsUpdate = true
+  const material = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+    depthTest: false,
+    sizeAttenuation: true,
+  })
+  const sprite = new THREE.Sprite(material)
+  sprite.scale.set(1.4, 0.7, 1)
+  return sprite
+}
+
+// ---------------------------------------------------------------------------
+// Robot structure builders – each creates a distinct shape per robot type
+// ---------------------------------------------------------------------------
+
+function buildWelderArm(group: THREE.Group, color: THREE.Color): void {
+  const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.3, metalness: 0.6 })
+  const jointMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.2, metalness: 0.8 })
+  const torchMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.4, metalness: 0.7 })
+
+  // Circular base platform
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.6, 0.06, 24), mat)
+  base.position.y = 0.03
+  base.castShadow = true
+  base.receiveShadow = true
+  base.name = 'body'
+  group.add(base)
+
+  // Base ring detail
+  const baseRing = new THREE.Mesh(new THREE.TorusGeometry(0.57, 0.02, 6, 24), mat)
+  baseRing.position.y = 0.06
+  baseRing.rotation.x = Math.PI / 2
+  baseRing.name = 'body'
+  group.add(baseRing)
+
+  // Vertical pillar
+  const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.15, 0.5, 12), mat)
+  pillar.position.y = 0.31
+  pillar.castShadow = true
+  pillar.receiveShadow = true
+  pillar.name = 'body'
+  group.add(pillar)
+
+  // Shoulder joint (sphere)
+  const shoulder = new THREE.Mesh(new THREE.SphereGeometry(0.1, 12, 12), jointMat)
+  shoulder.position.set(0, 0.56, 0)
+  shoulder.castShadow = true
+  group.add(shoulder)
+
+  // Upper arm (horizontal segment along +z)
+  const upperArm = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.4), mat)
+  upperArm.position.set(0, 0.56, 0.2)
+  upperArm.castShadow = true
+  upperArm.receiveShadow = true
+  upperArm.name = 'body'
+  group.add(upperArm)
+
+  // Elbow joint (sphere)
+  const elbow = new THREE.Mesh(new THREE.SphereGeometry(0.08, 12, 12), jointMat)
+  elbow.position.set(0, 0.56, 0.4)
+  elbow.castShadow = true
+  group.add(elbow)
+
+  // Forearm segment (angled down)
+  const forearm = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.3), mat)
+  forearm.position.set(0, 0.42, 0.55)
+  forearm.rotation.x = -0.5
+  forearm.castShadow = true
+  forearm.receiveShadow = true
+  forearm.name = 'body'
+  group.add(forearm)
+
+  // Wrist joint (sphere)
+  const wrist = new THREE.Mesh(new THREE.SphereGeometry(0.055, 10, 10), jointMat)
+  wrist.position.set(0, 0.30, 0.7)
+  group.add(wrist)
+
+  // Welding torch body (small cylinder)
+  const torchBody = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.045, 0.12, 8), torchMat)
+  torchBody.position.set(0, 0.24, 0.73)
+  torchBody.rotation.x = -0.3
+  torchBody.castShadow = true
+  torchBody.name = 'body'
+  group.add(torchBody)
+
+  // Torch tip (sphere)
+  const torchTip = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), torchMat)
+  torchTip.position.set(0, 0.19, 0.76)
+  group.add(torchTip)
+
+  // Torch flame glow (small emissive sphere)
+  const flameMat = new THREE.MeshStandardMaterial({
+    color: 0xff6600,
+    emissive: 0xff4400,
+    emissiveIntensity: 0.8,
+    transparent: true,
+    opacity: 0.5,
+  })
+  const flame = new THREE.Mesh(new THREE.SphereGeometry(0.025, 6, 6), flameMat)
+  flame.position.set(0, 0.16, 0.78)
+  group.add(flame)
+}
+
+function buildHumanoid(group: THREE.Group, color: THREE.Color): void {
+  const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.3, metalness: 0.4 })
+  const accentMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.5, metalness: 0.3 })
+  const visorMat = new THREE.MeshStandardMaterial({
+    color: 0x38bdf8,
+    emissive: 0x38bdf8,
+    emissiveIntensity: 0.2,
+  })
+
+  // Waist / base
+  const waist = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 0.08, 16), mat)
+  waist.position.y = 0.04
+  waist.castShadow = true
+  waist.receiveShadow = true
+  waist.name = 'body'
+  group.add(waist)
+
+  // Torso (slightly wider box)
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.45, 0.25), mat)
+  torso.position.y = 0.305
+  torso.castShadow = true
+  torso.receiveShadow = true
+  torso.name = 'body'
+  group.add(torso)
+
+  // Chest accent plate
+  const chest = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.15, 0.06), accentMat)
+  chest.position.set(0, 0.34, 0.155)
+  group.add(chest)
+
+  // Head (sphere)
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 16), mat)
+  head.position.y = 0.6
+  head.castShadow = true
+  head.name = 'body'
+  group.add(head)
+
+  // Visor (glowing eye strip)
+  const visor = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.04, 0.04), visorMat)
+  visor.position.set(0, 0.62, 0.14)
+  group.add(visor)
+
+  // Left arm segment
+  const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.3, 0.07), mat)
+  leftArm.position.set(-0.28, 0.35, 0)
+  leftArm.rotation.z = 0.08
+  leftArm.castShadow = true
+  leftArm.receiveShadow = true
+  leftArm.name = 'body'
+  group.add(leftArm)
+
+  // Right arm segment
+  const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.3, 0.07), mat)
+  rightArm.position.set(0.28, 0.35, 0)
+  rightArm.rotation.z = -0.08
+  rightArm.castShadow = true
+  rightArm.receiveShadow = true
+  rightArm.name = 'body'
+  group.add(rightArm)
+
+  // Shoulder joint spheres
+  const shoulderMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.2, metalness: 0.7 })
+  const lShoulder = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), shoulderMat)
+  lShoulder.position.set(-0.28, 0.5, 0)
+  group.add(lShoulder)
+
+  const rShoulder = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), shoulderMat)
+  rShoulder.position.set(0.28, 0.5, 0)
+  group.add(rShoulder)
+}
+
+function buildInspector(group: THREE.Group, color: THREE.Color): void {
+  const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.3, metalness: 0.5 })
+  const accentMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.4, metalness: 0.6 })
+  const eyeMat = new THREE.MeshStandardMaterial({
+    color: 0x22d3ee,
+    emissive: 0x22d3ee,
+    emissiveIntensity: 0.4,
+  })
+
+  // Base platform
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.06, 20), mat)
+  base.position.y = 0.03
+  base.castShadow = true
+  base.receiveShadow = true
+  base.name = 'body'
+  group.add(base)
+
+  // Thin neck
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.06, 0.15, 10), accentMat)
+  neck.position.y = 0.135
+  neck.castShadow = true
+  neck.name = 'body'
+  group.add(neck)
+
+  // Rotating sensor head (sphere)
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 16), mat)
+  head.position.y = 0.31
+  head.castShadow = true
+  head.name = 'body'
+  group.add(head)
+
+  // Camera eye (front-facing, along +z)
+  const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 10), eyeMat)
+  eye.position.set(0, 0.33, 0.16)
+  group.add(eye)
+
+  // Lens ring around camera eye
+  const lensRing = new THREE.Mesh(new THREE.TorusGeometry(0.065, 0.015, 6, 12), accentMat)
+  lensRing.position.set(0, 0.33, 0.16)
+  lensRing.rotation.x = Math.PI / 2
+  group.add(lensRing)
+
+  // Left sensor dish / antenna
+  const leftDish = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.25, 0.12), accentMat)
+  leftDish.position.set(-0.3, 0.15, 0)
+  leftDish.rotation.z = 0.15
+  leftDish.castShadow = true
+  leftDish.name = 'body'
+  group.add(leftDish)
+
+  // Left dish dome cap
+  const leftDome = new THREE.Mesh(
+    new THREE.SphereGeometry(0.06, 8, 8),
+    new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.3 }),
+  )
+  leftDome.position.set(-0.34, 0.15, 0)
+  group.add(leftDome)
+
+  // Right sensor dish / antenna
+  const rightDish = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.25, 0.12), accentMat)
+  rightDish.position.set(0.3, 0.15, 0)
+  rightDish.rotation.z = -0.15
+  rightDish.castShadow = true
+  rightDish.name = 'body'
+  group.add(rightDish)
+
+  // Right dish dome cap
+  const rightDome = new THREE.Mesh(
+    new THREE.SphereGeometry(0.06, 8, 8),
+    new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.3 }),
+  )
+  rightDome.position.set(0.34, 0.15, 0)
+  group.add(rightDome)
+
+  // Top sensor spinner
+  const spinner = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.08, 8), accentMat)
+  spinner.position.y = 0.42
+  spinner.name = 'body'
+  group.add(spinner)
+
+  // Spinner ball
+  const spinnerBall = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), eyeMat)
+  spinnerBall.position.y = 0.47
+  group.add(spinnerBall)
+}
+
+// ---------------------------------------------------------------------------
+// 3D robot mesh factory – dispatches to type-specific builders
 // ---------------------------------------------------------------------------
 
 function createRobotMesh(
@@ -48,37 +355,42 @@ function createRobotMesh(
   const group = new THREE.Group()
   const color = hexToThree(robotColor(robotId, status, customColors))
 
-  // Cylinder body
-  const bodyGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.3, 16)
-  const bodyMat = new THREE.MeshStandardMaterial({
-    color,
-    roughness: 0.3,
-    metalness: 0.6,
-  })
-  const body = new THREE.Mesh(bodyGeo, bodyMat)
-  body.position.y = 0.15
-  body.castShadow = true
-  body.receiveShadow = true
-  body.name = 'body'
-  group.add(body)
+  // Determine robot type from ID prefix
+  const type = robotId.startsWith('W2')
+    ? 'welder'
+    : robotId.startsWith('C3')
+      ? 'humanoid'
+      : 'inspector' // default for Q1 and others
 
-  // White band highlight
-  const bandGeo = new THREE.TorusGeometry(0.41, 0.03, 6, 24)
+  switch (type) {
+    case 'welder':
+      buildWelderArm(group, color)
+      break
+    case 'humanoid':
+      buildHumanoid(group, color)
+      break
+    case 'inspector':
+      buildInspector(group, color)
+      break
+  }
+
+  // White band highlight (around base)
+  const bandGeo = new THREE.TorusGeometry(0.47, 0.025, 6, 24)
   const bandMat = new THREE.MeshStandardMaterial({
     color: 0xffffff,
     roughness: 0.2,
     metalness: 0.1,
     transparent: true,
-    opacity: 0.15,
+    opacity: 0.12,
   })
   const band = new THREE.Mesh(bandGeo, bandMat)
-  band.position.y = 0.25
+  band.position.y = 0.065
   band.rotation.x = Math.PI / 2
   band.name = 'band'
   group.add(band)
 
   // Glow ring (shown for warning / critical statuses)
-  const ringGeo = new THREE.TorusGeometry(0.5, 0.04, 8, 24)
+  const ringGeo = new THREE.TorusGeometry(0.52, 0.035, 8, 24)
   const ringMat = new THREE.MeshStandardMaterial({
     color: 0xffffff,
     transparent: true,
@@ -88,10 +400,15 @@ function createRobotMesh(
     depthWrite: false,
   })
   const ring = new THREE.Mesh(ringGeo, ringMat)
-  ring.position.y = 0.02
+  ring.position.y = 0.015
   ring.rotation.x = -Math.PI / 2
   ring.name = 'ring'
   group.add(ring)
+
+  // Label floating above the robot
+  const label = createLabelSprite(robotId)
+  label.position.y = type === 'inspector' ? 0.8 : 1.1
+  group.add(label)
 
   return group
 }

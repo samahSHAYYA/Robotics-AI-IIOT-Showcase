@@ -17,9 +17,14 @@ import VoiceCommand from './components/VoiceCommand'
 import AmbientAudio from './components/AmbientAudio'
 import TelemetryExport from './components/TelemetryExport'
 import ShiftScheduler from './components/ShiftScheduler'
+import WorkerSafetyZone from './components/WorkerSafetyZone'
 import ServiceHealth from './components/ServiceHealth'
 import AuditLog from './components/AuditLog'
 import WebhookManager from './components/WebhookManager'
+import EnergyOptimizer from './components/EnergyOptimizer'
+import PredictiveQuality from './components/PredictiveQuality'
+import FederatedLearning from './components/FederatedLearning'
+import SupplyChain from './components/SupplyChain'
 import AnalyticsWidget from './components/AnalyticsWidget'
 import SensorGrid from './components/SensorGrid'
 import RobotFleetPanel from './components/RobotFleetPanel'
@@ -30,7 +35,7 @@ import LayoutSettingsPanel, { loadLayout, saveLayout } from './components/Layout
 import useAlertNotifications from './hooks/useAlertNotifications'
 import { ThemeProvider, useTheme } from './contexts/ThemeContext'
 import { I18nProvider, useI18n } from './contexts/I18nContext'
-import type { TelemetrySnapshot, RobotStatus, Alert, Event } from './types/telemetry'
+import type { TelemetrySnapshot, RobotStatus, Alert, Event, WorkerStatus } from './types/telemetry'
 import './App.css'
 import './themes/light.css'
 
@@ -58,6 +63,7 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
   })
   const [telemetry, setTelemetry] = useState<TelemetrySnapshot | undefined>()
   const [robots, setRobots] = useState<RobotStatus[]>([])
+  const [workers, setWorkers] = useState<WorkerStatus[]>([])
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [events, setEvents] = useState<Event[]>([])
   const [clock, setClock] = useState(new Date())
@@ -73,8 +79,8 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
 
   const TABS = [
     { key: 'factory', label: `🏭 ${t('tab.factory')}`, panels: ['map', 'fleet', 'alerts', 'console'] },
-    { key: 'analytics', label: `📊 ${t('tab.analytics')}`, panels: ['analytics', 'oee', 'production', 'energy'] },
-    { key: 'maintenance', label: `🔧 ${t('tab.maintenance')}`, panels: ['predictive', 'sensors', 'health', 'shift'] },
+    { key: 'analytics', label: `📊 ${t('tab.analytics')}`, panels: ['analytics', 'oee', 'production', 'energy', 'supply', 'quality', 'energyopt'] },
+    { key: 'maintenance', label: `🔧 ${t('tab.maintenance')}`, panels: ['predictive', 'sensors', 'health', 'shift', 'federated'] },
     { key: 'admin', label: `⚙️ ${t('tab.admin')}`, panels: ['audit', 'webhooks', 'robots', 'reconcile', 'sites'] },
     { key: 'camera', label: `📷 ${t('tab.camera')}`, panels: ['camera'] },
     { key: 'ai', label: `💬 ${t('tab.ai')}`, panels: ['chat'] },
@@ -166,6 +172,7 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
         const snapshot = msg.data as TelemetrySnapshot
         setTelemetry(snapshot)
         setRobots(snapshot.robots ?? [])
+        setWorkers(snapshot.workers ?? [])
         setAlerts(snapshot.alerts ?? [])
         break
       }
@@ -198,12 +205,18 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
   }, [status])
 
   const handleRobotStart = useCallback(async (id: string) => {
+    setRobots(prev => prev.map(r =>
+      r.robot_id === id ? { ...r, status: 'active' as const } : r
+    ))
     try {
       await fetch(`/api/v1/robot/${id}/start`, { method: 'POST' })
     } catch (err) { console.error(err) }
   }, [])
 
   const handleRobotStop = useCallback(async (id: string) => {
+    setRobots(prev => prev.map(r =>
+      r.robot_id === id ? { ...r, status: 'idle' as const } : r
+    ))
     try {
       await fetch(`/api/v1/robot/${id}/stop`, { method: 'POST' })
     } catch (err) { console.error(err) }
@@ -216,6 +229,12 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ task }),
       })
+    } catch (err) { console.error(err) }
+  }, [])
+
+  const handleWorkerToggle = useCallback(async (id: string) => {
+    try {
+      await fetch(`/api/v1/worker/${id}/toggle`, { method: 'POST' })
     } catch (err) { console.error(err) }
   }, [])
 
@@ -447,18 +466,20 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
                       <MapSettingsProvider>
                         <DigitalTwinMap
                           robots={robots}
+                          workers={workers}
                           error={error}
                           role={role}
                           selectedRobotId={selectedRobotId}
                           onRobotStart={handleRobotStart}
                           onRobotStop={handleRobotStop}
+                          onToggleWorker={handleWorkerToggle}
                         />
                       </MapSettingsProvider>
                     </div>
                   )}
                   <div className="factory-sidebar">
                     <nav className="factory-sub-tabs">
-                      {['alerts', 'console', 'fleet'].map(key => (
+                      {['alerts', 'console', 'fleet', 'safety'].map(key => (
                         <button
                           key={key}
                           className={`factory-sub-tab${factorySubTab === key ? ' factory-sub-tab--active' : ''}`}
@@ -494,6 +515,11 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
                         <RobotFleet robots={robots} error={error} highlightedRobotId={selectedRobotId} />
                       </div>
                     )}
+                    {showPanelForTab(factorySubTab) && factorySubTab === 'safety' && (
+                      <div className="panel panel-safety">
+                        <WorkerSafetyZone workers={workers} robots={robots} onToggleWorker={handleWorkerToggle} />
+                      </div>
+                    )}
                   </div>
                 </>
               )}
@@ -510,6 +536,21 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
                     <div className="panel panel-energy">
                       <h3>{t('energy.title')}</h3>
                       <EnergyWidget robots={robots} />
+                    </div>
+                  )}
+                  {showPanelForTab('supply') && (
+                    <div className="panel panel-supply">
+                      <SupplyChain />
+                    </div>
+                  )}
+                  {showPanelForTab('quality') && (
+                    <div className="panel panel-quality">
+                      <PredictiveQuality />
+                    </div>
+                  )}
+                  {showPanelForTab('energyopt') && (
+                    <div className="panel panel-energyopt">
+                      <EnergyOptimizer robots={robots} />
                     </div>
                   )}
                 </>
@@ -531,6 +572,9 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
                   )}
                   {showPanelForTab('shift') && (
                     <div className="panel panel-shift"><ShiftScheduler robots={robots} onAssignTask={handleAssignTask} /></div>
+                  )}
+                  {showPanelForTab('federated') && (
+                    <div className="panel panel-federated"><FederatedLearning /></div>
                   )}
                 </>
               )}
