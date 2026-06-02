@@ -1,4 +1,5 @@
-FROM node:22-alpine AS builder
+FROM alpine:3.23 AS builder
+RUN apk add --no-cache nodejs npm
 WORKDIR /app
 COPY package.json ./
 RUN npm install
@@ -6,7 +7,7 @@ COPY tsconfig.json tsconfig.node.json vite.config.ts index.html ./
 COPY src/ src/
 RUN npm run build
 
-FROM nginx:1.27-alpine
+FROM nginx:alpine-slim
 COPY --from=builder /app/dist/ /usr/share/nginx/html/
 COPY nginx.conf /etc/nginx/nginx.conf
 EXPOSE 80
