@@ -3,6 +3,7 @@
     "secrets/**",
     "src/.env",
     "src/envs/**/.env",
+    "src/envs/**/.env.local",
     "**/*.pem",
     "**/*.key",
     "**/*.crt"
@@ -17,17 +18,21 @@
   ],
 
   "require_approval": [
-    "src/docker-compose.yaml",
-    ".gitignore",
-    ".gitattributes",
     ".agent/access-permissions.json",
-    "**/Dockerfile"
+    ".gitattributes",
+    ".gitignore",
+    "opencode.json",
+    "src/Caddyfile",
+    "src/docker-compose.yaml",
+    "**/Dockerfile",
+    "**/pyproject.toml"
   ],
   
   "writable": [
     "src/**/*.cpp",
     "src/**/*.hpp",
     "src/**/*.h",
+    "scripts/**/*.py",
     "src/**/*.py",
     "src/**/*.ts",
     "src/**/*.tsx",

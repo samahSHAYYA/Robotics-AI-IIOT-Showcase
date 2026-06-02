@@ -138,6 +138,7 @@ video-demos/
 snapshots/
 
 # ===========================
-# User Task Related Files
+# Agent Working Documents
 # ===========================
 UserTasks.md
+WarmStart.md

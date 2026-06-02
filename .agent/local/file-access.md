@@ -19,6 +19,15 @@ access tiers with gitignore-style glob patterns.
 If a file matches patterns in multiple tiers, the more restrictive tier wins:
 `never_touch` > `read_only` > `require_approval` > `writable`.
 
+## Default tier
+
+Files that match no pattern in any tier default to `require_approval`. This
+ensures every file has an explicit access decision — if a file type hasn't
+been categorised yet, changes need a second look.
+
+To add a new file type, submit a pattern addition to the appropriate tier in
+`access-permissions.json`.
+
 ## Updating this manifest
 
 Changes to `access-permissions.json` itself require approval (the file matches

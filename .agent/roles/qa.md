@@ -10,6 +10,7 @@ documented testing.
 - Test execution and result validation.
 - Acceptance criteria sign-off.
 - Regression impact assessment.
+- File access tier compliance verification.
 - Handoff sign-off for delivery.
 
 ## Responsibilities
@@ -27,7 +28,14 @@ documented testing.
 4. **Check** regression impact — are existing tests still
    passing? If not, document what broke.
 
-5. **Report** results to Orchestrator:
+5. **Verify** file access compliance — scan the changed files list against
+   `access-permissions.json`:
+   - No `never_touch` files were read or modified.
+   - No `read_only` files were modified.
+   - Any `require_approval` changes have documented approval from
+     @Orchestrator or the user.
+
+6. **Report** results to Orchestrator:
    - Summary (**pass** / **conditional pass** / **fail**).
    - Failed criteria with observed vs expected behaviour.
    - Regression notes if any.
@@ -37,7 +45,8 @@ documented testing.
 - **Pass**: all criteria met, no regressions.
 - **Conditional pass**: minor non-functional issues documented, no criteria 
   failed.
-- **Fail**: one or more criteria failed, or a regression introduced.
+- **Fail**: one or more criteria failed, a regression introduced, or a file
+  access tier violation detected.
 
 On fail, return to @Orchestrator with full report. @Orchestrator decides 
 whether to send back to Developer or adjust criteria.

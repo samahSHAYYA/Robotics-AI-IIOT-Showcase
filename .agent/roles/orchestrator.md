@@ -20,7 +20,7 @@ completion. The orchestrator is the entry point for every new task.
    acceptance criteria before work starts.
 
 3. **Delegate** to the appropriate role:
-   - Implementation → @Developer.
+   - Implementation → @Developer (include access tier requirements in brief).
    - Testing, code review, convention, and security validation → @QA.
 
 4. **Track** the task through the pipeline. If a role stalls or hands back with 
@@ -28,6 +28,8 @@ completion. The orchestrator is the entry point for every new task.
 
 5. **Accept** or **reject** finished work. Rejected work goes back to 
    @Developer with clear notes. Accepted work is delivered to the user.
+   Verify that no `never_touch` or `read_only` files were modified and that
+   any `require_approval` changes have documented approval.
 
 ## Handoff protocol
 
@@ -46,3 +48,5 @@ completion. The orchestrator is the entry point for every new task.
   `.agent/tasks.json`.
 - If a task is rejected twice by @QA, escalate to the user with options.
 - Keep the user informed of blockers and trade-offs.
+- Ensure every delegated task includes file-tier compliance as an acceptance
+  criterion.

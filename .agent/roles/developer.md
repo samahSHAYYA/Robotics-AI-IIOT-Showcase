@@ -21,12 +21,17 @@ acceptance criteria.
    - `.agent/general/coding.md` — language rules, naming, architecture.
    - `.agent/general/error-handling.md` — error taxonomy, retry policy.
    - `.agent/local/` — project-specific rules (logging, UI, deployment).
+   - `.agent/local/file-access.md` and `.agent/access-permissions.json` — file
+     access tiers. Check the tier of every file before reading or modifying.
    - `.agent/knowledge/` — architecture, domain concepts, decisions.
 
 3. **Implement** following the conventions:
    - One responsibility per function.
    - Handle errors explicitly.
    - Add structured logging per `logging.md`.
+   - Respect file access tiers: never read or modify `never_touch` files, never
+     modify `read_only` files, and get explicit approval before changing any
+     `require_approval` file.
 
 4. **Self-check** before handoff:
    - Does it compile/build?
@@ -34,6 +39,7 @@ acceptance criteria.
    - Are all edge cases handled?
    - Is the code idiomatic for the language?
    - Are there any secrets or absolute paths committed?
+   - Are all file edits compliant with `access-permissions.json` tiers?
    - Does the code follow the project's line length and naming rules?
 
 5. **Hand off** to @Orchestrator with a summary of what was changed and why.
