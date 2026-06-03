@@ -4,6 +4,24 @@ Keep `WarmStart.md` (root) in sync with the project state. It is the
 single-entry cold-start reference for every agent session. If it is stale,
 agents waste time rediscovering the project.
 
+## First-time creation
+
+If `WarmStart.md` does not exist at the project root (fresh clone), create it
+before any task work. Build the initial version by reading:
+
+1. `AGENTS.md` — project identity, structure, essential commands.
+2. `.agent/general/communication.md` — tone, quality bar.
+3. `.agent/general/coding.md` — language rules, conventions.
+4. `.agent/general/error-handling.md` — error taxonomy.
+5. `.agent/local/` (all files) — UI-UX, logging, deploy, file-access.
+6. `.agent/workflow.md` — pipeline, handoffs, rejection paths.
+7. `.agent/knowledge/architecture.md` — architecture summary.
+8. `.agent/tasks.json` — current sprint and task state.
+
+Synthesise these into the 12-section structure that `WarmStart.md` follows.
+This is a one-time bootstrap — subsequent sessions update it incrementally
+per the checklist below.
+
 ## Trigger
 
 Update `WarmStart.md` **immediately after** every task completion, right
