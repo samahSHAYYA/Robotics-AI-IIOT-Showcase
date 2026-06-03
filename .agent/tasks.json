@@ -923,4 +923,119 @@
       "fix": "Added `settings` to the dependency array of the main render loop useEffect in DigitalTwinMap.tsx (line 1076). The effect had `[sx, sy]` but used `settings` extensively inside; without it in deps, the canvas never refreshed with new settings from the panel."
     }
   ]
+},
+{
+  "sprint": "Sprint 11 — Quality Hardening & Production Polish",
+  "status": "active",
+  "tasks": [
+    {
+      "id": 81,
+      "title": "Enforce JWT authentication on all ops-api REST and WebSocket endpoints",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "get_current_user dependency is applied to every protected route (commands, audit, webhooks, robots, sites, reconcile, sensors, analytics, reports, metrics, WebSocket)",
+        "Public-only routes remain: /health, /docs, /openapi.json, /api/v1/auth/login, /",
+        "WebSocket /ws and /api/v1/analytics/ws validate token via query parameter or first message",
+        "Unauthenticated requests receive HTTP 401 with descriptive error",
+        "Role-based access gates (admin vs operator vs viewer) are enforced per-route",
+        "Frontend login flow passes JWT token in Authorization header for all subsequent API calls",
+        "Frontend handles 401 responses by redirecting to login page",
+        "All existing tests updated to pass tokens where needed"
+      ]
+    },
+    {
+      "id": 82,
+      "title": "Fix ai-service consumer to process camera.frame events",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "consumer.py line 55 filter changed from `event_type.startswith('sensor.')` to also accept `camera.frame` events",
+        "Both sensor.reading and camera.frame events trigger their respective inference paths",
+        "Defect detection inference actually runs when camera.frame events arrive via Redis",
+        "Existing tests continue to pass",
+        "New test added verifying both event types are accepted by process_message"
+      ]
+    },
+    {
+      "id": 83,
+      "title": "Wire OpenTelemetry tracing in ai-service and ops-api main.py",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "ops-api/app/main.py calls setup_tracing(app) in the lifespan or immediately after app creation",
+        "ai-service/app/main.py calls setup_tracing(app) in the lifespan or immediately after app creation",
+        "Trace spans are visible in Jaeger when OTEL_EXPORTER_OTLP_ENDPOINT is configured",
+        "Trace context propagates across HTTP calls from ops-api to downstream services",
+        "No application errors or startup failures when OTLP endpoint is unavailable (graceful fallback)"
+      ]
+    },
+    {
+      "id": 84,
+      "title": "Fix KpiCard.tsx JSX error: class → className",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "Line 14 of KpiCard.tsx uses `className=` instead of `class=`",
+        "No React warning about 'class' attribute in the console",
+        "Component renders correctly with severity styling intact"
+      ]
+    },
+    {
+      "id": 85,
+      "title": "Add edge-sim unit tests for sensor simulation module",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "Tests cover SensorSimulator initialization (10 sensors with correct categories, units, nominal values)",
+        "Tests cover random walk tick producing values within min/max bounds",
+        "Tests cover all 3 failure modes: drift, spike, dropout",
+        "Tests cover sensor status determination (normal/warning/critical) at boundary values",
+        "Tests cover sensor reset clearing failure modes",
+        "Tests cover get_sensor, get_sensors, get_history for existing and non-existing sensors",
+        "Tests cover SensorServer Redis publishing (with mocked Redis)",
+        "Tests pass in CI via pytest",
+        "Test coverage for edge-sim is at least 70%"
+      ]
+    },
+    {
+      "id": 86,
+      "title": "Refactor App.tsx into maintainable modules",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "App.tsx is split into at least 3 separate modules: AppRouter (tab routing), AppLayout (panel layout/state), TelemetryProvider (WebSocket data context)",
+        "Auth state management extracted into AuthProvider context",
+        "Each new module has a single responsibility",
+        "No new test failures from the refactor",
+        "All existing dashboard functionality continues to work identically"
+      ]
+    },
+    {
+      "id": 87,
+      "title": "Fix Helm Chart security: Secret template, Jaeger version pin, resource limits",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "ConfigMap no longer contains plaintext PostgreSQL password — migrated to a Secret template",
+        "Jaeger deployment image tag uses a specific version (e.g. 1.60.0) instead of `latest`",
+        "Resource requests and limits are configurable via values.yaml instead of hardcoded in deployment.yaml",
+        "Helm chart linting passes with no warnings",
+        "Existing chart behavior is preserved for default values"
+      ]
+    },
+    {
+      "id": 88,
+      "title": "Fix Terraform Docker provider for cross-platform portability",
+      "status": "pending",
+      "committed": false,
+      "acceptance": [
+        "Docker host in main.tf detects OS (Windows vs Linux/Mac) and sets the correct provider host",
+        "On Windows: uses npipe:////./pipe/docker_engine",
+        "On Linux/Mac: uses unix:///var/run/docker.sock",
+        "No hardcoded platform-specific paths in the Terraform config",
+        "Terraform plan succeeds on both Windows and Linux environments"
+      ]
+    }
+  ]
 }
