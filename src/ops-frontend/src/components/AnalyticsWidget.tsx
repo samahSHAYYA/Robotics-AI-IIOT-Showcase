@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { authFetch } from '../utils/auth-fetch'
 
 interface AnalyticsCurrent {
   avg_uptime: number
@@ -40,8 +41,8 @@ export default function AnalyticsWidget() {
   const fetchData = useCallback(async () => {
     try {
       const [curRes, histRes] = await Promise.all([
-        fetch('/api/v1/analytics/current'),
-        fetch('/api/v1/analytics/history'),
+        authFetch('/api/v1/analytics/current'),
+        authFetch('/api/v1/analytics/history'),
       ])
       if (curRes.ok) {
         const curData = await curRes.json()

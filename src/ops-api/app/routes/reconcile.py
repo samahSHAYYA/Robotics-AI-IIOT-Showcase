@@ -10,9 +10,11 @@ import logging
 
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
+from app.deps import require_role
+from app.db import User
 from app.reconciliation import (
     build_snapshot,
     compute_diff,
@@ -39,7 +41,7 @@ class ResolveRequest(BaseModel):
 
 
 @router.get('/state')
-async def get_reconcile_state():
+async def get_reconcile_state(user: User = Depends(require_role('admin', 'operator'))):
     """
     Return the current digital twin state snapshot with version vector.
 
@@ -52,7 +54,8 @@ async def get_reconcile_state():
 
 
 @router.post('/diff')
-async def get_diff(body: DiffRequest):
+async def get_diff(body: DiffRequest,
+                   user: User = Depends(require_role('admin', 'operator'))):
     """
     Compare the current digital twin state with a submitted state.
 
@@ -80,7 +83,8 @@ async def get_diff(body: DiffRequest):
 
 
 @router.post('/resolve')
-async def resolve(body: ResolveRequest):
+async def resolve(body: ResolveRequest,
+                  user: User = Depends(require_role('admin', 'operator'))):
     """
     Resolve conflicts using the specified strategy (local, remote, or merge).
 

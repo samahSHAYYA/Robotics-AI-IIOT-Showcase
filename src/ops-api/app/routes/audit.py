@@ -7,10 +7,12 @@
 
 import logging
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import PlainTextResponse
 
 from app.audit_logger import export_audit_csv, get_audit_log
+from app.deps import get_current_user
+from app.db import User
 
 router: APIRouter = APIRouter(prefix='/api/v1/audit')
 logger: logging.Logger = logging.getLogger(__name__)
@@ -18,6 +20,7 @@ logger: logging.Logger = logging.getLogger(__name__)
 
 @router.get('')
 async def list_audit_logs(
+    user: User = Depends(get_current_user),
     robot_id: str | None = Query(None, description='Filter by robot ID'),
     action: str | None = Query(None, description='Filter by action'),
     from_date: str | None = Query(None, alias='from_date',
@@ -62,6 +65,7 @@ async def list_audit_logs(
 
 @router.get('/export')
 async def export_audit(
+    user: User = Depends(get_current_user),
     robot_id: str | None = Query(None, description='Filter by robot ID'),
     action: str | None = Query(None, description='Filter by action'),
     from_date: str | None = Query(None, alias='from_date',

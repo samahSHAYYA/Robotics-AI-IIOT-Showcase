@@ -52,7 +52,9 @@ async def process_message(msg_data: dict[str, str]) -> dict[str, Any] | None:
 
     event_type: str = msg_data.get('event_type', '')
 
-    if not event_type.startswith('sensor.'):
+    ALLOWED_EVENT_TYPES: frozenset[str] = frozenset({'sensor.reading', 'camera.frame'})
+
+    if event_type not in ALLOWED_EVENT_TYPES:
         return None
 
     logger.info('Inferring from event type=%s', event_type)

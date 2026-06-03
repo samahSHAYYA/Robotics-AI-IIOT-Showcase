@@ -36,6 +36,7 @@ import LayoutSettingsPanel, { loadLayout, saveLayout } from './components/Layout
 import useAlertNotifications from './hooks/useAlertNotifications'
 import { ThemeProvider, useTheme } from './contexts/ThemeContext'
 import { I18nProvider, useI18n } from './contexts/I18nContext'
+import { authFetch, getToken } from './utils/auth-fetch'
 import type { TelemetrySnapshot, RobotStatus, Alert, Event, WorkerStatus } from './types/telemetry'
 import './App.css'
 import './themes/light.css'
@@ -193,7 +194,9 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
     setError(err)
   }, [])
 
-  const { status } = useWebSocket(WS_URL, handleMessage, handleWsError)
+  const wsToken = getToken()
+  const wsUrl = wsToken ? `${WS_URL}?token=${encodeURIComponent(wsToken)}` : WS_URL
+  const { status } = useWebSocket(wsUrl, handleMessage, handleWsError)
 
   useEffect(() => {
     if (status === 'failed') {
@@ -210,7 +213,7 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
       r.robot_id === id ? { ...r, status: 'active' as const } : r
     ))
     try {
-      await fetch(`/api/v1/robot/${id}/start`, { method: 'POST' })
+      await authFetch(`/api/v1/robot/${id}/start`, { method: 'POST' })
     } catch (err) { console.error(err) }
   }, [])
 
@@ -219,13 +222,13 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
       r.robot_id === id ? { ...r, status: 'idle' as const } : r
     ))
     try {
-      await fetch(`/api/v1/robot/${id}/stop`, { method: 'POST' })
+      await authFetch(`/api/v1/robot/${id}/stop`, { method: 'POST' })
     } catch (err) { console.error(err) }
   }, [])
 
   const handleAssignTask = useCallback(async (id: string, task: string) => {
     try {
-      await fetch(`/api/v1/robot/${id}/task`, {
+      await authFetch(`/api/v1/robot/${id}/task`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ task }),
@@ -235,19 +238,19 @@ function AppContent({ kioskMode }: { kioskMode: boolean }) {
 
   const handleWorkerToggle = useCallback(async (id: string) => {
     try {
-      await fetch(`/api/v1/worker/${id}/toggle`, { method: 'POST' })
+      await authFetch(`/api/v1/worker/${id}/toggle`, { method: 'POST' })
     } catch (err) { console.error(err) }
   }, [])
 
   const handleEmergencyStop = useCallback(async (id: string) => {
     try {
-      await fetch(`/api/v1/robot/${id}/emergency-stop`, { method: 'POST' })
+      await authFetch(`/api/v1/robot/${id}/emergency-stop`, { method: 'POST' })
     } catch (err) { console.error(err) }
   }, [])
 
   const handleDownloadPdf = useCallback(async () => {
     try {
-      const res = await fetch('/api/v1/reports/pdf')
+      const res = await authFetch('/api/v1/reports/pdf')
       if (!res.ok) throw new Error('PDF download failed')
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)

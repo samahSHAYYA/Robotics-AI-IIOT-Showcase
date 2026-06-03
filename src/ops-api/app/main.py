@@ -22,9 +22,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from app.consumer import run_consumer
-from app.auth import hash_password
+from app.auth import decode_access_token, hash_password
 from app.db import User, async_session_factory, init_db
 from app.routes import auth, telemetry, commands
+
+# Feature 45: OpenTelemetry distributed tracing (optional dependency)
+try:
+    from app.tracing import setup_tracing
+    _otel_available: bool = True
+except ModuleNotFoundError:
+    _otel_available: bool = False
+    setup_tracing = None
 
 # Feature 27: Rate limiting + security middleware
 from app.middleware.rate_limit import RateLimitMiddleware
@@ -177,6 +185,10 @@ app = FastAPI(
     lifespan = lifespan,
 )
 
+# Feature 45: Wire up OpenTelemetry tracing (instruments FastAPI + HTTPX)
+if _otel_available and setup_tracing is not None:
+    setup_tracing(app)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins = [FRONTEND_ORIGIN, 'http://localhost:3000'],
@@ -307,12 +319,19 @@ async def health():
 
 
 @app.websocket('/ws')
-async def websocket_endpoint(websocket: WebSocket):
+async def websocket_endpoint(websocket: WebSocket, token: str = ''):
     """
     WebSocket endpoint for live dashboard updates.
 
     Clients receive JSON telemetry snapshots every 2 seconds.
+    Expects a `token` query parameter for authentication.
     """
+
+    # Validate token from query parameter
+    payload = decode_access_token(token)
+    if payload is None:
+        await websocket.close(code=4001)
+        return
 
     await websocket.accept()
 

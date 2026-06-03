@@ -16,6 +16,14 @@ from fastapi import FastAPI
 
 from app.consumer import run_consumer
 
+# Feature 45: OpenTelemetry distributed tracing (optional dependency)
+try:
+    from app.tracing import setup_tracing
+    _otel_available: bool = True
+except ModuleNotFoundError:
+    _otel_available: bool = False
+    setup_tracing = None
+
 REDIS_URL: str = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
 SERVICE_PORT: int = int(os.getenv('SERVICE_PORT', '8002'))
 LOG_LEVEL: str = os.getenv('LOG_LEVEL', 'INFO')
@@ -62,6 +70,10 @@ app = FastAPI(
     version = '0.1.0',
     lifespan = lifespan,
 )
+
+# Feature 45: Wire up OpenTelemetry tracing (instruments FastAPI + HTTPX)
+if _otel_available and setup_tracing is not None:
+    setup_tracing(app)
 
 
 @app.get('/health')

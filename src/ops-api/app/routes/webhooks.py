@@ -9,9 +9,11 @@ import logging
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from app.deps import require_role
+from app.db import User
 from app.webhook_engine import (
     create_webhook,
     delete_webhook,
@@ -45,7 +47,7 @@ class WebhookTestPayload(BaseModel):
 
 
 @router.get('')
-async def get_webhooks():
+async def get_webhooks(user: User = Depends(require_role('admin'))):
     """
     Returns all configured webhooks.
 
@@ -55,7 +57,8 @@ async def get_webhooks():
 
 
 @router.post('', status_code=201)
-async def create_webhook_endpoint(body: WebhookCreate):
+async def create_webhook_endpoint(body: WebhookCreate,
+                                  user: User = Depends(require_role('admin'))):
     """
     Creates a new webhook.
 
@@ -69,7 +72,8 @@ async def create_webhook_endpoint(body: WebhookCreate):
 
 
 @router.put('/{webhook_id}')
-async def update_webhook_endpoint(webhook_id: str, body: WebhookUpdate):
+async def update_webhook_endpoint(webhook_id: str, body: WebhookUpdate,
+                                  user: User = Depends(require_role('admin'))):
     """
     Updates an existing webhook.
 
@@ -92,7 +96,8 @@ async def update_webhook_endpoint(webhook_id: str, body: WebhookUpdate):
 
 
 @router.delete('/{webhook_id}')
-async def delete_webhook_endpoint(webhook_id: str):
+async def delete_webhook_endpoint(webhook_id: str,
+                                  user: User = Depends(require_role('admin'))):
     """
     Deletes a webhook.
 
@@ -109,7 +114,8 @@ async def delete_webhook_endpoint(webhook_id: str):
 
 
 @router.post('/{webhook_id}/test')
-async def test_webhook(webhook_id: str, body: WebhookTestPayload):
+async def test_webhook(webhook_id: str, body: WebhookTestPayload,
+                       user: User = Depends(require_role('admin'))):
     """
     Sends a test payload to the specified webhook.
 

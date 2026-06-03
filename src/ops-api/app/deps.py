@@ -21,6 +21,33 @@ from app.db import User, get_session
 security = HTTPBearer()
 logger: logging.Logger = logging.getLogger(__name__)
 
+ROLE_HIERARCHY: dict[str, int] = {
+    'admin': 3,
+    'operator': 2,
+    'viewer': 1,
+}
+
+
+def require_role(*roles: str):
+    """
+    Dependency factory: returns a dependency that requires the authenticated
+    user to have one of the specified roles.
+
+    @param roles: One or more role names that are permitted.
+
+    @return dependency: FastAPI dependency that validates the user's role.
+
+    @raises HTTPException 403: If the user does not have any of the required roles.
+    """
+    async def _require_role(user: User = Depends(get_current_user)) -> User:
+        if user.role not in roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f'Insufficient permissions. Required one of: {", ".join(roles)}, got "{user.role}"',
+            )
+        return user
+    return _require_role
+
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),

@@ -7,15 +7,17 @@
 
 import uuid
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
+from app.deps import get_current_user
+from app.db import User
 from app.store import store
 
 router: APIRouter = APIRouter(prefix = '/api/v1')
 
 
 @router.get('/telemetry')
-async def get_telemetry():
+async def get_telemetry(user: User = Depends(get_current_user)):
     """
     Returns the latest telemetry snapshot.
 
@@ -27,7 +29,7 @@ async def get_telemetry():
 
 
 @router.get('/robot/status')
-async def get_robot_status():
+async def get_robot_status(user: User = Depends(get_current_user)):
     """
     Returns the current fleet status.
 

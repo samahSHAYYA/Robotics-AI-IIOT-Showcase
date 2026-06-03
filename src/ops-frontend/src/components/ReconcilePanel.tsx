@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { authFetch } from '../utils/auth-fetch'
 
 interface ReconcileState {
   version: number
@@ -35,7 +36,7 @@ export default function ReconcilePanel() {
 
   const fetchState = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/state`)
+      const res = await authFetch(`${API_BASE}/state`)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
       setState(data)
@@ -57,7 +58,7 @@ export default function ReconcilePanel() {
     setConflicts([])
     try {
       const frontendState = state ?? { version: 0, timestamp: new Date().toISOString(), robots: 0, alerts: 0, sensors: 0 }
-      const res = await fetch(`${API_BASE}/diff`, {
+      const res = await authFetch(`${API_BASE}/diff`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ frontendState }),
@@ -77,7 +78,7 @@ export default function ReconcilePanel() {
     if (conflicts.length === 0) return
     setResolving(true)
     try {
-      const res = await fetch(`${API_BASE}/resolve`, {
+      const res = await authFetch(`${API_BASE}/resolve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ strategy, conflictIds: conflicts.map(c => c.id) }),

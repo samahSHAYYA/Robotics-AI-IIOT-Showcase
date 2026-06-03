@@ -10,9 +10,11 @@ import logging
 
 from datetime import datetime, timezone
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 
+from app.deps import get_current_user
+from app.db import User
 from app.store import store
 
 try:
@@ -36,7 +38,7 @@ logger: logging.Logger = logging.getLogger(__name__)
 
 
 @router.get('/pdf')
-async def generate_pdf_report():
+async def generate_pdf_report(user: User = Depends(get_current_user)):
     """
     Generates and returns a PDF report with factory status summary,
     per-robot status table, and recent alerts.

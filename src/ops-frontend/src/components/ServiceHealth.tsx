@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { authFetch } from '../utils/auth-fetch'
 
 interface ServiceStatus {
   name: string
@@ -18,7 +19,7 @@ const SERVICES = [
 async function checkService(url: string): Promise<Pick<ServiceStatus, 'status' | 'latency'>> {
   const start = performance.now()
   try {
-    const res = await fetch(url)
+    const res = await authFetch(url)
     const latency = Math.round(performance.now() - start)
     if (!res.ok) return { status: 'degraded', latency }
     const data = await res.json()

@@ -11,7 +11,10 @@ import os
 from typing import Any
 
 import httpx
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+
+from app.deps import get_current_user, require_role
+from app.db import User
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -21,7 +24,7 @@ router: APIRouter = APIRouter(prefix="/api/v1")
 
 
 @router.get("/sensors")
-async def get_sensors() -> list[dict[str, Any]]:
+async def get_sensors(user: User = Depends(get_current_user)) -> list[dict[str, Any]]:
     """
     Proxy: list all sensors with current values from the Edge Device Simulator.
 
@@ -46,7 +49,8 @@ async def get_sensors() -> list[dict[str, Any]]:
 
 
 @router.get("/sensors/{sensor_id}")
-async def get_sensor(sensor_id: str) -> dict[str, Any]:
+async def get_sensor(sensor_id: str,
+                     user: User = Depends(get_current_user)) -> dict[str, Any]:
     """
     Proxy: return a single sensor by ID.
 
@@ -78,7 +82,8 @@ async def get_sensor(sensor_id: str) -> dict[str, Any]:
 
 
 @router.post("/sensors/{sensor_id}/fail")
-async def trigger_failure(sensor_id: str, mode: str = "drift") -> dict[str, Any]:
+async def trigger_failure(sensor_id: str, mode: str = "drift",
+                          user: User = Depends(require_role('admin', 'operator'))) -> dict[str, Any]:
     """
     Proxy: trigger a failure mode on a sensor.
 
@@ -112,7 +117,8 @@ async def trigger_failure(sensor_id: str, mode: str = "drift") -> dict[str, Any]
 
 
 @router.post("/sensors/{sensor_id}/reset")
-async def reset_sensor(sensor_id: str) -> dict[str, Any]:
+async def reset_sensor(sensor_id: str,
+                       user: User = Depends(require_role('admin', 'operator'))) -> dict[str, Any]:
     """
     Proxy: reset a sensor to normal operation.
 

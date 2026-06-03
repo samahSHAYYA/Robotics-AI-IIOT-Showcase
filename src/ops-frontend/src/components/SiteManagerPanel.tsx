@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { authFetch } from '../utils/auth-fetch'
 
 interface Site {
   id: string
@@ -25,7 +26,7 @@ export default function SiteManagerPanel() {
 
   const fetchSites = useCallback(async () => {
     try {
-      const res = await fetch(API_BASE)
+      const res = await authFetch(API_BASE)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
       setSites(Array.isArray(data) ? data : data.sites ?? [])
@@ -46,7 +47,7 @@ export default function SiteManagerPanel() {
   const handleCreate = useCallback(async () => {
     if (!newName.trim() || !newLocation.trim() || !newTimezone.trim()) return
     try {
-      const res = await fetch(API_BASE, {
+      const res = await authFetch(API_BASE, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newName.trim(), location: newLocation.trim(), timezone: newTimezone.trim() }),
@@ -65,7 +66,7 @@ export default function SiteManagerPanel() {
 
   const handleDelete = useCallback(async (id: string) => {
     try {
-      const res = await fetch(`${API_BASE}/${id}`, { method: 'DELETE' })
+      const res = await authFetch(`${API_BASE}/${id}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('Failed to delete')
       setSites(prev => prev.filter(s => s.id !== id))
     } catch {
@@ -75,7 +76,7 @@ export default function SiteManagerPanel() {
 
   const handleSwitch = useCallback(async (id: string) => {
     try {
-      const res = await fetch(`${API_BASE}/${id}/switch`, { method: 'POST' })
+      const res = await authFetch(`${API_BASE}/${id}/switch`, { method: 'POST' })
       if (!res.ok) throw new Error('Failed to switch')
       const data: { active_site_id: string } = await res.json()
       setSites(prev => prev.map(s => ({ ...s, active: s.id === (data.active_site_id ?? id) })))
@@ -101,7 +102,7 @@ export default function SiteManagerPanel() {
   const saveEdit = useCallback(async (id: string) => {
     if (!editName.trim() || !editLocation.trim() || !editTimezone.trim()) return
     try {
-      const res = await fetch(`${API_BASE}/${id}`, {
+      const res = await authFetch(`${API_BASE}/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: editName.trim(), location: editLocation.trim(), timezone: editTimezone.trim() }),

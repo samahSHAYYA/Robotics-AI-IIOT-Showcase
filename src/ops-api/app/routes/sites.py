@@ -10,9 +10,11 @@ import logging
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from app.deps import require_role
+from app.db import User
 from app.site_manager import (
     create_site,
     delete_site,
@@ -49,7 +51,7 @@ class SiteSwitchRequest(BaseModel):
 
 
 @router.get('')
-async def get_sites():
+async def get_sites(user: User = Depends(require_role('admin', 'operator'))):
     """
     List all factory sites.
 
@@ -65,7 +67,8 @@ async def get_sites():
 
 
 @router.post('', status_code=201)
-async def create_site_endpoint(body: SiteCreateRequest):
+async def create_site_endpoint(body: SiteCreateRequest,
+                               user: User = Depends(require_role('admin', 'operator'))):
     """
     Create a new factory site.
 
@@ -83,7 +86,8 @@ async def create_site_endpoint(body: SiteCreateRequest):
 
 
 @router.get('/{site_id}')
-async def get_site_endpoint(site_id: str):
+async def get_site_endpoint(site_id: str,
+                            user: User = Depends(require_role('admin', 'operator'))):
     """
     Get details for a specific site.
 
@@ -103,7 +107,8 @@ async def get_site_endpoint(site_id: str):
 
 
 @router.put('/{site_id}')
-async def update_site_endpoint(site_id: str, body: SiteUpdateRequest):
+async def update_site_endpoint(site_id: str, body: SiteUpdateRequest,
+                               user: User = Depends(require_role('admin', 'operator'))):
     """
     Update an existing site's fields.
 
@@ -130,7 +135,8 @@ async def update_site_endpoint(site_id: str, body: SiteUpdateRequest):
 
 
 @router.delete('/{site_id}')
-async def delete_site_endpoint(site_id: str):
+async def delete_site_endpoint(site_id: str,
+                               user: User = Depends(require_role('admin', 'operator'))):
     """
     Delete a site. The default site ('site_default') cannot be deleted.
 
@@ -156,7 +162,8 @@ async def delete_site_endpoint(site_id: str):
 
 
 @router.get('/{site_id}/telemetry')
-async def get_site_telemetry(site_id: str):
+async def get_site_telemetry(site_id: str,
+                             user: User = Depends(require_role('admin', 'operator'))):
     """
     Get telemetry data scoped to a specific site.
 
@@ -188,7 +195,8 @@ async def get_site_telemetry(site_id: str):
 
 
 @router.post('/{site_id}/switch')
-async def switch_site(site_id: str):
+async def switch_site(site_id: str,
+                      user: User = Depends(require_role('admin', 'operator'))):
     """
     Switch the active site. Changes the Redis channel prefix used for
     pub/sub operations.
@@ -214,7 +222,7 @@ async def switch_site(site_id: str):
 
 
 @router.get('/active/info')
-async def get_active_site_info():
+async def get_active_site_info(user: User = Depends(require_role('admin', 'operator'))):
     """
     Get the currently active site's information.
 

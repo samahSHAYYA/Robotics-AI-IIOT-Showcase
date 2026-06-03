@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { authFetch } from '../utils/auth-fetch'
 
 interface AuditEntry {
   id: string
@@ -63,7 +64,7 @@ export default function AuditLog() {
       to: dateTo,
     }
     try {
-      const res = await fetch(`/api/v1/audit?${buildQuery(params)}`)
+      const res = await authFetch(`/api/v1/audit?${buildQuery(params)}`)
       if (!res.ok) throw new Error('Failed to fetch audit logs')
       const data: AuditResponse = await res.json()
       setEntries(data.entries ?? [])
@@ -95,7 +96,7 @@ export default function AuditLog() {
       format: 'csv',
     }
     try {
-      const res = await fetch(`/api/v1/audit/export?${buildQuery(params)}`)
+      const res = await authFetch(`/api/v1/audit/export?${buildQuery(params)}`)
       if (!res.ok) throw new Error('Export failed')
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)

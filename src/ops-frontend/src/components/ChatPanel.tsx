@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import type { ChatMessage, InlineChartData } from '../types/agent'
+import { authFetch } from '../utils/auth-fetch'
 import TelemetryChart from './TelemetryChart'
 
 const CHART_RE = /\{("chart":\s*true\s*,.*?)\}/g
@@ -133,7 +134,7 @@ export default function ChatPanel() {
     setLoading(true)
 
     try {
-      const resp = await fetch('/api/v1/agent/chat', {
+      const resp = await authFetch('/api/v1/agent/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: msg }),

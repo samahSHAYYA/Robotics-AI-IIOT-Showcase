@@ -66,6 +66,14 @@ variable "ai_agent_port" {
   default     = 8004
 }
 
+# ── Docker provider ─────────────────────────────────────────────────────────
+
+variable "docker_host" {
+  description = "Docker daemon socket URI. Use npipe:////./pipe/docker_engine on Windows or unix:///var/run/docker.sock on Linux/macOS"
+  type        = string
+  default     = "npipe:////./pipe/docker_engine"
+}
+
 variable "frontend_port" {
   description = "Host port for frontend dashboard"
   type        = number

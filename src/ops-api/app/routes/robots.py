@@ -8,9 +8,11 @@ Provides register, list, heartbeat, and delete operations for robots.
 
 import logging
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from app.deps import get_current_user
+from app.db import User
 from app.store import store
 
 router: APIRouter = APIRouter(prefix='/api/v1/robots')
@@ -24,7 +26,8 @@ class RobotRegisterRequest(BaseModel):
 
 
 @router.post('/register', status_code=201)
-async def register_robot(body: RobotRegisterRequest):
+async def register_robot(body: RobotRegisterRequest,
+                         user: User = Depends(get_current_user)):
     """
     Register a new robot.
     Auto-assigns robot_id with prefix based on type (H-, W-, I-) + sequence
@@ -51,7 +54,7 @@ async def register_robot(body: RobotRegisterRequest):
 
 
 @router.get('')
-async def list_robots():
+async def list_robots(user: User = Depends(get_current_user)):
     """
     List all registered robots with computed online/offline status.
 
@@ -62,7 +65,8 @@ async def list_robots():
 
 
 @router.post('/{robot_id}/heartbeat')
-async def robot_heartbeat(robot_id: str):
+async def robot_heartbeat(robot_id: str,
+                          user: User = Depends(get_current_user)):
     """
     Record a heartbeat for a registered robot.
 
@@ -82,7 +86,8 @@ async def robot_heartbeat(robot_id: str):
 
 
 @router.delete('/{robot_id}')
-async def delete_robot(robot_id: str):
+async def delete_robot(robot_id: str,
+                       user: User = Depends(get_current_user)):
     """
     Remove a robot from the fleet.
 

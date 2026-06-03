@@ -7,7 +7,7 @@ metadata:
 spec:
   containers:
   - name: jaeger
-    image: jaegertracing/all-in-one:latest
+    image: jaegertracing/all-in-one:1.60.0
     ports:
     - containerPort: 16686  # UI
     - containerPort: 4317   # OTLP gRPC

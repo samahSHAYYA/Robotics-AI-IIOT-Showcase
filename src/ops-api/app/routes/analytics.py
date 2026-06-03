@@ -9,9 +9,12 @@ import asyncio
 import json
 import logging
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 
 from app.analytics_engine import get_current, get_history, update as update_analytics
+from app.auth import decode_access_token
+from app.deps import get_current_user
+from app.db import User
 from app.store import store
 
 router: APIRouter = APIRouter(prefix='/api/v1/analytics')
@@ -19,7 +22,7 @@ logger: logging.Logger = logging.getLogger(__name__)
 
 
 @router.get('/current')
-async def current_analytics():
+async def current_analytics(user: User = Depends(get_current_user)):
     """
     Returns current analytics computed from the latest telemetry.
 
@@ -29,7 +32,7 @@ async def current_analytics():
 
 
 @router.get('/history')
-async def history_analytics():
+async def history_analytics(user: User = Depends(get_current_user)):
     """
     Returns time-series analytics data for the last hour at 5-minute intervals.
 
@@ -39,12 +42,19 @@ async def history_analytics():
 
 
 @router.websocket('/ws')
-async def analytics_websocket(websocket: WebSocket):
+async def analytics_websocket(websocket: WebSocket, token: str = ''):
     """
     WebSocket endpoint that sends analytics updates every 5 seconds.
 
     Each message is a JSON object with current analytics data.
+    Expects a `token` query parameter for authentication.
     """
+
+    # Validate token from query parameter
+    payload = decode_access_token(token)
+    if payload is None:
+        await websocket.close(code=4001)
+        return
 
     await websocket.accept()
     logger.info('Analytics WebSocket client connected')

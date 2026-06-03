@@ -3,7 +3,9 @@
 @description: Unit tests for mock ML inference module.
 """
 
+import asyncio
 import json
+from app.consumer import process_message
 from app.inference import run_mock_inference
 
 
@@ -56,3 +58,30 @@ def test_inference_json_roundtrip():
     loaded = json.loads(dumped)
     assert loaded["event_type"] == "ml.prediction"
     assert loaded["confidence"] == result["confidence"]
+
+
+def test_process_message_accepts_allowed_event_types():
+    """
+    Verify that process_message accepts both sensor.reading and camera.frame
+    event types and returns a prediction dict, while rejecting unknown types.
+    """
+
+    async def _run():
+        sensor_result = await process_message({"event_type": "sensor.reading"})
+        camera_result = await process_message({"event_type": "camera.frame"})
+        unknown_result = await process_message({"event_type": "robot.jog"})
+
+        return sensor_result, camera_result, unknown_result
+
+    sensor_result, camera_result, unknown_result = asyncio.run(_run())
+
+    # Allowed types must yield a prediction dict
+    assert sensor_result is not None, "sensor.reading should be accepted"
+    assert "model_name" in sensor_result
+    assert "defect_detection" in camera_result.get("prediction_type", "") or \
+        "maintenance_forecast" in camera_result.get("prediction_type", "")
+    assert camera_result is not None, "camera.frame should be accepted"
+    assert "model_name" in camera_result
+
+    # Unknown event type must be rejected
+    assert unknown_result is None, "robot.jog should be rejected"

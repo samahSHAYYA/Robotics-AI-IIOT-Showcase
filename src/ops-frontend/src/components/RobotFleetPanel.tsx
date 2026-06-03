@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { authFetch } from '../utils/auth-fetch'
 
 interface Robot {
   robot_id: string
@@ -22,7 +23,7 @@ export default function RobotFleetPanel() {
 
   const fetchRobots = useCallback(async () => {
     try {
-      const res = await fetch(API_BASE)
+      const res = await authFetch(API_BASE)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
       setRobots(Array.isArray(data) ? data : data.robots ?? [])
@@ -42,7 +43,7 @@ export default function RobotFleetPanel() {
 
   const handleRemove = useCallback(async (id: string) => {
     try {
-      const res = await fetch(`${API_BASE}/${id}`, { method: 'DELETE' })
+      const res = await authFetch(`${API_BASE}/${id}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('Failed to delete')
       setRobots(prev => prev.filter(r => r.robot_id !== id))
     } catch {
@@ -53,7 +54,7 @@ export default function RobotFleetPanel() {
   const handleRegister = useCallback(async () => {
     if (!newName.trim()) return
     try {
-      const res = await fetch(API_BASE, {
+      const res = await authFetch(API_BASE, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newName.trim(), type: newType }),

@@ -13,9 +13,11 @@ from datetime import datetime, timezone
 from typing import Any
 
 import redis.asyncio as aioredis
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app.audit_logger import log_action
+from app.deps import get_current_user, require_role
+from app.db import User
 from app.store import store
 from app.webhook_engine import trigger_webhooks
 
@@ -35,7 +37,8 @@ def _client_ip(request: Request) -> str:
 
 
 @router.post('/robot/{robot_id}/start')
-async def start_robot(robot_id: str, request: Request):
+async def start_robot(robot_id: str, request: Request,
+                      user: User = Depends(require_role('admin', 'operator'))):
     """Starts robot movement."""
     ok = store.start_robot(robot_id)
     if not ok:
@@ -59,7 +62,8 @@ async def start_robot(robot_id: str, request: Request):
 
 
 @router.post('/robot/{robot_id}/stop')
-async def stop_robot(robot_id: str, request: Request):
+async def stop_robot(robot_id: str, request: Request,
+                     user: User = Depends(require_role('admin', 'operator'))):
     """Stops robot movement."""
     ok = store.stop_robot(robot_id)
     if not ok:
@@ -83,7 +87,8 @@ async def stop_robot(robot_id: str, request: Request):
 
 
 @router.post('/robot/{robot_id}/emergency-stop')
-async def emergency_stop_robot(robot_id: str, request: Request):
+async def emergency_stop_robot(robot_id: str, request: Request,
+                               user: User = Depends(require_role('admin', 'operator'))):
     """Emergency stops a robot with critical alert."""
     ok = store.emergency_stop_robot(robot_id)
     if not ok:
@@ -108,7 +113,8 @@ async def emergency_stop_robot(robot_id: str, request: Request):
 
 @router.post('/robot/{robot_id}/task')
 async def assign_task(robot_id: str, body: dict[str, Any],
-                      request: Request):
+                      request: Request,
+                      user: User = Depends(require_role('admin', 'operator'))):
     """Assigns a task to a robot."""
     task = body.get('task', '')
     ok = store.assign_task(robot_id, task)
@@ -133,7 +139,8 @@ async def assign_task(robot_id: str, body: dict[str, Any],
 
 
 @router.get('/robot/{robot_id}')
-async def get_robot(robot_id: str):
+async def get_robot(robot_id: str,
+                    user: User = Depends(get_current_user)):
     """Returns detailed info for a single robot."""
     info = store.get_robot_info(robot_id)
     if not info:
@@ -142,7 +149,8 @@ async def get_robot(robot_id: str):
 
 
 @router.post('/worker/{worker_id}/toggle')
-async def toggle_worker(worker_id: str, request: Request):
+async def toggle_worker(worker_id: str, request: Request,
+                        user: User = Depends(require_role('admin', 'operator'))):
     """Toggle a worker's active/inactive state."""
     result = store.toggle_worker(worker_id)
     if not result:
@@ -166,7 +174,8 @@ async def toggle_worker(worker_id: str, request: Request):
 
 
 @router.post('/inspect')
-async def trigger_inspect(payload: dict[str, Any]):
+async def trigger_inspect(payload: dict[str, Any],
+                          user: User = Depends(require_role('admin', 'operator'))):
     """
     Triggers a mock visual inspection.
 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { authFetch } from '../utils/auth-fetch'
 
 /* ── Types ────────────────────────────────────────── */
 
@@ -162,7 +163,7 @@ export default function SensorGrid() {
 
   const fetchSensors = useCallback(async () => {
     try {
-      const res = await fetch(SENSOR_API_BASE)
+      const res = await authFetch(SENSOR_API_BASE)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data: SensorData[] = await res.json()
       setSensors(data)
@@ -183,7 +184,7 @@ export default function SensorGrid() {
   const handleFail = useCallback(
     async (id: string) => {
       try {
-        const res = await fetch(`${SENSOR_API_BASE}/${id}/fail?mode=drift`, {
+        const res = await authFetch(`${SENSOR_API_BASE}/${id}/fail?mode=drift`, {
           method: 'POST',
         })
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -198,7 +199,7 @@ export default function SensorGrid() {
   const handleReset = useCallback(
     async (id: string) => {
       try {
-        const res = await fetch(`${SENSOR_API_BASE}/${id}/reset`, {
+        const res = await authFetch(`${SENSOR_API_BASE}/${id}/reset`, {
           method: 'POST',
         })
         if (!res.ok) throw new Error(`HTTP ${res.status}`)

@@ -26,4 +26,3 @@ data:
 
   # postgres
   POSTGRES_USER: {{ .Values.postgres.env.POSTGRES_USER | quote }}
-  POSTGRES_PASSWORD: {{ .Values.postgres.env.POSTGRES_PASSWORD | quote }}

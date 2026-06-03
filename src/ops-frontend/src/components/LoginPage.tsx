@@ -33,8 +33,9 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
       }
       const data = await resp.json()
       localStorage.setItem('sf_session', data.access_token)
-      localStorage.setItem('sf_role', role)
-      onLogin(role)
+      const backendRole = data.role ?? role
+      localStorage.setItem('sf_role', backendRole)
+      onLogin(backendRole)
     } catch {
       setError(t('login.error.connection'))
     } finally {

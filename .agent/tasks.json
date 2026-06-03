@@ -931,7 +931,8 @@
     {
       "id": 81,
       "title": "Enforce JWT authentication on all ops-api REST and WebSocket endpoints",
-      "status": "pending",
+      "status": "completed",
+      "committed": true,
       "committed": false,
       "acceptance": [
         "get_current_user dependency is applied to every protected route (commands, audit, webhooks, robots, sites, reconcile, sensors, analytics, reports, metrics, WebSocket)",
@@ -947,8 +948,8 @@
     {
       "id": 82,
       "title": "Fix ai-service consumer to process camera.frame events",
-      "status": "pending",
-      "committed": false,
+      "status": "completed",
+      "committed": true,
       "acceptance": [
         "consumer.py line 55 filter changed from `event_type.startswith('sensor.')` to also accept `camera.frame` events",
         "Both sensor.reading and camera.frame events trigger their respective inference paths",
@@ -960,8 +961,8 @@
     {
       "id": 83,
       "title": "Wire OpenTelemetry tracing in ai-service and ops-api main.py",
-      "status": "pending",
-      "committed": false,
+      "status": "completed",
+      "committed": true,
       "acceptance": [
         "ops-api/app/main.py calls setup_tracing(app) in the lifespan or immediately after app creation",
         "ai-service/app/main.py calls setup_tracing(app) in the lifespan or immediately after app creation",
@@ -973,8 +974,8 @@
     {
       "id": 84,
       "title": "Fix KpiCard.tsx JSX error: class → className",
-      "status": "pending",
-      "committed": false,
+      "status": "completed",
+      "committed": true,
       "acceptance": [
         "Line 14 of KpiCard.tsx uses `className=` instead of `class=`",
         "No React warning about 'class' attribute in the console",
@@ -984,8 +985,8 @@
     {
       "id": 85,
       "title": "Add edge-sim unit tests for sensor simulation module",
-      "status": "pending",
-      "committed": false,
+      "status": "completed",
+      "committed": true,
       "acceptance": [
         "Tests cover SensorSimulator initialization (10 sensors with correct categories, units, nominal values)",
         "Tests cover random walk tick producing values within min/max bounds",
@@ -1014,8 +1015,8 @@
     {
       "id": 87,
       "title": "Fix Helm Chart security: Secret template, Jaeger version pin, resource limits",
-      "status": "pending",
-      "committed": false,
+      "status": "completed",
+      "committed": true,
       "acceptance": [
         "ConfigMap no longer contains plaintext PostgreSQL password — migrated to a Secret template",
         "Jaeger deployment image tag uses a specific version (e.g. 1.60.0) instead of `latest`",
@@ -1027,8 +1028,8 @@
     {
       "id": 88,
       "title": "Fix Terraform Docker provider for cross-platform portability",
-      "status": "pending",
-      "committed": false,
+      "status": "completed",
+      "committed": true,
       "acceptance": [
         "Docker host in main.tf detects OS (Windows vs Linux/Mac) and sets the correct provider host",
         "On Windows: uses npipe:////./pipe/docker_engine",

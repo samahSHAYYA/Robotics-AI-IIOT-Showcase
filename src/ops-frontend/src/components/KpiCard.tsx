@@ -11,7 +11,7 @@ export default function KpiCard({ label, value, unit, trend, severity }: KpiCard
   const severityClass = severity === 'critical' ? 'kpi--critical' : severity === 'warning' ? 'kpi--warning' : ''
 
   return (
-    <div class={`kpi-card ${severityClass}`}>
+    <div className={`kpi-card ${severityClass}`}>
       <div className="kpi-label">{label}</div>
       <div className="kpi-value">
         {value}

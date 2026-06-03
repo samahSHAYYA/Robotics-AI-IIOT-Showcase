@@ -6,11 +6,25 @@ opsFrontend:
   image: ops-frontend
   replicas: 1
   port: 5173
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
 
 opsApi:
   image: ops-api
   replicas: 2
   port: 8003
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
   env:
     REDIS_URL: redis://redis:6379/0
     POSTGRES_HOST: postgres
@@ -21,6 +35,13 @@ aiService:
   image: ai-service
   replicas: 1
   port: 8002
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
   env:
     REDIS_URL: redis://redis:6379/0
 
@@ -28,17 +49,38 @@ aiAgent:
   image: ai-agent
   replicas: 1
   port: 8004
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
   env:
     REDIS_URL: redis://redis:6379/0
 
 redis:
   image: redis:7-alpine
   port: 6379
+  resources:
+    requests:
+      cpu: 100m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
 
 postgres:
   image: postgres:16-alpine
   port: 5432
+  password: showcase_secret
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
   env:
     POSTGRES_DB: factory
     POSTGRES_USER: factory
-    POSTGRES_PASSWORD: factory

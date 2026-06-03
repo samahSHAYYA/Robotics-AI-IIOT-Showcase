@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { authFetch } from '../utils/auth-fetch'
 
 interface Webhook {
   id: string
@@ -29,7 +30,7 @@ export default function WebhookManager() {
   const fetchWebhooks = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/v1/webhooks')
+      const res = await authFetch('/api/v1/webhooks')
       if (!res.ok) throw new Error('Failed to fetch')
       const data = await res.json()
       setWebhooks(Array.isArray(data) ? data : data.webhooks ?? [])
@@ -47,7 +48,7 @@ export default function WebhookManager() {
   const handleAdd = useCallback(async () => {
     if (!newUrl.trim()) return
     try {
-      const res = await fetch('/api/v1/webhooks', {
+      const res = await authFetch('/api/v1/webhooks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: newUrl.trim(), trigger_event: newTrigger, enabled: newEnabled }),
@@ -65,7 +66,7 @@ export default function WebhookManager() {
 
   const handleDelete = useCallback(async (id: string) => {
     try {
-      const res = await fetch(`/api/v1/webhooks/${id}`, { method: 'DELETE' })
+      const res = await authFetch(`/api/v1/webhooks/${id}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('Failed to delete')
       setWebhooks(prev => prev.filter(w => w.id !== id))
     } catch {
@@ -75,7 +76,7 @@ export default function WebhookManager() {
 
   const handleToggle = useCallback(async (id: string, enabled: boolean) => {
     try {
-      const res = await fetch(`/api/v1/webhooks/${id}`, {
+      const res = await authFetch(`/api/v1/webhooks/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enabled }),
@@ -104,7 +105,7 @@ export default function WebhookManager() {
   const saveEdit = useCallback(async (id: string) => {
     if (!editUrl.trim()) return
     try {
-      const res = await fetch(`/api/v1/webhooks/${id}`, {
+      const res = await authFetch(`/api/v1/webhooks/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: editUrl.trim(), trigger_event: editTrigger, enabled: editEnabled }),
@@ -120,7 +121,7 @@ export default function WebhookManager() {
   const handleTest = useCallback(async (id: string) => {
     setTesting(id)
     try {
-      const res = await fetch(`/api/v1/webhooks/${id}/test`, { method: 'POST' })
+      const res = await authFetch(`/api/v1/webhooks/${id}/test`, { method: 'POST' })
       if (!res.ok) throw new Error('Test failed')
       const result = await res.json()
       if (result.status === 'ok') {
