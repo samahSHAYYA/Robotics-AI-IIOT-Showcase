@@ -35,6 +35,7 @@ export default function IntegrationsPanel() {
 
   const [activeView, setActiveView] = useState<PanelView>('list')
   const [editingId, setEditingId] = useState<number | null>(null)
+  const [editingIntegration, setEditingIntegration] = useState<Integration | null>(null)
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [testing, setTesting] = useState(false)
@@ -59,6 +60,7 @@ export default function IntegrationsPanel() {
   const resetForm = useCallback(() => {
     setForm(EMPTY_FORM)
     setEditingId(null)
+    setEditingIntegration(null)
     setTestResult(null)
   }, [])
 
@@ -78,6 +80,7 @@ export default function IntegrationsPanel() {
       enabled: integration.enabled,
     })
     setEditingId(integration.id)
+    setEditingIntegration(integration)
     setTestResult(null)
     setActiveView('form')
   }, [])
@@ -307,7 +310,10 @@ export default function IntegrationsPanel() {
               onChange={e => setForm(prev => ({ ...prev, adapter_type: e.target.value }))}
             >
               {adapters.length === 0 ? (
-                <option value="rest">REST</option>
+                <>
+                  <option value="rest">REST</option>
+                  <option value="opcua">OPC-UA</option>
+                </>
               ) : (
                 adapters.map(a => (
                   <option key={a.name} value={a.name}>{a.description || a.name}</option>
@@ -350,6 +356,42 @@ export default function IntegrationsPanel() {
               />
             </div>
           ))}
+
+          {/* Key rotation info — shown only when editing an existing integration */}
+          {editingId !== null && editingIntegration && (
+            <>
+              <div className="integration-form__row">
+                <span className="integration-form__key-info">
+                  {t('integration.keyRotated')}: {editingIntegration.key_rotated_at ? new Date(editingIntegration.key_rotated_at).toLocaleDateString() : t('integration.neverRotated')}
+                </span>
+              </div>
+              <div className="integration-form__row">
+                <button
+                  className="btn-base"
+                  type="button"
+                  style={{ borderColor: 'var(--warning)', color: 'var(--warning)', fontSize: '0.55rem', padding: '0.15rem 0.4rem' }}
+                  onClick={async () => {
+                    // Call the rotate-key endpoint
+                    try {
+                      const response = await fetch(`/api/v1/integrations/${editingId}/rotate-key`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                      })
+                      if (response.ok) {
+                        const updated = await response.json()
+                        setEditingIntegration(prev => prev ? { ...prev, key_rotated_at: updated.key_rotated_at } : null)
+                        await refetch()
+                      }
+                    } catch {
+                      // silently fail
+                    }
+                  }}
+                >
+                  {t('integration.rotateKey')}
+                </button>
+              </div>
+            </>
+          )}
 
           <div className="integration-form__row">
             <label>{t('integration.syncInterval')}</label>

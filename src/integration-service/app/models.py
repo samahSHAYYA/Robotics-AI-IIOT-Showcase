@@ -30,6 +30,7 @@ class Integration(Base):
     enabled = Column(Boolean, default=True)
     trigger_on_event = Column(Boolean, default=False)           # event-based triggering
     event_types = Column(JSON, default=list)                     # list of event types that trigger sync
+    key_rotated_at = Column(DateTime(timezone=True), nullable=True)
     last_sync_at = Column(DateTime(timezone=True), nullable=True)
     last_sync_status = Column(String(20), default='never')       # never, success, error
     created_at = Column(DateTime(timezone=True), server_default=func.now())

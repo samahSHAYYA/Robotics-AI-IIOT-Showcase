@@ -164,5 +164,22 @@
   "integration.minutesAgo": "il y a {count} min",
   "integration.hoursAgo": "il y a {count} h",
   "integration.triggered": "Déclenché par événement",
-  "integration.close": "Fermer"
+  "integration.close": "Fermer",
+  "audit.title": "Journal d'Audit",
+  "audit.refresh": "Actualiser",
+  "audit.filter.action": "Action",
+  "audit.filter.from": "Du",
+  "audit.filter.to": "Au",
+  "audit.filter.apply": "Appliquer",
+  "audit.table.time": "Heure",
+  "audit.table.user": "Utilisateur",
+  "audit.table.action": "Action",
+  "audit.table.resource": "Ressource",
+  "audit.table.details": "Détails",
+  "audit.empty": "Aucune entrée de journal trouvée",
+  "audit.loading": "Chargement du journal...",
+  "audit.pagination.prev": "Préc",
+  "audit.pagination.next": "Suiv",
+  "audit.showDetails": "Afficher détails",
+  "audit.hideDetails": "Masquer détails"
 }

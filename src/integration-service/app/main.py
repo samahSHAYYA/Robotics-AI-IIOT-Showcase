@@ -19,6 +19,7 @@ from fastapi import FastAPI
 
 from app.db import init_db
 from app.routes import integrations as integrations_router
+from app.event_consumer import start_event_consumer
 from app.sync_engine import start_sync_engine
 
 LOG_LEVEL: str = os.getenv('LOG_LEVEL', 'INFO')
@@ -32,6 +33,7 @@ logging.basicConfig(
 logger: logging.Logger = logging.getLogger(__name__)
 
 _sync_task: asyncio.Task | None = None
+_event_consumer_task: asyncio.Task | None = None
 
 
 @asynccontextmanager
@@ -50,6 +52,9 @@ async def lifespan(app: FastAPI):
     logger.info('Starting sync engine ...')
     _sync_task = start_sync_engine()
 
+    logger.info('Starting event consumer ...')
+    _event_consumer_task = start_event_consumer()
+
     logger.info('Integration service started.')
 
     yield
@@ -57,6 +62,10 @@ async def lifespan(app: FastAPI):
     if _sync_task:
         _sync_task.cancel()
         logger.info('Sync engine stopped.')
+
+    if _event_consumer_task:
+        _event_consumer_task.cancel()
+        logger.info('Event consumer stopped.')
 
     logger.info('Integration service shut down.')
 

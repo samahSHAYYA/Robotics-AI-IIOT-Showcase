@@ -10,6 +10,7 @@ time.
 from typing import Any
 
 from app.adapters.base import BaseAdapter
+from app.adapters.opcua import OpcUaAdapter
 from app.adapters.rest import RestAdapter
 
 _registry: dict[str, type[BaseAdapter]] = {}
@@ -49,3 +50,4 @@ def list_adapters() -> list[dict[str, Any]]:
 
 # Register built-in adapters
 register_adapter('rest', RestAdapter)
+register_adapter('opcua', OpcUaAdapter)

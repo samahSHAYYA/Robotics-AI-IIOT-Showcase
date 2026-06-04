@@ -64,6 +64,7 @@ from app.routes import sensors as sensors_router
 # Feature 30: Analytics engine (fed by broadcast loop)
 from app import analytics_engine
 
+from app.event_bus import close_publisher
 from app.store import store
 from app.webhook_engine import ensure_cache_loaded
 from app.webhook_v2 import start_webhook_v2_engine
@@ -344,6 +345,8 @@ async def lifespan(app: FastAPI):
     except asyncio.CancelledError:
         pass
 
+    await close_publisher()
+
     logger.info('ops-api shut down.')
 
 
@@ -365,8 +368,8 @@ app.add_middleware(
     allow_headers = ['*'],
 )
 
-# Feature 27: Rate limiting + security headers
-app.add_middleware(RateLimitMiddleware, max_requests=100, window_seconds=60)
+# Feature 27: Per-tenant rate limiting + security headers
+app.add_middleware(RateLimitMiddleware, max_requests=200, window_seconds=60)
 app.add_middleware(SecurityHeadersMiddleware)
 
 # Original routers

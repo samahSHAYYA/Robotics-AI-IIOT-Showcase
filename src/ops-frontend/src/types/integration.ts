@@ -5,8 +5,12 @@ export interface Integration {
   adapter_type: string
   base_url: string
   auth_type: 'api_key' | 'basic' | 'oauth2' | 'none'
+  auth_config?: Record<string, any>
   sync_interval_minutes: number
   enabled: boolean
+  trigger_on_event?: boolean
+  event_types?: string[]
+  key_rotated_at: string | null
   last_sync_at: string | null
   last_sync_status: 'never' | 'success' | 'error'
   created_at: string

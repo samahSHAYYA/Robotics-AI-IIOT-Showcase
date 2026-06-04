@@ -22,6 +22,7 @@ from typing import Any
 from sqlalchemy import select, delete as sa_delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.event_bus import publish_event
 from app.db import (
     Alert,
     Robot,
@@ -67,6 +68,29 @@ DB_FLUSH_INTERVAL_S: float = 5.0
 
 # Default factory ID for backward compatibility
 DEFAULT_FACTORY_ID: int = 1
+
+
+def _maybe_publish_event(
+    event_type: str,
+    payload: dict[str, Any],
+    tenant_id: int,
+    factory_id: int | None = None,
+):
+    """
+    Schedule an event publication if a running event loop exists.
+
+    This is a fire-and-forget wrapper around publish_event that safely
+    degrades when called from a synchronous context (e.g. test suite)
+    where no event loop is running.
+    """
+    try:
+        loop = asyncio.get_running_loop()
+        if loop.is_running():
+            asyncio.ensure_future(
+                publish_event(event_type, payload, tenant_id, factory_id),
+            )
+    except RuntimeError:
+        pass  # No running event loop — likely in test context
 
 
 class TelemetryStore:
@@ -214,7 +238,18 @@ class TelemetryStore:
                 'timestamp': datetime.now(timezone.utc).isoformat(),
             })
             cache['alerts'] = cache['alerts'][:20]
-            return True
+
+        _maybe_publish_event('robot.status_changed', {
+            'robot_id': robot_id,
+            'status': 'error',
+            'reason': 'emergency_stop',
+        }, tenant_id=1, factory_id=factory_id)
+        _maybe_publish_event('alert.raised', {
+            'severity': 'critical',
+            'message': f'Emergency stop triggered on {robot_id}',
+            'robot_id': robot_id,
+        }, tenant_id=1, factory_id=factory_id)
+        return True
 
     def assign_task(self, robot_id: str, task: str, factory_id: int = DEFAULT_FACTORY_ID) -> bool:
         with self._lock:
@@ -377,6 +412,12 @@ class TelemetryStore:
                         })
                         cache['alerts'] = cache['alerts'][:20]
 
+                        _maybe_publish_event('alert.raised', {
+                            'severity': severity,
+                            'message': msg,
+                            'robot_id': picked,
+                        }, tenant_id=1, factory_id=factory_id)
+
                     # Randomly change robot tasks (~1% chance per tick)
                     if random.random() < 0.01:
                         tasks_pool = ['Assembly Line A', 'Assembly Line B',
@@ -409,6 +450,17 @@ class TelemetryStore:
                                         'timestamp': datetime.now(timezone.utc).isoformat(),
                                     })
                                     cache['alerts'] = cache['alerts'][:20]
+
+                                    _maybe_publish_event('robot.status_changed', {
+                                        'robot_id': error_robot,
+                                        'status': 'active',
+                                        'reason': 'error_resolved',
+                                    }, tenant_id=1, factory_id=factory_id)
+                                    _maybe_publish_event('alert.raised', {
+                                        'severity': 'info',
+                                        'message': f'{error_robot} error resolved — back online',
+                                        'robot_id': error_robot,
+                                    }, tenant_id=1, factory_id=factory_id)
                                     break
                             error_robot = None
 
@@ -434,6 +486,17 @@ class TelemetryStore:
                                     'timestamp': datetime.now(timezone.utc).isoformat(),
                                 })
                                 cache['alerts'] = cache['alerts'][:20]
+
+                                _maybe_publish_event('robot.status_changed', {
+                                    'robot_id': rid,
+                                    'status': 'maintenance',
+                                    'reason': 'random_status_change',
+                                }, tenant_id=1, factory_id=factory_id)
+                                _maybe_publish_event('alert.raised', {
+                                    'severity': 'warning',
+                                    'message': f'{rid} requires maintenance — robot slowed',
+                                    'robot_id': rid,
+                                }, tenant_id=1, factory_id=factory_id)
                             elif choice == 'error':
                                 self._robot_fleet[rid]['status'] = 'error'
                                 self._robot_moving[rid] = False
@@ -450,6 +513,17 @@ class TelemetryStore:
                                 })
                                 cache['alerts'] = cache['alerts'][:20]
 
+                                _maybe_publish_event('robot.status_changed', {
+                                    'robot_id': rid,
+                                    'status': 'error',
+                                    'reason': 'random_status_change',
+                                }, tenant_id=1, factory_id=factory_id)
+                                _maybe_publish_event('alert.raised', {
+                                    'severity': 'critical',
+                                    'message': f'{rid} encountered a fault — emergency stop',
+                                    'robot_id': rid,
+                                }, tenant_id=1, factory_id=factory_id)
+
                         elif current_status in ('maintenance', 'idle'):
                             if random.random() < 0.5:
                                 self._robot_fleet[rid]['status'] = 'active'
@@ -458,6 +532,12 @@ class TelemetryStore:
                                     if r['robot_id'] == rid:
                                         r['status'] = 'active'
                                 logger.info('Robot %s status → active', rid)
+
+                                _maybe_publish_event('robot.status_changed', {
+                                    'robot_id': rid,
+                                    'status': 'active',
+                                    'reason': 'random_status_change',
+                                }, tenant_id=1, factory_id=factory_id)
 
                 if not ros2_controls_poses:
                     # ---- Compute movement per robot (skipped when ROS2 provides live data) ----
@@ -551,6 +631,13 @@ class TelemetryStore:
                                             'timestamp': datetime.now(timezone.utc).isoformat(),
                                         })
                                         cache['alerts'] = cache['alerts'][:20]
+
+                                        _maybe_publish_event('alert.raised', {
+                                            'severity': 'warning',
+                                            'message': f'Proximity alert: {rid_a} and {rid_b} within {d:.1f}m — '
+                                                       f'{slower_rid} slowing down',
+                                            'robot_id': rid_a if pri_a < pri_b else rid_b,
+                                        }, tenant_id=1, factory_id=factory_id)
 
                             if d < COLLISION_DIST:
                                 if pri_a < pri_b:
@@ -657,6 +744,11 @@ class TelemetryStore:
             cache['events_consumed'] += 1
             cache['last_update'] = datetime.now(timezone.utc).isoformat()
 
+        _maybe_publish_event('telemetry.updated', {
+            'event': event,
+            'factory_id': factory_id,
+        }, tenant_id=1, factory_id=factory_id)
+
     def update_from_prediction(self, prediction: dict[str, Any], factory_id: int = DEFAULT_FACTORY_ID):
         """Updates the store with data from an ai-service prediction event."""
         with self._lock:
@@ -680,6 +772,13 @@ class TelemetryStore:
 
             cache['alerts'] = cache['alerts'][:20]
             cache['last_update'] = datetime.now(timezone.utc).isoformat()
+
+        if triggered:
+            _maybe_publish_event('alert.raised', {
+                'severity': triggered,
+                'message': f"ML alert: {prediction.get('prediction_type', 'unknown')}",
+                'source': 'ml-prediction',
+            }, tenant_id=1, factory_id=factory_id)
 
     def update_from_ros2_snapshot(
         self,

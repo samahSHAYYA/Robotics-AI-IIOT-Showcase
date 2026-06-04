@@ -38,6 +38,49 @@ router: APIRouter = APIRouter(prefix='/api/v1')
 logger: logging.Logger = logging.getLogger(__name__)
 
 
+def _mask_credentials(auth_config: dict[str, Any] | None) -> dict[str, Any] | None:
+    """
+    Mask sensitive credential values for API responses.
+    Shows only the last 4 characters of each value.
+
+    @param auth_config: The raw auth_config dict.
+    @return: Dict with masked values, or None if input is None.
+    """
+    if auth_config is None:
+        return None
+    masked: dict[str, Any] = {}
+    for key, value in auth_config.items():
+        if isinstance(value, str) and len(value) > 4:
+            masked[key] = '*' * (len(value) - 4) + value[-4:]
+        elif isinstance(value, str):
+            masked[key] = value
+        else:
+            masked[key] = value
+    return masked
+
+
+def _integration_to_response(integration: Integration) -> dict[str, Any]:
+    """Convert Integration model to response dict with masked credentials."""
+    return {
+        'id': integration.id,
+        'tenant_id': integration.tenant_id,
+        'name': integration.name,
+        'adapter_type': integration.adapter_type,
+        'base_url': integration.base_url,
+        'auth_type': integration.auth_type,
+        'auth_config': _mask_credentials(integration.auth_config),
+        'sync_interval_minutes': integration.sync_interval_minutes,
+        'enabled': integration.enabled,
+        'trigger_on_event': integration.trigger_on_event,
+        'event_types': integration.event_types,
+        'key_rotated_at': integration.key_rotated_at,
+        'last_sync_at': integration.last_sync_at,
+        'last_sync_status': integration.last_sync_status,
+        'created_at': integration.created_at,
+        'updated_at': integration.updated_at,
+    }
+
+
 def _get_tenant_id(user: dict[str, Any]) -> int:
     """
     Extract tenant_id from the authenticated user's JWT payload.
@@ -72,7 +115,8 @@ async def list_integrations(
         select(Integration).where(Integration.tenant_id == tenant_id)
         .order_by(Integration.created_at.desc()),
     )
-    return result.scalars().all()
+    integrations: list[Integration] = result.scalars().all()
+    return [_integration_to_response(inst) for inst in integrations]
 
 
 @router.post(
@@ -113,7 +157,7 @@ async def create_integration(
         'Integration created: id=%d tenant=%d name=%s',
         integration.id, tenant_id, integration.name,
     )
-    return integration
+    return _integration_to_response(integration)
 
 
 @router.get('/integrations/{integration_id}', response_model=IntegrationResponse)
@@ -144,7 +188,7 @@ async def get_integration(
             status_code=status.HTTP_404_NOT_FOUND,
             detail='Integration not found.',
         )
-    return integration
+    return _integration_to_response(integration)
 
 
 @router.put('/integrations/{integration_id}', response_model=IntegrationResponse)
@@ -190,7 +234,59 @@ async def update_integration(
     logger.info(
         'Integration updated: id=%d tenant=%d', integration.id, tenant_id,
     )
-    return integration
+    return _integration_to_response(integration)
+
+
+@router.post(
+    '/integrations/{integration_id}/rotate-key',
+    response_model=IntegrationResponse,
+)
+async def rotate_integration_key(
+    integration_id: int,
+    user: dict[str, Any] = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Rotate the encrypted credentials for an integration.
+
+    Generates a new Fernet key, re-encrypts the stored auth_config,
+    and updates key_rotated_at. This invalidates the previous encryption
+    and provides a fresh credential store.
+
+    @param integration_id: The integration record ID.
+    @param user: Authenticated user JWT payload.
+    @param session: Async DB session.
+    @return: Updated Integration record with masked credentials.
+    @raises HTTPException 404: If integration not found in tenant.
+    """
+    tenant_id: int = _get_tenant_id(user)
+    result = await session.execute(
+        select(Integration).where(
+            Integration.id == integration_id,
+            Integration.tenant_id == tenant_id,
+        ),
+    )
+    integration: Integration | None = result.scalar_one_or_none()
+    if integration is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Integration not found.',
+        )
+
+    # Re-encrypt the auth_config with a new key rotation
+    from app.utils.crypto import encrypt_credentials, rotate_key
+    new_key: bytes = rotate_key()
+    integration.auth_config = encrypt_credentials(integration.auth_config, new_key)
+    integration.key_rotated_at = datetime.now(timezone.utc)
+    integration.updated_at = datetime.now(timezone.utc)
+
+    await session.commit()
+    await session.refresh(integration)
+    logger.info(
+        'Key rotated for integration %d (tenant=%d)',
+        integration_id, tenant_id,
+    )
+    return _integration_to_response(integration)
 
 
 @router.delete('/integrations/{integration_id}', status_code=status.HTTP_204_NO_CONTENT)

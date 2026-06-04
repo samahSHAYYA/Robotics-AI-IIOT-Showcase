@@ -25,7 +25,7 @@ import ShiftScheduler from '../components/ShiftScheduler'
 import WorkerSafetyZone from '../components/WorkerSafetyZone'
 import AnnotationPanel from '../components/AnnotationPanel'
 import ServiceHealth from '../components/ServiceHealth'
-import AuditLog from '../components/AuditLog'
+import AuditLogPanel from '../components/AuditLogPanel'
 import WebhookManager from '../components/WebhookManager'
 import EnergyOptimizer from '../components/EnergyOptimizer'
 import PredictiveQuality from '../components/PredictiveQuality'
@@ -115,7 +115,7 @@ export default function DashboardLayout() {
       tabs.push({ key: 'maintenance', label: `🔧 ${t('tab.maintenance')}`, panels: ['predictive', 'sensors', 'health', 'shift', 'federated'] })
     }
     if (canAdmin) {
-      tabs.push({ key: 'admin', label: `⚙️ ${t('tab.admin')}`, panels: ['audit', 'webhooks', 'integrations', 'robots', 'reconcile', 'sites'] })
+      tabs.push({ key: 'admin', label: `⚙️ ${t('tab.admin')}`, panels: ['audit-log', 'webhooks', 'integrations', 'robots', 'reconcile', 'sites'] })
     }
     if (canAccess('camera')) {
       tabs.push({ key: 'camera', label: `📷 ${t('tab.camera')}`, panels: ['camera'] })
@@ -599,8 +599,8 @@ export default function DashboardLayout() {
               {/* Admin tab — only for super_admin and tenant_admin */}
               {activeTab === 'admin' && canAdmin && (
                 <>
-                  {showPanelForTab('audit') && (
-                    <div className="panel panel-audit"><AuditLog /></div>
+                  {showPanelForTab('audit-log') && (
+                    <div className="panel panel-audit"><AuditLogPanel /></div>
                   )}
                   {showPanelForTab('webhooks') && (
                     <div className="panel panel-webhooks"><WebhookManager /></div>

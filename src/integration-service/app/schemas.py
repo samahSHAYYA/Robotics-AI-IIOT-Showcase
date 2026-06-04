@@ -46,10 +46,12 @@ class IntegrationResponse(BaseModel):
     adapter_type: str
     base_url: str
     auth_type: str
+    auth_config: dict[str, Any] = Field(default_factory=dict)
     sync_interval_minutes: int
     enabled: bool
     trigger_on_event: bool = False
     event_types: list[str] = Field(default_factory=list)
+    key_rotated_at: datetime | None = None
     last_sync_at: datetime | None = None
     last_sync_status: str
     created_at: datetime | None = None
