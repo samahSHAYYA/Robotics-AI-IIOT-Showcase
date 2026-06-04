@@ -3,6 +3,8 @@ import { useAuth } from '../contexts/AuthContext'
 import { useTelemetry } from '../contexts/TelemetryContext'
 import { useI18n } from '../contexts/I18nContext'
 import { useTheme } from '../contexts/ThemeContext'
+import { ROLE_PERMISSIONS } from '../types/auth'
+import { authFetch } from '../utils/auth-fetch'
 import KpiBoard from '../components/KpiBoard'
 import AlertBoard from '../components/AlertBoard'
 import RobotFleet from '../components/RobotFleet'
@@ -34,13 +36,39 @@ import SensorGrid from '../components/SensorGrid'
 import RobotFleetPanel from '../components/RobotFleetPanel'
 import ReconcilePanel from '../components/ReconcilePanel'
 import SiteManagerPanel from '../components/SiteManagerPanel'
+import IntegrationsPanel from '../components/IntegrationsPanel'
 import LoginPage from '../components/LoginPage'
 import LayoutSettingsPanel, { loadLayout, saveLayout } from '../components/LayoutSettingsPanel'
 import useAlertNotifications from '../hooks/useAlertNotifications'
 
+interface FactoryItem {
+  id: number
+  name: string
+  location: string
+  timezone: string
+}
+
+const ROLE_LABELS: Record<string, string> = {
+  super_admin: 'Super Admin',
+  tenant_admin: 'Org Admin',
+  factory_admin: 'Factory Admin',
+  operator: 'Operator',
+  viewer: 'Viewer',
+  integrator: 'Integrator',
+}
+
+const ROLE_ICONS: Record<string, string> = {
+  super_admin: '\u265B',   // Crown
+  tenant_admin: '\u2302',  // House/building
+  factory_admin: '\u2699', // Gear
+  operator: '\u25B6',      // Play
+  viewer: '\u25C9',        // Eye/dot
+  integrator: '\u29D6',    // Integration symbol
+}
+
 export default function DashboardLayout() {
-  const { t, lang, setLang } = useI18n()
-  const { authed, role, login, logout, kioskMode } = useAuth()
+  const { t, lang, setLang, availableLanguages } = useI18n()
+  const { authed, role, tenantName, factoryId, factoryName, login, logout, kioskMode, switchFactory } = useAuth()
   const {
     telemetry, robots, workers, alerts, events, error, wsStatus, kpiDiffs,
     handleRobotStart, handleRobotStop, handleAssignTask, handleWorkerToggle,
@@ -59,18 +87,72 @@ export default function DashboardLayout() {
   const voiceTimeoutRef = useRef<number>(0)
   const { notifEnabled, setNotifEnabled, minSeverity, cycleSeverity } = useAlertNotifications(alerts)
 
+  // Factory list for switcher
+  const [factories, setFactories] = useState<FactoryItem[]>([])
   const [kioskView, setKioskView] = useState<'map' | 'kpi'>('map')
 
-  const TABS = [
-    { key: 'factory', label: `🏭 ${t('tab.factory')}`, panels: ['map', 'fleet', 'alerts', 'console', 'annotations'] },
-    { key: 'analytics', label: `📊 ${t('tab.analytics')}`, panels: ['analytics', 'oee', 'production', 'energy', 'supply', 'quality', 'energyopt'] },
-    { key: 'maintenance', label: `🔧 ${t('tab.maintenance')}`, panels: ['predictive', 'sensors', 'health', 'shift', 'federated'] },
-    { key: 'admin', label: `⚙️ ${t('tab.admin')}`, panels: ['audit', 'webhooks', 'robots', 'reconcile', 'sites'] },
-    { key: 'camera', label: `📷 ${t('tab.camera')}`, panels: ['camera'] },
-    { key: 'ai', label: `💬 ${t('tab.ai')}`, panels: ['chat'] },
-  ] as const
+  // Derive allowed panels from role
+  const allowedPanels = role ? ROLE_PERMISSIONS[role] : []
+
+  const canAccess = useCallback((panel: string) => {
+    return allowedPanels.includes(panel)
+  }, [allowedPanels])
+
+  const canAdmin = role === 'super_admin' || role === 'tenant_admin'
+  const canControl = role !== 'viewer' && role !== 'integrator'
+
+  // Build tabs based on role permissions
+  const TABS = (() => {
+    const tabs: Array<{ key: string; label: string; panels: string[] }> = []
+
+    if (canAccess('map') || canAccess('fleet') || canAccess('alerts')) {
+      tabs.push({ key: 'factory', label: `🏭 ${t('tab.factory')}`, panels: ['map', 'fleet', 'alerts', 'console', 'annotations'] })
+    }
+    if (canAccess('analytics') || canAccess('oee') || canAccess('energy')) {
+      tabs.push({ key: 'analytics', label: `📊 ${t('tab.analytics')}`, panels: ['analytics', 'oee', 'production', 'energy', 'supply', 'quality', 'energyopt'] })
+    }
+    if (canAccess('predictive') || canAccess('shift-scheduler')) {
+      tabs.push({ key: 'maintenance', label: `🔧 ${t('tab.maintenance')}`, panels: ['predictive', 'sensors', 'health', 'shift', 'federated'] })
+    }
+    if (canAdmin) {
+      tabs.push({ key: 'admin', label: `⚙️ ${t('tab.admin')}`, panels: ['audit', 'webhooks', 'integrations', 'robots', 'reconcile', 'sites'] })
+    }
+    if (canAccess('camera')) {
+      tabs.push({ key: 'camera', label: `📷 ${t('tab.camera')}`, panels: ['camera'] })
+    }
+    if (canAccess('chat')) {
+      tabs.push({ key: 'ai', label: `💬 ${t('tab.ai')}`, panels: ['chat'] })
+    }
+    return tabs
+  })()
 
   const activePanels: readonly string[] = TABS.find(t => t.key === activeTab)?.panels ?? []
+
+  // Fetch factories for switcher
+  const fetchFactories = useCallback(async () => {
+    try {
+      const res = await authFetch('/api/v1/sites')
+      if (res.ok) {
+        const data = await res.json()
+        const list = Array.isArray(data) ? data : (data.sites ?? data.factories ?? [])
+        setFactories(list.map((f: Record<string, unknown>) => ({
+          id: typeof f.id === 'number' ? f.id : Number(f.id),
+          name: String(f.name ?? ''),
+          location: String(f.location ?? ''),
+          timezone: String(f.timezone ?? ''),
+        })))
+      }
+    } catch {
+      // Silently fail — factory switcher just won't populate
+    }
+  }, [])
+
+  useEffect(() => {
+    if (canAdmin || role === 'factory_admin') {
+      fetchFactories()
+    }
+  }, [fetchFactories, canAdmin, role])
+
   const showPanelForTab = (key: string) => activePanels.includes(key) && (panelVisibility[key] ?? true)
 
   // Persist panel layout
@@ -214,6 +296,9 @@ export default function DashboardLayout() {
         ? t('reconnect.connecting')
         : null
 
+  const roleIcon = role ? ROLE_ICONS[role] ?? '' : ''
+  const roleLabel = role ? ROLE_LABELS[role] ?? role : ''
+
   if (!authed) return <LoginPage onLogin={login} />
 
   return (
@@ -231,6 +316,47 @@ export default function DashboardLayout() {
             <span className="app-subtitle">{t('app.subtitle')}</span>
           </div>
           <div className="header-right">
+            {/* Organization badge */}
+            {tenantName && (
+              <span className="org-badge" title={tenantName}>
+                {tenantName}
+              </span>
+            )}
+
+            {/* Factory switcher for super_admin and tenant_admin */}
+            {canAdmin && factories.length > 1 && (
+              <div className="factory-switcher-wrapper">
+                <select
+                  className="factory-switcher"
+                  value={factoryId ?? undefined}
+                  onChange={(e) => {
+                    const idx = e.target.selectedIndex
+                    const name = e.target.options[idx]?.text ?? ''
+                    switchFactory(Number(e.target.value), name)
+                  }}
+                >
+                  {factories.map(f => (
+                    <option key={f.id} value={f.id}>{f.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Factory name text for non-admin roles */}
+            {!canAdmin && factoryName && (
+              <span className="org-badge factory-name-badge" title={factoryName}>
+                🏭 {factoryName}
+              </span>
+            )}
+
+            {/* Live data source indicator */}
+            {telemetry?.data_source && (
+              <span className={`data-source-badge data-source-badge--${telemetry.data_source}`}>
+                <span className="data-source-dot" />
+                {telemetry.data_source === 'ros2' ? 'Live' : 'Simulated'}
+              </span>
+            )}
+
             <VoiceCommand />
             <AmbientAudio robots={robots} />
             <div className="notif-group">
@@ -267,14 +393,23 @@ export default function DashboardLayout() {
             >
               {theme === 'dark' ? '\u2600\uFE0F' : '\uD83C\uDF19'}
             </button>
-            <button
-              className="layout-settings-btn"
-              onClick={() => setLang(lang === 'en' ? 'fr' : 'en')}
+            {/* Language switcher — dynamic from availableLanguages */}
+            <select
+              className="lang-switcher"
+              value={lang}
+              onChange={(e) => setLang(e.target.value)}
+              title={t('lang.switch')}
             >
-              {lang === 'en' ? 'FR' : 'EN'}
-            </button>
-            <span className={`role-badge role-badge--${role}`}>{role}</span>
-            {role === 'admin' && <button className="layout-settings-btn" onClick={() => setShowLayoutSettings(true)}>{t('app.layout')}</button>}
+              {availableLanguages.map(langPack => (
+                <option key={langPack.code} value={langPack.code}>
+                  {langPack.nativeName}
+                </option>
+              ))}
+            </select>
+            <span className={`role-badge role-badge--${role}`} title={roleLabel}>
+              {roleIcon} {roleLabel}
+            </span>
+            {canAdmin && <button className="layout-settings-btn" onClick={() => setShowLayoutSettings(true)}>{t('app.layout')}</button>}
             <button className="layout-settings-btn" onClick={() => setShowShortcuts((p) => !p)}>?</button>
             <span className="header-clock">{clock.toLocaleTimeString()}</span>
             <button className="logout-btn" onClick={logout}>{t('app.logout')}</button>
@@ -289,7 +424,7 @@ export default function DashboardLayout() {
                 <DigitalTwinMap
                   robots={robots}
                   error={error}
-                  role={role}
+                  role={role ?? undefined}
                   selectedRobotId={selectedRobotId}
                   onRobotStart={handleRobotStart}
                   onRobotStop={handleRobotStop}
@@ -344,7 +479,7 @@ export default function DashboardLayout() {
                           robots={robots}
                           workers={workers}
                           error={error}
-                          role={role}
+                          role={role ?? undefined}
                           selectedRobotId={selectedRobotId}
                           onRobotStart={handleRobotStart}
                           onRobotStop={handleRobotStop}
@@ -355,25 +490,27 @@ export default function DashboardLayout() {
                   )}
                   <div className="factory-sidebar">
                     <nav className="factory-sub-tabs">
-                      {['alerts', 'console', 'fleet', 'safety', 'annotations'].map(key => (
-                        <button
-                          key={key}
-                          className={`factory-sub-tab${factorySubTab === key ? ' factory-sub-tab--active' : ''}`}
-                          onClick={() => setFactorySubTab(key)}
-                        >
-                          {t(`factory.${key}`)}
-                        </button>
-                      ))}
+                      {['alerts', 'console', 'fleet', 'safety', 'annotations']
+                        .filter(k => canAccess(k === 'console' && !canControl ? '__hidden__' : k))
+                        .map(key => (
+                          <button
+                            key={key}
+                            className={`factory-sub-tab${factorySubTab === key ? ' factory-sub-tab--active' : ''}`}
+                            onClick={() => setFactorySubTab(key)}
+                          >
+                            {t(`factory.${key}`)}
+                          </button>
+                        ))}
                     </nav>
                     {showPanelForTab(factorySubTab) && factorySubTab === 'alerts' && (
                       <div className="panel panel-alerts">
                         <AlertBoard alerts={alerts} events={events} error={error} />
                       </div>
                     )}
-                    {showPanelForTab(factorySubTab) && factorySubTab === 'console' && (
+                    {showPanelForTab(factorySubTab) && factorySubTab === 'console' && canControl && (
                       <div className="panel panel-console">
                         <CommandConsole
-                          role={role}
+                          role={role ?? undefined}
                           robots={robots}
                           onStartRobot={handleRobotStart}
                           onStopRobot={handleRobotStop}
@@ -451,7 +588,7 @@ export default function DashboardLayout() {
                   {showPanelForTab('health') && (
                     <div className="panel panel-health"><ServiceHealth /></div>
                   )}
-                  {showPanelForTab('shift') && (
+                  {showPanelForTab('shift') && canAccess('shift-scheduler') && (
                     <div className="panel panel-shift"><ShiftScheduler robots={robots} onAssignTask={handleAssignTask} /></div>
                   )}
                   {showPanelForTab('federated') && (
@@ -459,14 +596,17 @@ export default function DashboardLayout() {
                   )}
                 </>
               )}
-              {/* Admin tab */}
-              {activeTab === 'admin' && (
+              {/* Admin tab — only for super_admin and tenant_admin */}
+              {activeTab === 'admin' && canAdmin && (
                 <>
                   {showPanelForTab('audit') && (
                     <div className="panel panel-audit"><AuditLog /></div>
                   )}
                   {showPanelForTab('webhooks') && (
                     <div className="panel panel-webhooks"><WebhookManager /></div>
+                  )}
+                  {showPanelForTab('integrations') && (
+                    <div className="panel panel-integrations"><IntegrationsPanel /></div>
                   )}
                   {showPanelForTab('robots') && (
                     <div className="panel panel-robots"><RobotFleetPanel /></div>

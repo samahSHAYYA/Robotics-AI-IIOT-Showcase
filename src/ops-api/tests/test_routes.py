@@ -13,10 +13,13 @@ from app.auth import create_access_token
 client = TestClient(app)
 
 # Mock user used to override the get_current_user dependency
+# Using super_admin to bypass all RBAC checks in tests
 MOCK_USER = User(
     id=1,
     username='testadmin',
-    role='admin',
+    role='super_admin',
+    tenant_id=1,
+    factory_id=1,
     password_hash='$2b$12$fakehash',
 )
 
@@ -27,7 +30,13 @@ async def _mock_get_current_user():
 
 def _auth_header() -> dict[str, str]:
     """Returns an Authorization header with a valid Bearer token for the mock user."""
-    token = create_access_token(data={'sub': 'testadmin', 'role': 'admin'})
+    token = create_access_token(data={
+        'sub': 'testadmin',
+        'role': 'super_admin',
+        'tenant_id': 1,
+        'factory_id': 1,
+        'scope': 'global:admin tenant:admin factory:admin robot:control robot:view',
+    })
     return {'Authorization': f'Bearer {token}'}
 
 

@@ -9,11 +9,11 @@ import asyncio
 import json
 import logging
 
-from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
 
 from app.analytics_engine import get_current, get_history, update as update_analytics
 from app.auth import decode_access_token
-from app.deps import get_current_user
+from app.deps import get_current_user, require_factory_access, require_role
 from app.db import User
 from app.store import store
 
@@ -22,7 +22,11 @@ logger: logging.Logger = logging.getLogger(__name__)
 
 
 @router.get('/current')
-async def current_analytics(user: User = Depends(get_current_user)):
+async def current_analytics(
+    user: User = Depends(require_role('viewer')),
+    _=Depends(require_factory_access()),
+    factory_id: int | None = Query(None, description='Factory context'),
+):
     """
     Returns current analytics computed from the latest telemetry.
 
@@ -32,13 +36,18 @@ async def current_analytics(user: User = Depends(get_current_user)):
 
 
 @router.get('/history')
-async def history_analytics(user: User = Depends(get_current_user)):
+async def history_analytics(
+    user: User = Depends(require_role('viewer')),
+    _=Depends(require_factory_access()),
+    factory_id: int | None = Query(None, description='Factory context'),
+):
     """
     Returns time-series analytics data for the last hour at 5-minute intervals.
 
     @return response: Dict with history list.
     """
-    return {'history': get_history()}
+    history = await get_history()
+    return {'history': history}
 
 
 @router.websocket('/ws')

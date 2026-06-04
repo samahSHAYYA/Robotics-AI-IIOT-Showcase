@@ -38,14 +38,14 @@ def _client_ip(request: Request) -> str:
 
 @router.post('/robot/{robot_id}/start')
 async def start_robot(robot_id: str, request: Request,
-                      user: User = Depends(require_role('admin', 'operator'))):
+                      user: User = Depends(require_role('operator'))):
     """Starts robot movement."""
     ok = store.start_robot(robot_id)
     if not ok:
         raise HTTPException(status_code=404, detail='Robot not found')
 
     ip = _client_ip(request)
-    log_action(
+    await log_action(
         robot_id=robot_id,
         action='start',
         user_role='operator',
@@ -63,14 +63,14 @@ async def start_robot(robot_id: str, request: Request,
 
 @router.post('/robot/{robot_id}/stop')
 async def stop_robot(robot_id: str, request: Request,
-                     user: User = Depends(require_role('admin', 'operator'))):
+                     user: User = Depends(require_role('operator'))):
     """Stops robot movement."""
     ok = store.stop_robot(robot_id)
     if not ok:
         raise HTTPException(status_code=404, detail='Robot not found')
 
     ip = _client_ip(request)
-    log_action(
+    await log_action(
         robot_id=robot_id,
         action='stop',
         user_role='operator',
@@ -88,14 +88,14 @@ async def stop_robot(robot_id: str, request: Request,
 
 @router.post('/robot/{robot_id}/emergency-stop')
 async def emergency_stop_robot(robot_id: str, request: Request,
-                               user: User = Depends(require_role('admin', 'operator'))):
+                               user: User = Depends(require_role('operator'))):
     """Emergency stops a robot with critical alert."""
     ok = store.emergency_stop_robot(robot_id)
     if not ok:
         raise HTTPException(status_code=404, detail='Robot not found')
 
     ip = _client_ip(request)
-    log_action(
+    await log_action(
         robot_id=robot_id,
         action='emergency_stop',
         user_role='operator',
@@ -114,7 +114,7 @@ async def emergency_stop_robot(robot_id: str, request: Request,
 @router.post('/robot/{robot_id}/task')
 async def assign_task(robot_id: str, body: dict[str, Any],
                       request: Request,
-                      user: User = Depends(require_role('admin', 'operator'))):
+                      user: User = Depends(require_role('operator'))):
     """Assigns a task to a robot."""
     task = body.get('task', '')
     ok = store.assign_task(robot_id, task)
@@ -122,7 +122,7 @@ async def assign_task(robot_id: str, body: dict[str, Any],
         raise HTTPException(status_code=404, detail='Robot not found')
 
     ip = _client_ip(request)
-    log_action(
+    await log_action(
         robot_id=robot_id,
         action='assign_task',
         user_role='operator',
@@ -150,14 +150,14 @@ async def get_robot(robot_id: str,
 
 @router.post('/worker/{worker_id}/toggle')
 async def toggle_worker(worker_id: str, request: Request,
-                        user: User = Depends(require_role('admin', 'operator'))):
+                        user: User = Depends(require_role('operator'))):
     """Toggle a worker's active/inactive state."""
     result = store.toggle_worker(worker_id)
     if not result:
         raise HTTPException(status_code=404, detail='Worker not found')
 
     ip = _client_ip(request)
-    log_action(
+    await log_action(
         robot_id=worker_id,
         action='toggle_worker',
         user_role='operator',
@@ -175,7 +175,7 @@ async def toggle_worker(worker_id: str, request: Request,
 
 @router.post('/inspect')
 async def trigger_inspect(payload: dict[str, Any],
-                          user: User = Depends(require_role('admin', 'operator'))):
+                          user: User = Depends(require_role('operator'))):
     """
     Triggers a mock visual inspection.
 

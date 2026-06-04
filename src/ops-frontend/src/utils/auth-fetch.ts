@@ -3,11 +3,10 @@
  * and handles 401 responses by clearing session and redirecting.
  */
 
-const SESSION_KEY = 'sf_session'
 const LOGIN_PATH = '/'
 
 export function getToken(): string | null {
-  return localStorage.getItem(SESSION_KEY)
+  return localStorage.getItem('sf_session')
 }
 
 export async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
@@ -23,11 +22,18 @@ export async function authFetch(url: string, options: RequestInit = {}): Promise
   const response = await fetch(url, { ...options, headers })
 
   if (response.status === 401) {
-    localStorage.removeItem(SESSION_KEY)
-    localStorage.removeItem('sf_role')
+    localStorage.clear()
     window.location.href = LOGIN_PATH
     throw new Error('Session expired')
   }
 
   return response
+}
+
+/**
+ * Convenience wrapper around authFetch that automatically parses JSON.
+ */
+export async function authFetchJson(url: string, options: RequestInit = {}): Promise<any> {
+  const response = await authFetch(url, options)
+  return response.json()
 }

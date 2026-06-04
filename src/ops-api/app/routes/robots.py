@@ -11,7 +11,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from app.deps import get_current_user
+from app.deps import get_current_user, require_role
 from app.db import User
 from app.store import store
 
@@ -27,7 +27,7 @@ class RobotRegisterRequest(BaseModel):
 
 @router.post('/register', status_code=201)
 async def register_robot(body: RobotRegisterRequest,
-                         user: User = Depends(get_current_user)):
+                         user: User = Depends(require_role('factory_admin'))):
     """
     Register a new robot.
     Auto-assigns robot_id with prefix based on type (H-, W-, I-) + sequence
@@ -54,7 +54,7 @@ async def register_robot(body: RobotRegisterRequest,
 
 
 @router.get('')
-async def list_robots(user: User = Depends(get_current_user)):
+async def list_robots(user: User = Depends(require_role('viewer'))):
     """
     List all registered robots with computed online/offline status.
 
@@ -66,9 +66,10 @@ async def list_robots(user: User = Depends(get_current_user)):
 
 @router.post('/{robot_id}/heartbeat')
 async def robot_heartbeat(robot_id: str,
-                          user: User = Depends(get_current_user)):
+                          user: User = Depends(require_role('integrator'))):
     """
     Record a heartbeat for a registered robot.
+    Designed for integrator role (API key auth from robot devices).
 
     @param robot_id: The robot's unique ID.
 
@@ -87,7 +88,7 @@ async def robot_heartbeat(robot_id: str,
 
 @router.delete('/{robot_id}')
 async def delete_robot(robot_id: str,
-                       user: User = Depends(get_current_user)):
+                       user: User = Depends(require_role('factory_admin'))):
     """
     Remove a robot from the fleet.
 

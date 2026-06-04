@@ -1,58 +1,77 @@
 """
-@author: generated
-@date: 30-May-2026
+@author: Samah SHAYYA
+@date: 03-Jun-2026
 
-@description: Streaming analytics engine for ops-api. Maintains a rolling
-1-hour buffer of telemetry snapshots and computes current analytics.
+@description: Streaming analytics engine for ops-api backed by PostgreSQL.
+Maintains a small in-memory cache of the last 5 minutes for hot-path reads;
+older history is queried from the TelemetrySnapshot table.
 """
 
 import logging
+import threading
 
 from collections import deque
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from sqlalchemy import select
+
+from app.db import TelemetrySnapshot, async_session_factory
+
 logger: logging.Logger = logging.getLogger(__name__)
 
 MAX_HISTORY_MINUTES: int = 60
+IN_MEMORY_CACHE_MINUTES: int = 5
 
-# Rolling buffer: list of (timestamp_iso, snapshot_dict)
-_history: deque[tuple[str, dict[str, Any]]] = deque(maxlen=200)
+# Rolling buffer: list of (timestamp_iso, snapshot_dict) — last 5 minutes only
+_history: deque[tuple[str, dict[str, Any]]] = deque(maxlen=100)
+_history_lock: threading.Lock = threading.Lock()
+
+# Cache for the last computed analytics result
+_last_analytics: dict[str, Any] | None = None
+_last_analytics_lock: threading.Lock = threading.Lock()
 
 
-def update(snapshot: dict[str, Any]):
+def update(snapshot: dict[str, Any], factory_id: int = 1):
     """
-    Appends a telemetry snapshot with the current timestamp.
+    Appends a telemetry snapshot to the in-memory cache.
 
-    Prunes entries older than 1 hour.
+    Only keeps the last 5 minutes in memory; older data is queried from DB.
 
     @param snapshot: The latest telemetry snapshot dict from
                      store.get_snapshot().
+    @param factory_id: Factory context (default 1 for backward compat).
     """
-
     now = datetime.now(timezone.utc)
-    _history.append((now.isoformat(), snapshot))
+    with _history_lock:
+        _history.append((now.isoformat(), snapshot))
 
-    # Prune entries older than 1 hour
-    cutoff = now - timedelta(minutes=MAX_HISTORY_MINUTES)
-    while _history and _history[0][0] < cutoff.isoformat():
-        _history.popleft()
+        # Prune entries older than 5 minutes from memory
+        cutoff = now - timedelta(minutes=IN_MEMORY_CACHE_MINUTES)
+        while _history and _history[0][0] < cutoff.isoformat():
+            _history.popleft()
 
 
 def get_current() -> dict[str, Any]:
     """
-    Returns current analytics computed from the latest snapshot.
+    Returns current analytics computed from the latest snapshot in cache.
 
     @return analytics: Dict with avg/max/min uptime, alert rate,
                        robot utilization, and robot counts.
     """
+    with _history_lock:
+        if not _history:
+            return _empty_analytics()
 
-    if not _history:
-        return _empty_analytics()
+        _, latest = _history[-1]
 
-    _, latest = _history[-1]
-    robots: list[dict[str, Any]] = latest.get('robots', [])
-    alerts: list[dict[str, Any]] = latest.get('alerts', [])
+    return _compute_analytics(latest)
+
+
+def _compute_analytics(snapshot: dict[str, Any]) -> dict[str, Any]:
+    """Compute analytics from a single snapshot dict."""
+    robots: list[dict[str, Any]] = snapshot.get('robots', [])
+    alerts: list[dict[str, Any]] = snapshot.get('alerts', [])
 
     uptimes = [r.get('uptime_pct', 0.0) for r in robots]
     active_count = sum(1 for r in robots
@@ -84,35 +103,63 @@ def get_current() -> dict[str, Any]:
         'idle_robot_count': idle_count,
         'error_robot_count': error_count,
         'total_robot_count': total_robots,
-        'timestamp': latest.get('last_update',
-                                datetime.now(timezone.utc).isoformat()),
+        'timestamp': snapshot.get('last_update',
+                                  datetime.now(timezone.utc).isoformat()),
     }
 
 
-def get_history() -> list[dict[str, Any]]:
+async def get_history(factory_id: int = 1) -> list[dict[str, Any]]:
     """
     Returns time-series data for the last hour at 5-minute granularity.
 
+    Combines in-memory cache (last 5 min) with DB queries (older data).
     Snapshots within each 5-minute bucket are averaged together.
+
+    @param factory_id: Factory context.
 
     @return snapshots: List of dicts with timestamp, avg_uptime, alert_rate,
                        robot_utilization, robot_count.
     """
-
     now = datetime.now(timezone.utc)
     cutoff = now - timedelta(minutes=MAX_HISTORY_MINUTES)
 
-    # Filter entries within the window
-    recent = [(ts, snap) for ts, snap in _history
-              if ts >= cutoff.isoformat()]
+    # Collect all snapshots from in-memory cache (last 5 min)
+    recent_snapshots: list[tuple[str, dict[str, Any]]] = []
+    with _history_lock:
+        for ts, snap in _history:
+            if ts >= cutoff.isoformat():
+                recent_snapshots.append((ts, snap))
 
-    if not recent:
+    # Query older snapshots from DB if needed
+    db_cutoff = now - timedelta(minutes=IN_MEMORY_CACHE_MINUTES)
+    if db_cutoff > cutoff:
+        try:
+            async with async_session_factory() as session:
+                result = await session.execute(
+                    select(TelemetrySnapshot)
+                    .where(TelemetrySnapshot.factory_id == factory_id)
+                    .where(TelemetrySnapshot.timestamp >= cutoff)
+                    .where(TelemetrySnapshot.timestamp < db_cutoff)
+                    .order_by(TelemetrySnapshot.timestamp)
+                )
+                db_snapshots = result.scalars().all()
+
+            for snap in db_snapshots:
+                ts = snap.timestamp.isoformat() if snap.timestamp else ''
+                recent_snapshots.append((ts, snap.data))
+        except Exception as exc:
+            logger.warning('Failed to query analytics history from DB: %s', exc)
+
+    if not recent_snapshots:
         return []
 
     # Group into 5-minute buckets
     buckets: dict[str, list[dict[str, Any]]] = {}
-    for ts, snap in recent:
-        dt = datetime.fromisoformat(ts)
+    for ts, snap in recent_snapshots:
+        try:
+            dt = datetime.fromisoformat(ts)
+        except (ValueError, TypeError):
+            continue
         rounded_min = (dt.minute // 5) * 5
         bucket_key = dt.replace(
             minute=rounded_min, second=0, microsecond=0

@@ -28,6 +28,7 @@ export interface TelemetrySnapshot {
   alerts: Alert[]
   events_consumed: number
   predictions_consumed: number
+  data_source?: 'ros2' | 'mock'
   last_update: string
 }
 

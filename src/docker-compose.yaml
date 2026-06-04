@@ -158,6 +158,55 @@ services:
       - ./edge-sim/app:/app/edge-sim/app
     command: uv run uvicorn app.main:app --host 0.0.0.0 --port 8005 --reload
 
+  integration-service:
+    build:
+      context: .
+      dockerfile: ./integration-service/Dockerfile
+    container_name: showcase-integration
+    env_file:
+      - .env
+      - ./envs/integration-service/.env
+    environment:
+      - OPS_API_URL=http://ops-api:8003
+      - DATABASE_URL=postgresql+asyncpg://showcase:showcase_secret@postgres:5432/showcase
+    ports:
+      - "${INTEGRATION_SERVICE_PORT:-8006}:8006"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - showcase_net
+
+  ros2-sim:
+    profiles: ["ros2"]
+    build:
+      context: ./ros2
+      dockerfile: Dockerfile
+    container_name: showcase-ros2
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - PUBLISH_INTERVAL=2.0
+      - FACTORY_ID=1
+      - GAZEBO_HEADLESS=true
+      - DISPLAY=${DISPLAY:-}
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - showcase_net
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:ro
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    # Only start with --profile ros2 (Gazebo is heavy)
+    # To run: docker compose --profile ros2 up -d
+
   ops-frontend-dev:
     profiles: ["dev"]
     image: node:22-alpine

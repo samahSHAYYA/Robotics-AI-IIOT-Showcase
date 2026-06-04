@@ -95,3 +95,17 @@
 [data-theme="light"] .ambient-audio-popup {
   box-shadow: 0 8px 32px rgba(0,0,0,0.1);
 }
+
+[data-theme="light"] .org-badge {
+  border-color: var(--accent);
+}
+
+[data-theme="light"] .factory-name-badge {
+  border-color: var(--ok);
+}
+
+[data-theme="light"] .factory-switcher,
+[data-theme="light"] .lang-switcher {
+  border-color: #cbd5e1;
+  background: #fff;
+}
