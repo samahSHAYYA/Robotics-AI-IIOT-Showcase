@@ -10,8 +10,11 @@ time.
 from typing import Any
 
 from app.adapters.base import BaseAdapter
+from app.adapters.mqtt import MqttAdapter
 from app.adapters.opcua import OpcUaAdapter
 from app.adapters.rest import RestAdapter
+from app.adapters.sap_odata import SapODataAdapter
+from app.adapters.soap import SoapAdapter
 
 _registry: dict[str, type[BaseAdapter]] = {}
 
@@ -49,5 +52,8 @@ def list_adapters() -> list[dict[str, Any]]:
 
 
 # Register built-in adapters
-register_adapter('rest', RestAdapter)
+register_adapter('mqtt', MqttAdapter)
 register_adapter('opcua', OpcUaAdapter)
+register_adapter('rest', RestAdapter)
+register_adapter('sap_odata', SapODataAdapter)
+register_adapter('soap', SoapAdapter)

@@ -37,6 +37,8 @@ import RobotFleetPanel from '../components/RobotFleetPanel'
 import ReconcilePanel from '../components/ReconcilePanel'
 import SiteManagerPanel from '../components/SiteManagerPanel'
 import IntegrationsPanel from '../components/IntegrationsPanel'
+import ShiftPanel from '../components/ShiftPanel'
+import InventoryPanel from '../components/InventoryPanel'
 import LoginPage from '../components/LoginPage'
 import LayoutSettingsPanel, { loadLayout, saveLayout } from '../components/LayoutSettingsPanel'
 import useAlertNotifications from '../hooks/useAlertNotifications'
@@ -115,7 +117,7 @@ export default function DashboardLayout() {
       tabs.push({ key: 'maintenance', label: `🔧 ${t('tab.maintenance')}`, panels: ['predictive', 'sensors', 'health', 'shift', 'federated'] })
     }
     if (canAdmin) {
-      tabs.push({ key: 'admin', label: `⚙️ ${t('tab.admin')}`, panels: ['audit-log', 'webhooks', 'integrations', 'robots', 'reconcile', 'sites'] })
+      tabs.push({ key: 'admin', label: `⚙️ ${t('tab.admin')}`, panels: ['audit-log', 'webhooks', 'integrations', 'robots', 'reconcile', 'sites', 'shifts', 'inventory'] })
     }
     if (canAccess('camera')) {
       tabs.push({ key: 'camera', label: `📷 ${t('tab.camera')}`, panels: ['camera'] })
@@ -616,6 +618,12 @@ export default function DashboardLayout() {
                   )}
                   {showPanelForTab('sites') && (
                     <div className="panel panel-sites"><SiteManagerPanel /></div>
+                  )}
+                  {showPanelForTab('shifts') && (
+                    <div className="panel panel-shifts"><ShiftPanel /></div>
+                  )}
+                  {showPanelForTab('inventory') && (
+                    <div className="panel panel-inventory"><InventoryPanel /></div>
                   )}
                 </>
               )}

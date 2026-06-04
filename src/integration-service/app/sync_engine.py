@@ -17,6 +17,7 @@ from sqlalchemy import select
 
 from app.adapters.registry import get_adapter
 from app.db import async_session_factory
+from app.metrics import SYNC_COUNTER, SYNC_DURATION
 from app.models import Integration, SyncLog
 
 logger: logging.Logger = logging.getLogger(__name__)
@@ -81,6 +82,17 @@ async def sync_integration(integration_id: int) -> None:
             integration.last_sync_at = completed_at
             integration.last_sync_status = status
             await session.commit()
+
+            # Record Prometheus metrics
+            SYNC_COUNTER.labels(
+                integration_id=str(integration_id),
+                status=status,
+            ).inc()
+            SYNC_DURATION.labels(
+                integration_id=str(integration_id),
+            ).observe(
+                (completed_at - started_at).total_seconds(),
+            )
 
             logger.info(
                 'Sync %s for integration %d: %d records in %.1fs',

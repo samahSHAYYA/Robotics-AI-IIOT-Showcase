@@ -61,6 +61,12 @@ from app.routes import sites as sites_router
 # Feature 41: Edge Device Simulator (sensor proxy)
 from app.routes import sensors as sensors_router
 
+# Task 104: Shift Scheduling & Worker Tracking
+from app.routes import shifts as shifts_router
+
+# Task 105: Inventory Management
+from app.routes import inventory as inventory_router
+
 # Feature 30: Analytics engine (fed by broadcast loop)
 from app import analytics_engine
 
@@ -404,6 +410,12 @@ app.include_router(sites_router.router)
 # Feature 41: Edge Device Simulator (sensor proxy)
 app.include_router(sensors_router.router)
 
+# Task 104: Shift Scheduling & Worker Tracking
+app.include_router(shifts_router.router)
+
+# Task 105: Inventory Management
+app.include_router(inventory_router.router)
+
 
 @app.get('/')
 async def root():
@@ -435,6 +447,11 @@ async def root():
             'sites_telemetry': '/api/v1/sites/{site_id}/telemetry',
             'sites_active': '/api/v1/sites/active/info',
             'sensors': '/api/v1/sensors',
+            'shifts': '/api/v1/shifts',
+            'workers': '/api/v1/workers',
+            'inventory': '/api/v1/inventory',
+            'inventory_movements': '/api/v1/inventory/{id}/movements',
+            'inventory_adjust': '/api/v1/inventory/{id}/adjust',
         },
     }
 

@@ -70,18 +70,20 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
     'heatmap', 'production', 'camera', 'chat', 'safety', 'supply-chain',
     'federated', 'quality', 'audio', 'sensors', 'audit', 'webhooks',
     'admin', 'sites', 'users', 'shift-scheduler', 'integrations',
+    'shifts', 'inventory',
   ],
   tenant_admin: [
     'map', 'fleet', 'alerts', 'analytics', 'oee', 'energy', 'predictive',
     'heatmap', 'production', 'camera', 'chat', 'safety', 'supply-chain',
     'federated', 'quality', 'audio', 'sensors', 'audit', 'webhooks',
     'admin', 'sites', 'users', 'shift-scheduler', 'integrations',
+    'shifts', 'inventory',
   ],
   factory_admin: [
     'map', 'fleet', 'alerts', 'analytics', 'oee', 'energy', 'predictive',
     'heatmap', 'production', 'camera', 'chat', 'safety', 'supply-chain',
     'federated', 'quality', 'audio', 'sensors', 'audit', 'webhooks',
-    'shift-scheduler',
+    'shift-scheduler', 'inventory',
   ],
   operator: [
     'map', 'fleet', 'alerts', 'analytics', 'oee', 'energy', 'predictive',

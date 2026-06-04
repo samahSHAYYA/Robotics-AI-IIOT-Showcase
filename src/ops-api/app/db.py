@@ -24,7 +24,14 @@ DATABASE_URL: str = os.getenv(
     'postgresql+asyncpg://showcase:showcase_secret@localhost:5432/showcase',
 )
 
-engine = create_async_engine(DATABASE_URL, echo=False)
+engine = create_async_engine(
+    DATABASE_URL,
+    echo=False,
+    pool_size=20,          # Up from default 5
+    max_overflow=10,        # Allow up to 10 extra connections
+    pool_pre_ping=True,     # Verify connections before use
+    pool_recycle=3600,      # Recycle connections after 1 hour
+)
 async_session_factory = async_sessionmaker(engine, expire_on_commit=False)
 
 
@@ -159,6 +166,75 @@ class WebhookConfig(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     factory = relationship('Factory', back_populates='webhook_configs')
+
+
+# ── Shift Scheduling & Worker Tracking (Task 104) ─────────────────────────────
+
+
+class Shift(Base):
+    """Shift schedule configuration for a factory."""
+    __tablename__ = 'shifts'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    tenant_id = Column(Integer, ForeignKey('tenants.id'), nullable=False)
+    factory_id = Column(Integer, ForeignKey('factories.id'), nullable=False)
+    name = Column(String(100), nullable=False)          # e.g. "Day Shift", "Night Shift"
+    start_time = Column(String(5), nullable=False)      # HH:MM format
+    end_time = Column(String(5), nullable=False)        # HH:MM format
+    days_of_week = Column(JSON, default=list)            # [0,1,2,3,4,5,6] (0=Mon, 6=Sun)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class Worker(Base):
+    """Worker/employee assigned to a factory and optionally a shift."""
+    __tablename__ = 'workers'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    tenant_id = Column(Integer, ForeignKey('tenants.id'), nullable=False)
+    factory_id = Column(Integer, ForeignKey('factories.id'), nullable=False)
+    shift_id = Column(Integer, ForeignKey('shifts.id'), nullable=True)
+    name = Column(String(200), nullable=False)
+    role = Column(String(50), default='operator')        # operator, supervisor, engineer, manager
+    email = Column(String(200), nullable=True)
+    phone = Column(String(50), nullable=True)
+    active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+# ── Inventory Management (Task 105) ──────────────────────────────────────────
+
+
+class InventoryItem(Base):
+    """Inventory item with stock tracking."""
+    __tablename__ = 'inventory_items'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    tenant_id = Column(Integer, ForeignKey('tenants.id'), nullable=False)
+    factory_id = Column(Integer, ForeignKey('factories.id'), nullable=False)
+    sku = Column(String(100), nullable=False)
+    name = Column(String(200), nullable=False)
+    description = Column(String(500), nullable=True)
+    quantity = Column(Integer, default=0)
+    unit = Column(String(20), default='EA')               # EA, KG, M, L, etc.
+    min_threshold = Column(Integer, default=10)             # Alert when below this
+    location = Column(String(200), nullable=True)           # Warehouse location
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class StockMovement(Base):
+    """Track inventory stock changes."""
+    __tablename__ = 'stock_movements'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    item_id = Column(Integer, ForeignKey('inventory_items.id'), nullable=False)
+    quantity_change = Column(Integer, nullable=False)       # Positive=in, Negative=out
+    reason = Column(String(200), nullable=False)            # receipt, consumption, transfer, adjustment
+    reference = Column(String(200), nullable=True)          # PO number, work order, etc.
+    created_by = Column(String(100), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
 # ── Session & Init ───────────────────────────────────────────────────────────

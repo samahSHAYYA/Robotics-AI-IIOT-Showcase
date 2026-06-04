@@ -6181,4 +6181,57 @@ html, body, #root {
   font-size: 0.65rem;
 }
 
+/* ===== Shift & Worker Panel (Task 104) ===== */
+.shift-panel { }
+.sub-tabs { display: flex; gap: 0; margin-bottom: 1rem; border-bottom: 1px solid var(--color-border); }
+.sub-tab { padding: 0.4rem 0.8rem; cursor: pointer; border: none; background: none; color: var(--color-text); font-size: 0.8rem; border-bottom: 2px solid transparent; }
+.sub-tab--active { border-bottom-color: var(--accent); font-weight: 600; }
+.shift-form { border: 1px solid var(--color-border); padding: 1rem; border-radius: 6px; margin-bottom: 1rem; }
+.shift-form-row { display: flex; gap: 1rem; }
+.shift-form-row .integration-form__row { flex: 1; }
+.shift-card, .worker-card { border: 1px solid var(--color-border); padding: 0.6rem; border-radius: 6px; margin-bottom: 0.5rem; }
+.shift-card__header { display: flex; justify-content: space-between; align-items: center; }
+.shift-card__days { font-size: 0.8rem; color: var(--text2); margin: 0.3rem 0; }
+.shift-card__actions, .worker-card__details { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+.shift-days-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.shift-day-label { display: flex; align-items: center; gap: 0.2rem; font-size: 0.8rem; }
+.worker-badge { font-size: 0.7rem; padding: 0.1rem 0.3rem; border-radius: 3px; }
+.worker-badge--operator { background: #3498db22; color: #3498db; }
+.worker-badge--supervisor { background: #2ecc7122; color: #2ecc71; }
+.worker-badge--engineer { background: #f39c1222; color: #f39c12; }
+.worker-badge--manager { background: #9b59b622; color: #9b59b6; }
+
+/* ===== Inventory Panel (Task 105) ===== */
+.inventory-panel { }
+.inv-form { border: 1px solid var(--color-border); padding: 1rem; border-radius: 6px; margin-bottom: 1rem; }
+.inv-table { border: 1px solid var(--color-border); border-radius: 6px; overflow: hidden; }
+.inv-table-row { display: flex; gap: 0.5rem; padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--color-border); align-items: center; font-size: 0.75rem; }
+.inv-table-row--header { background: var(--surface); font-weight: 600; color: var(--text2); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.inv-table-row:last-child { border-bottom: none; }
+.inv-col--sku { flex: 0 0 5rem; }
+.inv-col--name { flex: 1; }
+.inv-col--qty { flex: 0 0 3rem; text-align: right; font-family: 'JetBrains Mono', monospace; }
+.inv-col--unit { flex: 0 0 3rem; }
+.inv-col--threshold { flex: 0 0 3rem; text-align: right; }
+.inv-col--location { flex: 0 0 6rem; }
+.inv-col--status { flex: 0 0 5rem; }
+.inv-col--actions { flex: 0 0 8rem; display: flex; gap: 0.2rem; }
+.inv-name-btn { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 0.75rem; text-decoration: underline; padding: 0; }
+.inv-name-btn:hover { color: var(--accent2); }
+.inv-status { font-size: 0.65rem; padding: 0.1rem 0.4rem; border-radius: 3px; font-weight: 600; text-transform: uppercase; }
+.inv-status--ok { background: #22c55e22; color: #22c55e; }
+.inv-status--low { background: #eab30822; color: #eab308; }
+.inv-status--critical { background: #ef444422; color: #ef4444; }
+.inv-movements-modal { border: 1px solid var(--color-border); border-radius: 6px; padding: 0.8rem; margin-bottom: 1rem; background: var(--surface); }
+.inv-movements-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+.inv-movements-table { }
+.inv-movements-row { display: flex; gap: 0.5rem; padding: 0.3rem 0.4rem; font-size: 0.7rem; border-bottom: 1px solid var(--color-border); }
+.inv-movements-row--header { font-weight: 600; color: var(--text2); text-transform: uppercase; font-size: 0.6rem; background: var(--surface2); }
+.inv-movements-row--header span { flex: 1; }
+.inv-movements-row span { flex: 1; }
+.movement-qty--in { color: #22c55e; font-weight: 600; }
+.movement-qty--out { color: #ef4444; font-weight: 600; }
+.inv-adjust-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 100; }
+.inv-adjust-modal .inv-form { background: var(--surface); max-width: 420px; width: 90%; }
+
 

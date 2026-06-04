@@ -313,6 +313,9 @@ export default function IntegrationsPanel() {
                 <>
                   <option value="rest">REST</option>
                   <option value="opcua">OPC-UA</option>
+                  <option value="mqtt">MQTT</option>
+                  <option value="soap">SOAP</option>
+                  <option value="sap_odata">SAP OData</option>
                 </>
               ) : (
                 adapters.map(a => (

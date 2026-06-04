@@ -15,15 +15,21 @@ import os
 from contextlib import asynccontextmanager
 from typing import Any
 
+import redis as redis_lib
 from fastapi import FastAPI
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from sqlalchemy import func, select, text
+from starlette.responses import Response
 
-from app.db import init_db
+from app.db import init_db, async_session_factory
+from app.models import Integration
 from app.routes import integrations as integrations_router
 from app.event_consumer import start_event_consumer
 from app.sync_engine import start_sync_engine
 
 LOG_LEVEL: str = os.getenv('LOG_LEVEL', 'INFO')
 SERVICE_PORT: int = int(os.getenv('SERVICE_PORT', '8006'))
+REDIS_URL: str = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
 
 logging.basicConfig(
     level = getattr(logging, LOG_LEVEL.upper(), logging.INFO),
@@ -101,6 +107,60 @@ async def root() -> dict[str, Any]:
 
 
 @app.get('/health')
-async def health() -> dict[str, str]:
-    """Return service health status."""
-    return {'status': 'ok', 'service': 'integration-service'}
+async def health() -> dict[str, Any]:
+    """
+    Return detailed service health including DB, Redis, and adapter status.
+
+    @returns: Dict with service name, overall status, and per-dependency status.
+    """
+    deps: dict[str, Any] = {
+        'service': 'integration-service',
+        'status': 'ok',
+        'dependencies': {},
+    }
+
+    # Check DB
+    try:
+        async with async_session_factory() as session:
+            await session.execute(text('SELECT 1'))
+        deps['dependencies']['database'] = 'ok'
+    except Exception as exc:
+        deps['dependencies']['database'] = 'error'
+        deps['status'] = 'degraded'
+        logger.warning('Health check — database error: %s', exc)
+
+    # Check Redis
+    try:
+        r = redis_lib.Redis.from_url(
+            REDIS_URL,
+            socket_connect_timeout=3,
+        )
+        r.ping()
+        deps['dependencies']['redis'] = 'ok'
+        r.close()
+    except Exception as exc:
+        deps['dependencies']['redis'] = 'error'
+        deps['status'] = 'degraded'
+        logger.warning('Health check — redis error: %s', exc)
+
+    # Count active integrations
+    try:
+        async with async_session_factory() as session:
+            result = await session.execute(
+                select(func.count()).where(Integration.enabled == True),  # noqa: E712
+            )
+            deps['dependencies']['active_integrations'] = result.scalar() or 0
+    except Exception as exc:
+        deps['dependencies']['active_integrations'] = -1
+        logger.warning('Health check — integration count error: %s', exc)
+
+    return deps
+
+
+@app.get('/metrics')
+async def metrics() -> Response:
+    """Prometheus metrics endpoint."""
+    return Response(
+        content=generate_latest(),
+        media_type=CONTENT_TYPE_LATEST,
+    )
