@@ -1133,12 +1133,12 @@
 },
 {
   "sprint": "Sprint 14 — Integration Service & External Connectivity",
-  "status": "active",
+  "status": "completed",
   "tasks": [
     {
       "id": 94,
       "title": "Integration Service Skeleton + Adapter Framework",
-      "status": "pending",
+      "status": "completed",
       "committed": true,
       "acceptance": [
         "New integration-service created at src/integration-service/ (Python FastAPI, port 8006)",
@@ -1153,7 +1153,7 @@
     {
       "id": 95,
       "title": "Sync Engine + Webhook v2 with Delivery Receipts",
-      "status": "pending",
+      "status": "completed",
       "committed": true,
       "acceptance": [
         "Sync engine runs scheduled data sync per integration (configurable interval)",
@@ -1167,7 +1167,7 @@
     {
       "id": 96,
       "title": "Integration Management UI + Frontend Panel",
-      "status": "pending",
+      "status": "completed",
       "committed": true,
       "acceptance": [
         "New 'Integrations' panel in frontend under Admin tab",
@@ -1177,6 +1177,169 @@
         "Sync log viewer per integration",
         "Enable/disable toggle for each integration",
         "i18n strings for all new UI elements (EN + FR)"
+      ]
+    }
+  ]
+},
+{
+  "sprint": "Sprint 15 — OPC-UA Adapter & Event Wiring",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 97,
+      "title": "OPC-UA Adapter for integration-service",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        "OPC-UA adapter in integration-service adapters registry",
+        "Connects to OPC-UA servers for industrial protocol telemetry",
+        "Adapter test coverage with mocked OPC-UA endpoints"
+      ]
+    },
+    {
+      "id": 98,
+      "title": "Event Wiring — Redis consumer for integration-service",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        "event_consumer.py reads from Redis Streams",
+        "Events trigger sync or webhook actions",
+        "Graceful error handling on stream read failures"
+      ]
+    },
+    {
+      "id": 99,
+      "title": "Audit UI — frontend audit log viewer panel",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        "Audit log viewer panel in frontend",
+        "Filterable by action type, date range, user",
+        "CSV export of audit logs"
+      ]
+    },
+    {
+      "id": 100,
+      "title": "Secrets Management & Rate Limiting",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        "Encrypted credential storage for integration auth",
+        "Rate limiting on integration-service API endpoints"
+      ]
+    }
+  ]
+},
+{
+  "sprint": "Sprint 16 — More Adapters & Performance Tuning",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 101,
+      "title": "Additional Adapters (SOAP, SAP OData, MQTT)",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        "SOAP adapter for legacy WS-* web services",
+        "SAP OData adapter for ERP integration",
+        "MQTT adapter for IoT/edge device connectivity",
+        "All adapters registered in adapter registry with tests"
+      ]
+    },
+    {
+      "id": 102,
+      "title": "Performance Tuning — sync engine optimizations",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        "Sync engine performance tuned for high-frequency integrations",
+        "Configurable batch sizes and sync intervals",
+        "Metrics endpoint for sync engine performance"
+      ]
+    },
+    {
+      "id": 103,
+      "title": "Helm Chart for integration-service",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        "Helm chart templates for integration-service",
+        "Configurable resources, replicas, secrets",
+        "Chart linting passes"
+      ]
+    },
+    {
+      "id": 104,
+      "title": "Scheduling & Inventory enhancements",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        "Sync scheduling with cron-like expressions",
+        "Inventory tracking for synced records",
+        "Sync statistics dashboard data"
+      ]
+    }
+  ]
+},
+{
+  "sprint": "Sprint 17 — Chat, KPI Widgets, 3D, Tauri Shell",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 105,
+      "title": "Chat Overhaul — AI chat UX improvements",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        "Redesigned AI chat interface",
+        "Streaming response display",
+        "Conversation history management",
+        "Suggested prompts / quick action chips"
+      ]
+    },
+    {
+      "id": 106,
+      "title": "KPI Widgets — IntegrationsKPIWidget",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        "IntegrationsKPIWidget showing sync stats",
+        "Per-integration status indicators",
+        "Auto-refresh with real-time data"
+      ]
+    },
+    {
+      "id": 107,
+      "title": "Test Suite — integration-service test coverage",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        "94 integration-service tests passing on Python 3.14",
+        "Tests cover sync engine, routes, adapters",
+        "AsyncMock compatibility with Python 3.14"
+      ]
+    },
+    {
+      "id": 108,
+      "title": "3D Joint Visualization",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        "3D robot joint angle visualization",
+        "Three.js integrated with arm mesh rendering",
+        "Per-joint status display"
+      ]
+    },
+    {
+      "id": 109,
+      "title": "Tauri Desktop Shell",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        "Tauri application shell for ops-frontend",
+        "src-tauri/ directory with Rust backend",
+        "Desktop window configuration (title, size, icon)",
+        "Builds successfully with cargo"
       ]
     }
   ]
