@@ -40,7 +40,7 @@ class TestRestAdapter:
     # ── test_connection ───────────────────────────────────────────────────
 
     async def test_base_url_required(self):
-        """test_connection returns False when base_url is missing (caught by generic handler)."""
+        """test_connection returns False when base_url is missing."""
         adapter = RestAdapter()
         result = await adapter.test_connection({})
         assert result is False

@@ -933,7 +933,6 @@
       "title": "Enforce JWT authentication on all ops-api REST and WebSocket endpoints",
       "status": "completed",
       "committed": true,
-      "committed": false,
       "acceptance": [
         "get_current_user dependency is applied to every protected route (commands, audit, webhooks, robots, sites, reconcile, sensors, analytics, reports, metrics, WebSocket)",
         "Public-only routes remain: /health, /docs, /openapi.json, /api/v1/auth/login, /",

@@ -69,7 +69,11 @@ def _make_mock_session():
     """Create a mock async DB session with an async context manager."""
     session = AsyncMock()
 
-    # Configure execute to return a reusable result mock by default
+    # Configure execute to return a reusable result mock by default.
+    # MagicMock is used (not AsyncMock) because all the chained methods
+    # (scalar_one_or_none, scalars, scalar) are synchronous attribute
+    # accesses.  Python 3.14 changed AsyncMock so that child attribute
+    # access returns a coroutine-wrapped value, breaking the chain.
     default_result = MagicMock()
     default_result.scalar_one_or_none.return_value = None
     default_result.scalars.return_value.all.return_value = []
@@ -81,9 +85,13 @@ def _make_mock_session():
     session.refresh = AsyncMock()
     session.delete = AsyncMock()
 
-    # NOTE: No explicit __aenter__/__aexit__ setup.
-    # AsyncMock natively supports async with via its class-level
-    # __aenter__ method. Setting instance attributes would shadow it.
+    # NOTE: __aenter__/__aexit__ are NOT set as instance attributes.
+    # AsyncMock provides these as class-level magic methods natively
+    # (Python looks up magic methods on the *type*, not the instance).
+    # Setting them on the instance would shadow the class method and
+    # break the async context manager protocol.
+    # This also avoids the Python 3.14+ issue where AsyncMock child
+    # attribute access returns coroutine-wrapped values.
 
     return session
 

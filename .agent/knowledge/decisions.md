@@ -105,21 +105,45 @@ This file records significant decisions. Each entry answers:
 
 ---
 
-## ADR-008: Python 3.14 AsyncMock `__aenter__` behavior change
+## ADR-008: Python 3.14 AsyncMock child-method call behavior
 
-- **Context:** The integration-service test suite failed on Python 3.14 with
-  16 test failures. All failures traced to `AsyncMock` objects used as async
-  context managers in `mock_session` fixtures. Tests used `spec` on AsyncMock
-  or expected class-level `__aenter__` / `__aexit__` methods.
+- **Context:** The integration-service test suite (94 tests) runs on
+  Python 3.14 while other Python services use 3.12. Two distinct
+  `AsyncMock` behavioral changes in Python 3.14 caused test failures:
 
-- **Decision:** Remove `spec` from AsyncMock when async context manager
-  behavior is needed. Use `__aenter__.return_value = session` chaining on the
-  mock instance. Use `asyncio_mode = "auto"` in `pyproject.toml` for
-  pytest-asyncio.
+  1. `__aenter__` is now an instance attribute created in `__init__`,
+     shadowing the class-level async method. Using `spec` on AsyncMock
+     breaks the async context manager protocol.
 
-- **Rationale:** In Python 3.14, `AsyncMock.__aenter__` is created as an
-  instance attribute during `__init__`, shadowing the class-level async
-  method. Passing `spec` (e.g. `spec=AsyncMock`) breaks this mechanism —
-  `__aenter__` returns the mock itself instead of a coroutine. Using
-  `spec_set` or omitting `spec` entirely lets the instance attribute work
-  correctly. See Python issue CPython-123456 (AsyncMock instance attrs).
+  2. Calling any child method on an AsyncMock now returns a **coroutine**
+     wrapping the `return_value`, not the `return_value` directly. This
+     broke synchronous chaining patterns like
+     `result.scalars().all()` — `result.scalars()` returned a coroutine,
+     so `.all()` failed with `AttributeError: 'coroutine' object has no
+     attribute 'all'`.
+
+- **Decision:**
+
+  1. Remove `spec` from AsyncMock when async context manager behavior
+     is needed. Use `__aenter__.return_value = session` chaining on the
+     mock instance.
+
+  2. Use `MagicMock` (not `AsyncMock`) for objects that are the
+     *already-awaited result* of an `await` expression — e.g., the
+     return value of `await session.execute(...)`. Since these objects
+     are synchronous values, their children should be synchronous
+     (`MagicMock`), not async (`AsyncMock`).
+
+  3. Use `return mock_session` instead of `yield mock_session` in
+     FastAPI dependency overrides to avoid async-generator protocol
+     interactions with AsyncMock.
+
+  4. Use `asyncio_mode = "auto"` in `pyproject.toml` for
+     pytest-asyncio.
+
+- **Rationale:** Python 3.14 changed `AsyncMock` internals to create
+  instance-level magic method attributes during `__init__`. The child
+  method behavior change (returning coroutine-wrapped values) means any
+  synchronous method chain on an AsyncMock result breaks. The fix is to
+  use `MagicMock` for synchronous mock chains and avoid `spec` on
+  `AsyncMock` instances used as async context managers.

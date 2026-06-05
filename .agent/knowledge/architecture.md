@@ -7,15 +7,23 @@ via Docker Compose:
 
 ```
 core-platform (C++20)  --->  events:core-platform  --->  ai-service
-                                                              |
-                                                              v
-ai-service (Python)    --->  events:ai-service     --->  ops-api
-                                                              |
-                                         ops-api (Python) ----+
-                                              |
-                                         HTTP /api/*
-                                              |
-                                         ops-frontend (React)
+                                                               |
+                                                               v
+edge-sim (Python)      --->  events:edge-sim        --->  ops-api
+                                                               |
+ai-service (Python)    --->  events:ai-service      --->  ops-api
+                                                               |
+                                          ops-api (Python) ----+
+                                                               |
+                                               +---------------+
+                                               |
+                                          HTTP /api/*
+                                               |
+                                          ops-frontend (React)
+                                               |
+                                          integration-service (Python 3.14)
+                                               |
+                                          postgres
 ```
 
 All services communicate through Redis Streams for async events. The frontend
@@ -29,6 +37,8 @@ reads only through the REST API — it has no direct stream access.
 | `ai-service` | Python 3.12 | Stub | ML inference, anomaly, model lifecycle |
 | `ops-api` | Python 3.12 | Stub | REST, aggregation, queries, validation |
 | `ops-frontend` | TS/React | Stub | Dashboard, telemetry, control |
+| `edge-sim` | Python 3.12 | Stub | IoT sensor grid, failure mode simulation |
+| `integration-service` | Python 3.14 | Stub | External system integration, sync engine, webhook v2 |
 
 ## Redis Stream topology
 
@@ -37,10 +47,11 @@ their stream. Consumers use `XREADGROUP` with persistent cursors (at-least-once
 delivery). Streams cap at `MAXLEN ~ 100000`.
 
 | Stream | Producer | Consumers |
-|---|---|---|
+|---|---|---|---|
 | `events:core-platform` | `core-platform` | `ai-service`, `ops-api` |
 | `events:ai-service` | `ai-service` | `ops-api` |
 | `events:ops-api` | `ops-api` | — (logged, not consumed) |
+| `events:edge-sim` | `edge-sim` | `ops-api` |
 
 ## Network
 
@@ -68,3 +79,12 @@ build.
 Single `docker-compose.yaml` at `src/`. Environment via layered `.env` files
 (global + per-service + optional `.env.local` for secrets). See
 `.agent/local/deployment.md`.
+
+## Python version divergence
+
+- All Python services use Python 3.12 except `integration-service`, which
+  uses Python 3.14 (the latest stable release at time of creation).
+- Python 3.14 changes `AsyncMock` behavior: child method calls return
+  coroutine-wrapped values, and `__aenter__` is an instance attribute
+  created in `__init__`. Tests for the integration-service account for
+  these differences.

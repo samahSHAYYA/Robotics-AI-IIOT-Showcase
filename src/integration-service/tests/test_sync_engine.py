@@ -75,7 +75,14 @@ def mock_integration():
 
 
 def _make_execute_result(scalar_one_or_none_value=None, scalars_all_value=None, scalar_value=0):
-    """Build a mock AsyncMock that simulates session.execute()."""
+    """Build a mock that simulates session.execute().
+
+    MagicMock is used here (not AsyncMock) because this is a synchronous
+    helper that returns synchronous attribute chains (scalar_one_or_none,
+    scalars, scalar).  On Python 3.14+, calling a child method on an
+    AsyncMock returns a coroutine wrapping the return_value rather than
+    the return_value directly, which breaks synchronous chaining.
+    """
     result = MagicMock()
     result.scalar_one_or_none.return_value = scalar_one_or_none_value
 
@@ -303,7 +310,8 @@ class TestSyncLoop:
         mock_create_task.assert_called_once()
         # Verify it called sync_integration with the right ID
         # create_task receives the RESULT of sync_integration(id) -- a coroutine
-        # (the function reference check was removed because it's a coroutine object)
+        # (the function reference check was removed because accessing a
+        # coroutine attribute would fail)
 
     @patch('app.sync_engine.sync_integration')
     @patch('app.sync_engine.async_session_factory')
