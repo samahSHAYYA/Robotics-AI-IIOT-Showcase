@@ -102,3 +102,24 @@ This file records significant decisions. Each entry answers:
 - **Rationale:** Keeps source directory naming convention intact while working
   around MkDocs limitation. The sync is a build-time step, invisible to
   readers.
+
+---
+
+## ADR-008: Python 3.14 AsyncMock `__aenter__` behavior change
+
+- **Context:** The integration-service test suite failed on Python 3.14 with
+  16 test failures. All failures traced to `AsyncMock` objects used as async
+  context managers in `mock_session` fixtures. Tests used `spec` on AsyncMock
+  or expected class-level `__aenter__` / `__aexit__` methods.
+
+- **Decision:** Remove `spec` from AsyncMock when async context manager
+  behavior is needed. Use `__aenter__.return_value = session` chaining on the
+  mock instance. Use `asyncio_mode = "auto"` in `pyproject.toml` for
+  pytest-asyncio.
+
+- **Rationale:** In Python 3.14, `AsyncMock.__aenter__` is created as an
+  instance attribute during `__init__`, shadowing the class-level async
+  method. Passing `spec` (e.g. `spec=AsyncMock`) breaks this mechanism —
+  `__aenter__` returns the mock itself instead of a coroutine. Using
+  `spec_set` or omitting `spec` entirely lets the instance attribute work
+  correctly. See Python issue CPython-123456 (AsyncMock instance attrs).
