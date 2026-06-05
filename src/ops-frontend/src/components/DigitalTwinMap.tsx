@@ -1718,6 +1718,7 @@ export default function DigitalTwinMap({
             <ThreeDView
               active={true}
               robots={robots}
+              workers={workers}
               customColors={settings.robotColors}
               onRobotSelect={handle3DRobotSelect}
             />
@@ -1760,6 +1761,7 @@ export default function DigitalTwinMap({
           <ThreeDView
             active={true}
             robots={robots}
+            workers={workers}
             customColors={settings.robotColors}
             onRobotSelect={handle3DRobotSelect}
           />

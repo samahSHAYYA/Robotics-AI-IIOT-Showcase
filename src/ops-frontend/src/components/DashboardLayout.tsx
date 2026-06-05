@@ -32,6 +32,9 @@ import PredictiveQuality from '../components/PredictiveQuality'
 import FederatedLearning from '../components/FederatedLearning'
 import SupplyChain from '../components/SupplyChain'
 import AnalyticsWidget from '../components/AnalyticsWidget'
+import ShiftsKPIWidget from '../components/ShiftsKPIWidget'
+import InventoryKPIWidget from '../components/InventoryKPIWidget'
+import IntegrationsKPIWidget from '../components/IntegrationsKPIWidget'
 import SensorGrid from '../components/SensorGrid'
 import RobotFleetPanel from '../components/RobotFleetPanel'
 import ReconcilePanel from '../components/ReconcilePanel'
@@ -88,6 +91,9 @@ export default function DashboardLayout() {
   const [voiceResult, setVoiceResult] = useState<{ text: string; ok: boolean } | null>(null)
   const voiceTimeoutRef = useRef<number>(0)
   const { notifEnabled, setNotifEnabled, minSeverity, cycleSeverity } = useAlertNotifications(alerts)
+
+  // AI Insights state — dynamically populated from agent responses
+  const [aiInsights, setAiInsights] = useState<React.ReactNode[]>([])
 
   // Factory list for switcher
   const [factories, setFactories] = useState<FactoryItem[]>([])
@@ -280,6 +286,129 @@ export default function DashboardLayout() {
     }
   }, [handleRobotStart, handleRobotStop])
 
+  // AI Insights: listen for agent responses and parse them
+  useEffect(() => {
+    const handler = ((e: globalThis.Event) => {
+      const detail = (e as CustomEvent).detail as string
+      if (!detail) return
+      const lower = detail.toLowerCase()
+      const cards: React.ReactNode[] = []
+
+      // Alert insight
+      if (lower.includes('alert') || lower.includes('warning') || lower.includes('critical') || lower.includes('error')) {
+        const hasCritical = lower.includes('critical')
+        const hasWarning = lower.includes('warning')
+        cards.push(
+          <div key="alerts" className="ai-insight-card">
+            <div className="ai-insight-card-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+              <h4>Alerts</h4>
+            </div>
+            <p>{detail}</p>
+            <span className={`ai-insight-tag ai-insight-tag--${hasCritical ? 'warning' : hasWarning ? 'warning' : 'info'}`}>
+              {hasCritical ? 'Critical' : hasWarning ? 'Warning' : 'Info'}
+            </span>
+          </div>
+        )
+      }
+
+      // Robot insight
+      if (lower.includes('robot') || lower.includes('fleet') || lower.includes('active')) {
+        const robotMatch = detail.match(/(\d+)\s*robot/i)
+        const robotCount = robotMatch ? robotMatch[1] : '—'
+        const statusMatch = lower.includes('online') ? 'Online' : lower.includes('idle') ? 'Idle' : 'Active'
+        cards.push(
+          <div key="robots" className="ai-insight-card">
+            <div className="ai-insight-card-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="10" rx="2" />
+                <circle cx="12" cy="5" r="2" />
+                <path d="M12 7v4" />
+                <line x1="8" y1="16" x2="8" y2="16" />
+                <line x1="16" y1="16" x2="16" y2="16" />
+              </svg>
+              <h4>Robots</h4>
+            </div>
+            <div className="ai-insight-card-metric">
+              <span className="ai-insight-card-value">{robotCount}</span>
+              <span className="ai-insight-card-unit">robots</span>
+            </div>
+            <span className={`ai-insight-tag ai-insight-tag--${statusMatch === 'Online' ? 'ok' : 'info'}`}>
+              {statusMatch}
+            </span>
+          </div>
+        )
+      }
+
+      // Temperature / metrics insight
+      if (lower.includes('temperature') || lower.includes('temp') || lower.includes('celsius') || lower.includes('°c')) {
+        const tempMatch = detail.match(/(\d+[.-]\d+|\d+)\s*°?C/i)
+        const tempValue = tempMatch ? tempMatch[1] : '—'
+        cards.push(
+          <div key="temperature" className="ai-insight-card">
+            <div className="ai-insight-card-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z" />
+              </svg>
+              <h4>Temperature</h4>
+            </div>
+            <div className="ai-insight-card-metric">
+              <span className="ai-insight-card-value">{tempValue}</span>
+              <span className="ai-insight-card-unit">°C</span>
+            </div>
+            <p>{detail}</p>
+          </div>
+        )
+      }
+
+      // Battery insight
+      if (lower.includes('battery') || lower.includes('charge')) {
+        const battMatch = detail.match(/(\d+)\s*%/i)
+        const battValue = battMatch ? battMatch[1] : '—'
+        cards.push(
+          <div key="battery" className="ai-insight-card">
+            <div className="ai-insight-card-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="1" y="6" width="18" height="12" rx="2" />
+                <line x1="23" y1="10" x2="23" y2="14" />
+                <line x1="7" y1="10" x2="7" y2="14" />
+              </svg>
+              <h4>Battery</h4>
+            </div>
+            <div className="ai-insight-card-metric">
+              <span className="ai-insight-card-value">{battValue}</span>
+              <span className="ai-insight-card-unit">%</span>
+            </div>
+            <p>{detail}</p>
+          </div>
+        )
+      }
+
+      // Fallback: if no specific insight matched, show a general summary card
+      if (cards.length === 0) {
+        cards.push(
+          <div key="summary" className="ai-insight-card">
+            <div className="ai-insight-card-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              <h4>Response Summary</h4>
+            </div>
+            <p>{detail.length > 200 ? detail.slice(0, 200) + '…' : detail}</p>
+          </div>
+        )
+      }
+
+      setAiInsights(cards)
+    }) as unknown as EventListener
+    window.addEventListener('chat-agent-response', handler)
+    return () => window.removeEventListener('chat-agent-response', handler)
+  }, [])
+
   const togglePanel = useCallback((key: string) => {
     setPanelVisibility((prev) => ({ ...prev, [key]: !(prev[key] ?? true) }))
   }, [])
@@ -450,6 +579,13 @@ export default function DashboardLayout() {
             {panelVisibility.analytics !== false && (
               <section className="grid-analytics">
                 <AnalyticsWidget />
+              </section>
+            )}
+            {panelVisibility.kpiWidgets !== false && (
+              <section className="kpi-widgets-row">
+                <ShiftsKPIWidget />
+                <InventoryKPIWidget />
+                <IntegrationsKPIWidget />
               </section>
             )}
             <nav className="tab-bar">
@@ -642,13 +778,26 @@ export default function DashboardLayout() {
                 <>
                   {showPanelForTab('chat') && (
                     <div className="ai-tab-layout">
-                      <div className="panel ai-tab-chat">
+                      <div className="ai-tab-chat">
                         <ChatPanel />
                       </div>
-                      <div className="panel ai-tab-render">
+                      <div className="ai-tab-render">
                         <h3>AI Insights</h3>
-                        <div className="ai-render-content" id="ai-render-content">
-                          <div className="ai-render-empty">Ask the AI agent a question — responses with charts and analysis appear here.</div>
+                        <div className="ai-render-content">
+                          {aiInsights.length > 0 ? (
+                            aiInsights
+                          ) : (
+                            <div className="ai-render-empty">
+                              <div className="ai-render-empty-icon">
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                                  <path d="M2 17l10 5 10-5" />
+                                  <path d="M2 12l10 5 10-5" />
+                                </svg>
+                              </div>
+                              Ask the AI agent a question — responses with charts and analysis appear here.
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>

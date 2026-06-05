@@ -53,7 +53,7 @@ ROBOT_PATHS: dict[str, list[tuple[float, float]]] = {
 # Priority order for collision avoidance (highest first)
 ROBOT_PRIORITY: list[str] = ['C3', 'W2', 'Q1']
 
-# Worker simulation constants
+        # Worker simulation constants
 WORKER_ZONE_BOUNDS: dict[str, dict[str, float]] = {
     'assembly': {'x_min': 0.5, 'x_max': 4.0, 'y_min': 0.5, 'y_max': 4.0},
     'welding': {'x_min': 4.0, 'x_max': 8.0, 'y_min': 3.0, 'y_max': 6.5},
@@ -150,6 +150,13 @@ class TelemetryStore:
         self._last_db_flush: float = 0.0
         self._db_flush_task: asyncio.Task | None = None
 
+        # Joint simulation state per robot
+        self._robot_joints: dict[str, dict[str, float]] = {
+            'C3': {'shoulder_pitch': 0, 'shoulder_roll': 0, 'elbow': 30, 'wrist': 0, 'head_pan': 0, 'head_tilt': 5, 'gripper': 50},
+            'W2': {'shoulder_pitch': 10, 'shoulder_roll': 0, 'elbow': 45, 'wrist': 0, 'head_pan': 0, 'head_tilt': 10, 'gripper': 50},
+            'Q1': {'shoulder_pitch': 0, 'shoulder_roll': 0, 'elbow': 0, 'wrist': 0, 'head_pan': 0, 'head_tilt': 15, 'gripper': 50},
+        }
+
     def _build_default_snapshot(self) -> dict[str, Any]:
         """Build the default telemetry snapshot."""
         return {
@@ -159,13 +166,19 @@ class TelemetryStore:
             'robots': [
                 {'robot_id': 'C3', 'name': 'C3 Humanoid', 'status': 'moving',
                  'uptime_pct': 99.5, 'current_task': 'Assembly Line A',
-                 'pose': {'x': 3.0, 'y': 1.5, 'theta': 0.0}},
+                 'pose': {'x': 3.0, 'y': 1.5, 'theta': 0.0,
+                          'joints': {'shoulder_pitch': 0, 'shoulder_roll': 0, 'elbow': 30,
+                                     'wrist': 0, 'head_pan': 0, 'head_tilt': 5, 'gripper': 50}}},
                 {'robot_id': 'W2', 'name': 'W2 Welder Arm', 'status': 'moving',
                  'uptime_pct': 97.2, 'current_task': 'Welding Station 3',
-                 'pose': {'x': 6.5, 'y': 2.0, 'theta': 0.0}},
+                 'pose': {'x': 6.5, 'y': 2.0, 'theta': 0.0,
+                          'joints': {'shoulder_pitch': 10, 'shoulder_roll': 0, 'elbow': 45,
+                                     'wrist': 0, 'head_pan': 0, 'head_tilt': 10, 'gripper': 50}}},
                 {'robot_id': 'Q1', 'name': 'Q1 Inspector', 'status': 'moving',
                  'uptime_pct': 98.7, 'current_task': 'Visual Inspection',
-                 'pose': {'x': 4.0, 'y': 3.0, 'theta': 0.0}},
+                 'pose': {'x': 4.0, 'y': 3.0, 'theta': 0.0,
+                          'joints': {'shoulder_pitch': 0, 'shoulder_roll': 0, 'elbow': 0,
+                                     'wrist': 0, 'head_pan': 0, 'head_tilt': 15, 'gripper': 50}}},
             ],
             'workers': [
                 {'worker_id': 'WKR-01', 'name': 'Alex Chen', 'x': 1.5, 'y': 2.0, 'zone': 'assembly', 'active': True},
@@ -688,6 +701,41 @@ class TelemetryStore:
                             wkr_state['x'] = max(bounds['x_min'], min(bounds['x_max'], wkr_state['x']))
                             wkr_state['y'] = max(bounds['y_min'], min(bounds['y_max'], wkr_state['y']))
 
+                # ---- Joint angle simulation (every tick, regardless of data source) ----
+                t = now
+                joint_robots = {
+                    'W2': {
+                        'elbow': 20 + 35 * (1 + math.sin(t * 1.2)) / 2,
+                        'shoulder_roll': 15 * math.sin(t * 0.8),
+                        'shoulder_pitch': 5 * math.sin(t * 0.6),
+                        'wrist': 10 * math.sin(t * 1.5),
+                        'head_pan': 0,
+                        'head_tilt': 10,
+                        'gripper': 50,
+                    },
+                    'C3': {
+                        'head_pan': 30 * math.sin(t * 0.6),
+                        'head_tilt': 5 + 10 * (1 + math.sin(t * 0.4)) / 2,
+                        'shoulder_pitch': 10 * math.sin(t * 1.0),
+                        'shoulder_roll': 5 * math.sin(t * 0.7),
+                        'elbow': 15 + 25 * (1 + math.sin(t * 0.9)) / 2,
+                        'wrist': 5 * math.sin(t * 1.1),
+                        'gripper': 50 + 30 * math.sin(t * 0.7),
+                    },
+                    'Q1': {
+                        'head_tilt': 10 + 20 * (1 + math.sin(t * 0.5)) / 2,
+                        'head_pan': 20 * math.sin(t * 0.9),
+                        'shoulder_pitch': 0,
+                        'shoulder_roll': 0,
+                        'elbow': 0,
+                        'wrist': 15 * math.sin(t * 1.3),
+                        'gripper': 50,
+                    },
+                }
+                for rid, jvals in joint_robots.items():
+                    if rid in self._robot_joints:
+                        self._robot_joints[rid].update(jvals)
+
                 # Write updates into cache snapshot
                 with self._lock:
                     cache = self._get_cache(factory_id)
@@ -713,6 +761,12 @@ class TelemetryStore:
                             w['x'] = wp['x']
                             w['y'] = wp['y']
                             w['active'] = wp['active']
+
+                    # Inject joints into robot cache entries
+                    for r in cache['robots']:
+                        rid = r['robot_id']
+                        if rid in self._robot_joints:
+                            r.setdefault('pose', {})['joints'] = dict(self._robot_joints[rid])
 
                     cache['last_update'] = datetime.now(timezone.utc).isoformat()
 
@@ -936,12 +990,22 @@ class TelemetryStore:
                     'status': 'moving',
                     'uptime_pct': 100.0,
                     'current_task': 'Auto-discovered',
-                    'pose': {'x': path[0][0], 'y': path[0][1], 'theta': 0.0},
+                    'pose': {
+                        'x': path[0][0], 'y': path[0][1], 'theta': 0.0,
+                        'joints': {'shoulder_pitch': 0, 'shoulder_roll': 0, 'elbow': 45,
+                                   'wrist': 0, 'head_pan': 0, 'head_tilt': 10, 'gripper': 50},
+                    },
                 })
                 self._robot_fleet[robot_id] = {
                     'status': 'moving',
                     'uptime_pct': 100.0,
                     'pose': {'x': path[0][0], 'y': path[0][1], 'theta': 0.0},
+                }
+
+                # Initialize joint state for new robot
+                self._robot_joints[robot_id] = {
+                    'shoulder_pitch': 0, 'shoulder_roll': 0, 'elbow': 45,
+                    'wrist': 0, 'head_pan': 0, 'head_tilt': 10, 'gripper': 50,
                 }
 
         return dict(record)
@@ -961,6 +1025,7 @@ class TelemetryStore:
             self._robot_tasks.pop(robot_id, None)
             self._robot_paused_until.pop(robot_id, None)
             self._robot_fleet.pop(robot_id, None)
+            self._robot_joints.pop(robot_id, None)
             cache = self._get_cache(factory_id)
             cache['robots'] = [
                 r for r in cache['robots']

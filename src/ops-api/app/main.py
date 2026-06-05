@@ -67,6 +67,9 @@ from app.routes import shifts as shifts_router
 # Task 105: Inventory Management
 from app.routes import inventory as inventory_router
 
+# Task 106: Integration Service KPI Proxy
+from app.routes import integration_proxy as integration_proxy_router
+
 # Feature 30: Analytics engine (fed by broadcast loop)
 from app import analytics_engine
 
@@ -416,6 +419,9 @@ app.include_router(shifts_router.router)
 # Task 105: Inventory Management
 app.include_router(inventory_router.router)
 
+# Task 106: Integration Service KPI Proxy
+app.include_router(integration_proxy_router.router)
+
 
 @app.get('/')
 async def root():
@@ -452,6 +458,9 @@ async def root():
             'inventory': '/api/v1/inventory',
             'inventory_movements': '/api/v1/inventory/{id}/movements',
             'inventory_adjust': '/api/v1/inventory/{id}/adjust',
+            'shifts_summary': '/api/v1/shifts/summary',
+            'inventory_summary': '/api/v1/inventory/summary',
+            'integrations_summary': '/api/v1/integrations/summary',
         },
     }
 

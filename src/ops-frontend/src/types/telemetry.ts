@@ -1,7 +1,18 @@
+export interface RobotJoints {
+  shoulder_pitch?: number    // -90 to 90
+  shoulder_roll?: number    // -45 to 45
+  elbow?: number            // 0 to 180
+  wrist?: number            // -90 to 90
+  head_pan?: number         // -60 to 60
+  head_tilt?: number        // -30 to 30
+  gripper?: number          // 0 (open) to 100 (closed)
+}
+
 export interface RobotPose {
   x: number
   y: number
   theta: number
+  joints?: RobotJoints
 }
 
 export interface RobotStatus {

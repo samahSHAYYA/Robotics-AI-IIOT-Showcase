@@ -7,7 +7,7 @@ Tenant-scoped CRUD for inventory items and movement history.
 """
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -230,3 +230,59 @@ async def adjust_inventory_stock(
     await session.commit()
     await session.refresh(movement)
     return movement
+
+
+# ── Aggregation / KPI Endpoint ────────────────────────────────────────────────
+
+
+@router.get('/inventory/summary')
+async def inventory_summary(
+    user: User = Depends(require_role('operator')),
+    _=Depends(require_factory_access()),
+    session: AsyncSession = Depends(get_session),
+):
+    """Return aggregate KPI data for inventory."""
+    # All items for this factory
+    result = await session.execute(
+        select(InventoryItem).where(
+            InventoryItem.tenant_id == user.tenant_id,
+            InventoryItem.factory_id == user.factory_id,
+        ),
+    )
+    items = result.scalars().all()
+
+    total_items = len(items)
+    total_quantity = sum(item.quantity for item in items)
+    low_stock = sum(
+        1 for item in items
+        if item.quantity <= item.min_threshold and item.quantity > item.min_threshold * 0.5
+    )
+    critical_stock = sum(
+        1 for item in items
+        if item.quantity <= item.min_threshold * 0.5
+    )
+    ok_stock = total_items - low_stock - critical_stock
+
+    # Movement stats (last 24h) — scoped to this factory's items
+    yesterday = datetime.now(timezone.utc) - timedelta(hours=24)
+    movements_query = await session.execute(
+        select(func.count())
+        .select_from(StockMovement)
+        .join(InventoryItem, StockMovement.item_id == InventoryItem.id)
+        .where(
+            StockMovement.created_at >= yesterday,
+            InventoryItem.tenant_id == user.tenant_id,
+            InventoryItem.factory_id == user.factory_id,
+        ),
+    )
+    recent_movements = movements_query.scalar() or 0
+
+    return {
+        'total_items': total_items,
+        'total_quantity': total_quantity,
+        'ok_stock': ok_stock,
+        'low_stock': low_stock,
+        'critical_stock': critical_stock,
+        'recent_movements_24h': recent_movements,
+        'stock_health_pct': round(ok_stock / max(total_items, 1) * 100, 1),
+    }

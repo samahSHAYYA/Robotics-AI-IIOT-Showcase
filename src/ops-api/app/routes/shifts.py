@@ -256,3 +256,82 @@ async def delete_worker(
         raise HTTPException(status_code=404, detail='Worker not found')
     await session.delete(worker)
     await session.commit()
+
+
+# ── Aggregation / KPI Endpoint ────────────────────────────────────────────────
+
+
+@router.get('/shifts/summary')
+async def shifts_summary(
+    user: User = Depends(require_role('operator')),
+    _=Depends(require_factory_access()),
+    session: AsyncSession = Depends(get_session),
+):
+    """Return aggregate KPI data for shifts and workers."""
+    # Count total shifts
+    shifts_result = await session.execute(
+        select(func.count()).where(
+            Shift.tenant_id == user.tenant_id,
+            Shift.factory_id == user.factory_id,
+        ),
+    )
+    total_shifts = shifts_result.scalar() or 0
+
+    # Count active workers
+    workers_result = await session.execute(
+        select(func.count()).where(
+            Worker.tenant_id == user.tenant_id,
+            Worker.factory_id == user.factory_id,
+            Worker.active == True,
+        ),
+    )
+    active_workers = workers_result.scalar() or 0
+
+    # Count total workers
+    total_workers_result = await session.execute(
+        select(func.count()).where(
+            Worker.tenant_id == user.tenant_id,
+            Worker.factory_id == user.factory_id,
+        ),
+    )
+    total_workers = total_workers_result.scalar() or 0
+
+    # Count workers per shift
+    workers_per_shift = {}
+    shifts_query = await session.execute(
+        select(Shift).where(
+            Shift.tenant_id == user.tenant_id,
+            Shift.factory_id == user.factory_id,
+        ),
+    )
+    shifts = shifts_query.scalars().all()
+    for shift in shifts:
+        count_query = await session.execute(
+            select(func.count()).where(
+                Worker.shift_id == shift.id,
+                Worker.active == True,
+            ),
+        )
+        workers_per_shift[shift.name] = count_query.scalar() or 0
+
+    # Determine active shifts based on current time
+    now = datetime.now(timezone.utc)
+    current_hour = now.hour
+    current_minute = now.minute
+    current_time_str = f'{current_hour:02d}:{current_minute:02d}'
+    current_day = now.weekday()  # 0=Monday
+
+    active_shifts_count = 0
+    for shift in shifts:
+        if current_day in (shift.days_of_week or []):
+            if shift.start_time <= current_time_str <= shift.end_time:
+                active_shifts_count += 1
+
+    return {
+        'total_shifts': total_shifts,
+        'total_workers': total_workers,
+        'active_workers': active_workers,
+        'active_shifts': active_shifts_count,
+        'worker_utilization': round(active_workers / max(total_workers, 1) * 100, 1),
+        'workers_per_shift': workers_per_shift,
+    }
