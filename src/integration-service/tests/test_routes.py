@@ -70,7 +70,7 @@ def _make_mock_session():
     session = AsyncMock()
 
     # Configure execute to return a reusable result mock by default
-    default_result = AsyncMock()
+    default_result = MagicMock()
     default_result.scalar_one_or_none.return_value = None
     default_result.scalars.return_value.all.return_value = []
     default_result.scalar.return_value = 0
@@ -79,11 +79,11 @@ def _make_mock_session():
     session.add = MagicMock()
     session.commit = AsyncMock()
     session.refresh = AsyncMock()
-    session.delete = MagicMock()
+    session.delete = AsyncMock()
 
-    # Async context manager
-    session.__aenter__.return_value = session
-    session.__aexit__.return_value = None
+    # NOTE: No explicit __aenter__/__aexit__ setup.
+    # AsyncMock natively supports async with via its class-level
+    # __aenter__ method. Setting instance attributes would shadow it.
 
     return session
 
@@ -91,7 +91,7 @@ def _make_mock_session():
 def _override_get_session(mock_session):
     """Override the get_session dependency with a mock session generator."""
     async def _gen():
-        yield mock_session
+        return mock_session
     app.dependency_overrides[get_session] = _gen
 
 
@@ -187,6 +187,18 @@ class TestCreateIntegration:
     def test_creates_integration(self, auth_override, mock_session):
         """Creating a valid integration returns 201."""
         _override_get_session(mock_session)
+
+        # The route creates a real Integration object and calls
+        # await session.refresh(integration) to populate auto-generated
+        # fields like id and created_at.  Since refresh is mocked, we
+        # simulate that behaviour via a side effect.
+        async def _refresh_side_effect(inst):
+            inst.id = 1
+            inst.last_sync_status = 'never'
+            from datetime import timezone
+            inst.created_at = datetime.now(timezone.utc)
+        mock_session.refresh.side_effect = _refresh_side_effect
+
         try:
             client = TestClient(app)
             payload = {
@@ -399,7 +411,7 @@ class TestListAdapters:
 class TestTriggerSync:
     """POST /api/v1/integrations/{id}/trigger"""
 
-    @patch('app.sync_engine.trigger_integration')
+    @patch('app.routes.integrations.trigger_integration')
     def test_trigger_sync(self, mock_trigger, auth_override, mock_session):
         """Triggering a sync returns status from the engine."""
         integration = _make_mock_integration(id=1)
