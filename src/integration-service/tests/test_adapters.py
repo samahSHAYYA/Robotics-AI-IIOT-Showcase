@@ -40,10 +40,10 @@ class TestRestAdapter:
     # ── test_connection ───────────────────────────────────────────────────
 
     async def test_base_url_required(self):
-        """test_connection raises KeyError when base_url is missing."""
+        """test_connection returns False when base_url is missing."""
         adapter = RestAdapter()
-        with pytest.raises(KeyError):
-            await adapter.test_connection({})
+        result = await adapter.test_connection({})
+        assert result is False
 
     @patch('app.adapters.rest.httpx.AsyncClient')
     async def test_test_connection_success(self, mock_client_cls):

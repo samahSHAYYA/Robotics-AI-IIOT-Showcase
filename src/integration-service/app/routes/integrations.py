@@ -450,10 +450,13 @@ async def get_sync_log(
 
 
 @router.get('/adapters', response_model=AdapterListResponse)
-async def get_adapters():
+async def get_adapters(
+    user: dict[str, Any] = Depends(get_current_user),
+):
     """
     List all available adapter types registered in the system.
 
+    @param user: Authenticated user JWT payload.
     @return: A list of adapter type names (e.g. 'rest').
     """
     return AdapterListResponse(adapters=list_adapters())

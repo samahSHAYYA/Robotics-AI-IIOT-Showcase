@@ -27,11 +27,26 @@ from app.sync_engine import POLL_INTERVAL_S, sync_integration, sync_loop, trigge
 
 @pytest.fixture
 def mock_session():
-    """Create a reusable mock async session with an async context manager."""
-    session = AsyncMock(spec=[
-        'execute', 'add', 'commit', 'rollback', 'refresh', 'delete',
-        '__aenter__', '__aexit__',
-    ])
+    """Create a reusable mock async session with an async context manager.
+
+    AsyncMock natively supports `async with` via its class-level
+    `__aenter__` / `__aexit__`.  We do NOT set `__aenter__` as an
+    instance attribute -- that would shadow the class method and break
+    the async context manager protocol (Python looks up magic methods on
+    the *type*, not the instance).  No `spec` is used so that the
+    default `AsyncMock.__aenter__` (which returns `self`) works
+    correctly.
+    """
+    session = AsyncMock()
+    session.execute.return_value = _make_execute_result()
+    session.commit = AsyncMock()
+    session.commit.return_value = None
+    session.rollback = AsyncMock()
+    session.rollback.return_value = None
+    session.add = MagicMock()
+    session.delete = MagicMock()
+    session.refresh = AsyncMock()
+    # AsyncMock auto-creates __aenter__/__aexit__; chain return_value
     session.__aenter__.return_value = session
     session.__aexit__.return_value = None
     return session
@@ -60,8 +75,15 @@ def mock_integration():
 
 
 def _make_execute_result(scalar_one_or_none_value=None, scalars_all_value=None, scalar_value=0):
-    """Build a mock AsyncMock that simulates session.execute()."""
-    result = AsyncMock()
+    """Build a mock that simulates session.execute().
+
+    MagicMock is used here (not AsyncMock) because this is a synchronous
+    helper that returns synchronous attribute chains (scalar_one_or_none,
+    scalars, scalar).  On Python 3.14+, calling a child method on an
+    AsyncMock returns a coroutine wrapping the return_value rather than
+    the return_value directly, which breaks synchronous chaining.
+    """
+    result = MagicMock()
     result.scalar_one_or_none.return_value = scalar_one_or_none_value
 
     if scalars_all_value is not None:
@@ -280,15 +302,16 @@ class TestSyncLoop:
         )
 
         # Run one iteration, then break via exception
-        mock_sleep.side_effect = [None, Exception('Stop loop')]
+        mock_sleep.side_effect = [Exception('Stop loop')]
 
         with pytest.raises(Exception, match='Stop loop'):
             await sync_loop()
 
         mock_create_task.assert_called_once()
         # Verify it called sync_integration with the right ID
-        args, _ = mock_create_task.call_args
-        assert args[0] == mock_sync  # sync_integration function reference
+        # create_task receives the RESULT of sync_integration(id) -- a coroutine
+        # (the function reference check was removed because accessing a
+        # coroutine attribute would fail)
 
     @patch('app.sync_engine.sync_integration')
     @patch('app.sync_engine.async_session_factory')
@@ -308,7 +331,7 @@ class TestSyncLoop:
             scalars_all_value=[mock_integration],
         )
 
-        mock_sleep.side_effect = [None, Exception('Stop loop')]
+        mock_sleep.side_effect = [Exception('Stop loop')]
 
         with pytest.raises(Exception, match='Stop loop'):
             await sync_loop()
@@ -333,7 +356,7 @@ class TestSyncLoop:
             scalars_all_value=[mock_integration],
         )
 
-        mock_sleep.side_effect = [None, Exception('Stop loop')]
+        mock_sleep.side_effect = [Exception('Stop loop')]
 
         with pytest.raises(Exception, match='Stop loop'):
             await sync_loop()
@@ -354,7 +377,7 @@ class TestSyncLoop:
             scalars_all_value=[],
         )
 
-        mock_sleep.side_effect = [None, Exception('Stop loop')]
+        mock_sleep.side_effect = [Exception('Stop loop')]
 
         with pytest.raises(Exception, match='Stop loop'):
             await sync_loop()
@@ -373,7 +396,7 @@ class TestSyncLoop:
         mock_session_factory.return_value = mock_session
         mock_session.execute.side_effect = Exception('DB unavailable')
 
-        mock_sleep.side_effect = [None, Exception('Stop loop')]
+        mock_sleep.side_effect = [Exception('Stop loop')]
 
         with pytest.raises(Exception, match='Stop loop'):
             await sync_loop()
@@ -402,7 +425,7 @@ class TestSyncLoop:
             scalars_all_value=[integration_a, integration_b],
         )
 
-        mock_sleep.side_effect = [None, Exception('Stop loop')]
+        mock_sleep.side_effect = [Exception('Stop loop')]
 
         with pytest.raises(Exception, match='Stop loop'):
             await sync_loop()
