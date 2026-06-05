@@ -1,17 +1,18 @@
 import { useState } from 'react'
 import { useI18n } from '../contexts/I18nContext'
+import type { LoginResponse } from '../types/auth'
 
 interface LoginPageProps {
-  onLogin: (role: string) => void
+  onLogin: (payload: LoginResponse) => void
 }
 
 export default function LoginPage({ onLogin }: LoginPageProps) {
   const { t } = useI18n()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [role, setRole] = useState('admin')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [loginResult, setLoginResult] = useState<LoginResponse | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -31,11 +32,10 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
         setError(t('login.error.invalid'))
         return
       }
-      const data = await resp.json()
-      localStorage.setItem('sf_session', data.access_token)
-      const backendRole = data.role ?? role
-      localStorage.setItem('sf_role', backendRole)
-      onLogin(backendRole)
+      const data: LoginResponse = await resp.json()
+      setLoginResult(data)
+      // Brief delay to show the context summary, then proceed
+      setTimeout(() => onLogin(data), 1500)
     } catch {
       setError(t('login.error.connection'))
     } finally {
@@ -67,41 +67,53 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
         <h1 className="login-title">{t('login.title')}</h1>
         <p className="login-sub">{t('login.subtitle')}</p>
         {error && <div className="login-error">{error}</div>}
-        <div className="login-field">
-          <label>{t('login.username')}</label>
-          <input
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="admin"
-            disabled={loading}
-          />
-        </div>
-        <div className="login-field">
-          <label>{t('login.password')}</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="admin"
-            disabled={loading}
-          />
-        </div>
-        <div className="login-field">
-          <label>{t('login.role')}</label>
-          <select
-            className="login-select"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            disabled={loading}
-          >
-            <option value="admin">{t('login.admin')}</option>
-            <option value="operator">{t('login.operator')}</option>
-            <option value="viewer">{t('login.viewer')}</option>
-          </select>
-        </div>
-        <button className="login-btn" type="submit" disabled={loading}>
-          {loading ? t('login.loading') : t('login.signIn')}
-        </button>
+        {loginResult && (
+          <div className="login-context-info">
+            <div className="login-context-row">
+              <span className="login-context-label">{t('login.role')}</span>
+              <span className="login-context-value">{loginResult.role}</span>
+            </div>
+            {loginResult.tenant_name && (
+              <div className="login-context-row">
+                <span className="login-context-label">{t('org.name')}</span>
+                <span className="login-context-value">{loginResult.tenant_name}</span>
+              </div>
+            )}
+            {loginResult.factory_name && (
+              <div className="login-context-row">
+                <span className="login-context-label">{t('factory.name')}</span>
+                <span className="login-context-value">{loginResult.factory_name}</span>
+              </div>
+            )}
+            <div className="login-context-message">Access granted — entering control room...</div>
+          </div>
+        )}
+        {!loginResult && (
+          <>
+            <div className="login-field">
+              <label>{t('login.username')}</label>
+              <input
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="admin"
+                disabled={loading}
+              />
+            </div>
+            <div className="login-field">
+              <label>{t('login.password')}</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="admin"
+                disabled={loading}
+              />
+            </div>
+            <button className="login-btn" type="submit" disabled={loading}>
+              {loading ? t('login.loading') : t('login.signIn')}
+            </button>
+          </>
+        )}
       </form>
     </div>
   )

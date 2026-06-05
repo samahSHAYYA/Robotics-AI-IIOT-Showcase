@@ -926,7 +926,7 @@
 },
 {
   "sprint": "Sprint 11 — Quality Hardening & Production Polish",
-  "status": "active",
+  "status": "completed",
   "tasks": [
     {
       "id": 81,
@@ -1036,6 +1036,147 @@
         "On Linux/Mac: uses unix:///var/run/docker.sock",
         "No hardcoded platform-specific paths in the Terraform config",
         "Terraform plan succeeds on both Windows and Linux environments"
+      ]
+    }
+  ]
+},
+{
+  "sprint": "Sprint 12 — Data Foundation & Multi-Tenant Architecture",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 89,
+      "title": "Core Database Schema & Migration",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        "SQLAlchemy models defined: Tenant, Factory, User, Robot, TelemetrySnapshot, Alert, AuditLog, WebhookConfig",
+        "All models have tenant_id FK for data isolation; Factories have tenant_id + org-scoped uniqueness",
+        "Alembic migration scripts generate the full schema",
+        "Seed data creates a default tenant with a default factory and admin user",
+        "In-memory store.py is replaced with database-backed reads/writes",
+        "Existing API endpoints work identically but persist to PostgreSQL"
+      ]
+    },
+    {
+      "id": 90,
+      "title": "Hierarchical RBAC with JWT Claims",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        "Roles: super_admin, tenant_admin, factory_admin, operator, viewer, integrator",
+        "JWT payload includes tenant_id, factory_id, role, and scope",
+        "Dependency injection gates check role hierarchy (not flat matching)",
+        "Super Admin can create tenants and manage global config",
+        "Tenant Admin manages factories and users within their tenant",
+        "Factory Admin manages robots and operations within their factory",
+        "Integrator role with API key auth for external system access",
+        "All existing routes updated to enforce tenant-scoped access"
+      ]
+    },
+    {
+      "id": 91,
+      "title": "Multi-Tenant Frontend Updates",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        "Login flow requests organization context; organization selection on login",
+        "Organization/Company name displayed in header (descriptive UI label)",
+        "Factory switcher dropdown in header (tenant admin can switch factories)",
+        "Role badge shows hierarchical role name with color coding",
+        "Super Admin sees organization management panel",
+        "Tenant Admin sees factory management + user management panels",
+        "Factory-scoped users only see their assigned factory's data",
+        "Panel visibility adapts to role permissions"
+      ]
+    }
+  ]
+},
+{
+  "sprint": "Sprint 13 — ROS2 Pipeline & Pluggable i18n",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": 92,
+      "title": "ROS2/Gazebo Dockerization + Live Data Pipeline",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        "ROS2/Gazebo workspace Dockerized with ROS2 Jazzy + Gazebo Harmonic",
+        "Dockerfile builds all 5 ROS2 packages (factory_gazebo, humanoid_robot, welder_robot, inspector_robot, ros2_bridge)",
+        "docker-compose.yaml includes ros2-sim service with GPU passthrough (or headless fallback)",
+        "ROS2 bridge writes to Redis Streams (events:core-platform) — NOT pub/sub",
+        "ops-api consumer reads ROS2 telemetry from streams and stores in DB",
+        "Mock fallback simulates ROS2 data when ros2-sim service is not running",
+        "Frontend displays ROS2-sourced telemetry with a 'Live' badge indicator",
+        "Existing mock data path continues to work as fallback"
+      ]
+    },
+    {
+      "id": 93,
+      "title": "Pluggable i18n Framework — Auto-Discover Language Packs",
+      "status": "completed",
+      "committed": true,
+      "acceptance": [
+        "Language packs are auto-discovered from the i18n/ directory — no code change to add a language",
+        "Each language pack is a self-contained JSON file with metadata (name, nativeName)",
+        "Language switcher dynamically lists all available languages (not hardcoded EN/FR)",
+        "Browser language auto-detection on first visit (navigator.language)",
+        "Selected language persists in localStorage",
+        "Adding a new language = copy en.json → de.json, translate strings, done",
+        "Missing keys fall back to English gracefully",
+        "All existing i18n functionality preserved (25 new keys from Sprint 12 included)",
+        "Documentation comment in i18n/README.md explains the 30-second add-a-language process"
+      ]
+    }
+  ]
+},
+{
+  "sprint": "Sprint 14 — Integration Service & External Connectivity",
+  "status": "active",
+  "tasks": [
+    {
+      "id": 94,
+      "title": "Integration Service Skeleton + Adapter Framework",
+      "status": "pending",
+      "committed": true,
+      "acceptance": [
+        "New integration-service created at src/integration-service/ (Python FastAPI, port 8006)",
+        "IntegrationService app has CRUD for connection configurations",
+        "Adapter registry supports pluggable adapters: Generic REST adapter (first-class)",
+        "Connection model stores: name, type, base_url, auth_type (api_key/basic/oauth2), credentials (encrypted), sync_interval, enabled",
+        "Test endpoint: POST /api/v1/integrations/{id}/test — tests connectivity to external system",
+        "Dockerized with pyproject.toml, Dockerfile, and added to docker-compose.yaml",
+        "Existing tests continue to pass"
+      ]
+    },
+    {
+      "id": 95,
+      "title": "Sync Engine + Webhook v2 with Delivery Receipts",
+      "status": "pending",
+      "committed": true,
+      "acceptance": [
+        "Sync engine runs scheduled data sync per integration (configurable interval)",
+        "Webhook v2 improves on existing webhook engine: idempotency keys, delivery receipts, retry queue with dead-letter after 5 retries",
+        "Sync log tracks: integration_id, timestamp, status (success/error), records_synced, error_message",
+        "GET /api/v1/integrations/{id}/sync-log returns paginated sync history",
+        "All retries use exponential backoff (1s, 2s, 4s, 8s, 16s) then dead-letter",
+        "Existing webhook engine continues to work (v2 is additive)"
+      ]
+    },
+    {
+      "id": 96,
+      "title": "Integration Management UI + Frontend Panel",
+      "status": "pending",
+      "committed": true,
+      "acceptance": [
+        "New 'Integrations' panel in frontend under Admin tab",
+        "Integrations list view: name, type, status (connected/disconnected/error), last sync",
+        "Create/edit integration form: name, type, base_url, auth config, sync interval",
+        "Test connection button calls POST /api/v1/integrations/{id}/test",
+        "Sync log viewer per integration",
+        "Enable/disable toggle for each integration",
+        "i18n strings for all new UI elements (EN + FR)"
       ]
     }
   ]

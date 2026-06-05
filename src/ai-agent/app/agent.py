@@ -5,10 +5,11 @@
 @description: Factory agent with PydanticAI real-LLM and mock fallback modes.
 """
 
+import json
 import os
 
 from pathlib import Path
-from typing import Any
+from typing import Any, AsyncGenerator
 
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.openai import OpenAIChatModel
@@ -91,31 +92,104 @@ class FactoryAgent:
         self._agent: Agent | None = _build_agent(llm_url)
         self.ready: bool = self._agent is not None
 
-    async def chat(self, message: str) -> dict[str, Any]:
+    async def chat(self, message: str, history: list[dict] | None = None) -> dict[str, Any]:
         """
         Processes a chat message and returns a response.
 
         @param message: User message.
+        @param history: Optional list of previous messages (each with 'role' and 'content').
         @return result: Dict with 'reply' (str) and optionally 'chart' (dict).
         """
 
         if self.ready and self._agent is not None:
-            return await self._agent_chat(message)
+            return await self._agent_chat(message, history=history)
         return self._mock_chat(message)
 
-    async def _agent_chat(self, message: str) -> dict[str, Any]:
+    async def chat_stream(self, message: str, history: list[dict] | None = None) -> AsyncGenerator[str, None]:
+        """
+        Streaming chat — yields SSE-formatted JSON strings.
+
+        @param message: User message.
+        @param history: Optional list of previous messages for context.
+        @yield: 'data: {"token": "..."}\\n\\n' or 'data: {"done": true, "reply": "..."}\\n\\n'
+        """
+
+        if self.ready and self._agent is not None:
+            async for chunk in self._agent_chat_stream(message, history=history):
+                yield chunk
+        else:
+            result = self._mock_chat(message)
+            reply = result.get('reply', '')
+            yield json.dumps({'token': reply})
+            yield json.dumps({'done': True, 'reply': reply})
+
+    async def _agent_chat(self, message: str, history: list[dict] | None = None) -> dict[str, Any]:
         """
         Sends the message to the PydanticAI Agent for processing.
 
         @param message: User message.
+        @param history: Optional conversation history for context.
         @return result: Dict with the LLM's text reply.
         """
 
         try:
-            result = await self._agent.run(message, deps = self._ops_api_url)
+            prompt = self._build_prompt_with_history(message, history)
+            result = await self._agent.run(prompt, deps=self._ops_api_url)
             return {'reply': result.data, 'chart': None}
         except Exception as exc:
             return {'reply': f'AI Agent error: {exc}', 'chart': None}
+
+    async def _agent_chat_stream(self, message: str, history: list[dict] | None = None) -> AsyncGenerator[str, None]:
+        """
+        Streams tokens from the PydanticAI Agent.
+
+        @param message: User message.
+        @param history: Optional conversation history.
+        @yield: SSE JSON strings with tokens / done signal.
+        """
+
+        try:
+            prompt = self._build_prompt_with_history(message, history)
+            # PydanticAI doesn't have a native streaming API for Agent.run,
+            # so we simulate progressive tokens by sending the full reply as one token.
+            # In production with an OpenAI streaming client, replace this block.
+            result = await self._agent.run(prompt, deps=self._ops_api_url)
+            reply = result.data
+
+            # Yield the response in word-sized chunks for a streaming effect
+            words = reply.split(' ')
+            for i, word in enumerate(words):
+                token = word + (' ' if i < len(words) - 1 else '')
+                yield json.dumps({'token': token})
+                import asyncio
+                await asyncio.sleep(0.02)  # Small delay to simulate streaming
+
+            yield json.dumps({'done': True, 'reply': reply})
+        except Exception as exc:
+            yield json.dumps({'token': f'AI Agent error: {exc}'})
+            yield json.dumps({'done': True, 'reply': f'AI Agent error: {exc}'})
+
+    @staticmethod
+    def _build_prompt_with_history(message: str, history: list[dict] | None = None) -> str:
+        """
+        Builds a prompt by prepending conversation history to the current message.
+
+        @param message: Current user message.
+        @param history: Previous messages (role + content).
+        @return prompt: Formatted prompt string.
+        """
+
+        if not history:
+            return message
+
+        lines: list[str] = []
+        for msg in history[-20:]:  # Keep last 20 messages as context
+            role = msg.get('role', 'user')
+            content = msg.get('content', '')
+            lines.append(f'{role.capitalize()}: {content}')
+        lines.append(f'User: {message}')
+        lines.append('Assistant:')
+        return '\n'.join(lines)
 
     @staticmethod
     def _mock_chat(message: str) -> dict[str, Any]:

@@ -41,7 +41,7 @@ class ResolveRequest(BaseModel):
 
 
 @router.get('/state')
-async def get_reconcile_state(user: User = Depends(require_role('admin', 'operator'))):
+async def get_reconcile_state(user: User = Depends(require_role('factory_admin'))):
     """
     Return the current digital twin state snapshot with version vector.
 
@@ -55,7 +55,7 @@ async def get_reconcile_state(user: User = Depends(require_role('admin', 'operat
 
 @router.post('/diff')
 async def get_diff(body: DiffRequest,
-                   user: User = Depends(require_role('admin', 'operator'))):
+                   user: User = Depends(require_role('factory_admin'))):
     """
     Compare the current digital twin state with a submitted state.
 
@@ -84,7 +84,7 @@ async def get_diff(body: DiffRequest,
 
 @router.post('/resolve')
 async def resolve(body: ResolveRequest,
-                  user: User = Depends(require_role('admin', 'operator'))):
+                  user: User = Depends(require_role('factory_admin'))):
     """
     Resolve conflicts using the specified strategy (local, remote, or merge).
 

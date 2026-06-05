@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { authFetch, getToken } from '../utils/auth-fetch'
+import { useAuth } from './AuthContext'
 import type { TelemetrySnapshot, RobotStatus, Alert, Event, WorkerStatus } from '../types/telemetry'
 
 const WS_URL = import.meta.env.VITE_WS_URL ?? `${window.location.host}/ws`
@@ -25,7 +26,29 @@ interface TelemetryContextType {
 
 const TelemetryContext = createContext<TelemetryContextType | null>(null)
 
+interface FactoryAwareWsUrlProps {
+  baseUrl: string
+  factoryId: number | null
+}
+
+function buildWsUrl({ baseUrl, factoryId }: FactoryAwareWsUrlProps): string {
+  const token = getToken()
+  let url = baseUrl
+  const params: string[] = []
+  if (token) {
+    params.push(`token=${encodeURIComponent(token)}`)
+  }
+  if (factoryId !== null && factoryId !== undefined) {
+    params.push(`factory_id=${encodeURIComponent(factoryId)}`)
+  }
+  if (params.length > 0) {
+    url += (url.includes('?') ? '&' : '?') + params.join('&')
+  }
+  return url
+}
+
 export function TelemetryProvider({ children }: { children: ReactNode }) {
+  const { factoryId } = useAuth()
   const [telemetry, setTelemetry] = useState<TelemetrySnapshot | undefined>()
   const [robots, setRobots] = useState<RobotStatus[]>([])
   const [workers, setWorkers] = useState<WorkerStatus[]>([])
@@ -34,6 +57,12 @@ export function TelemetryProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null)
   const [kpiDiffs, setKpiDiffs] = useState<Record<string, { value: number; direction: 'up' | 'down' }> | undefined>(undefined)
   const maxRetriesReached = useRef(false)
+  const factoryIdRef = useRef(factoryId)
+
+  // Track factoryId changes for WebSocket reconnection
+  if (factoryIdRef.current !== factoryId) {
+    factoryIdRef.current = factoryId
+  }
 
   const handleMessage = useCallback((data: unknown) => {
     const msg = data as { type: string; data: unknown }
@@ -64,8 +93,8 @@ export function TelemetryProvider({ children }: { children: ReactNode }) {
     setError(err)
   }, [])
 
-  const wsToken = getToken()
-  const wsUrl = wsToken ? `${WS_URL}?token=${encodeURIComponent(wsToken)}` : WS_URL
+  // Build WS URL with factory context
+  const wsUrl = buildWsUrl({ baseUrl: WS_URL, factoryId })
   const { status: wsStatus } = useWebSocket(wsUrl, handleMessage, handleWsError)
 
   useEffect(() => {

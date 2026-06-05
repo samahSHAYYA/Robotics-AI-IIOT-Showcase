@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import PlainTextResponse
 
 from app.audit_logger import export_audit_csv, get_audit_log
-from app.deps import get_current_user
+from app.deps import require_factory_access, require_role
 from app.db import User
 
 router: APIRouter = APIRouter(prefix='/api/v1/audit')
@@ -20,7 +20,8 @@ logger: logging.Logger = logging.getLogger(__name__)
 
 @router.get('')
 async def list_audit_logs(
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_role('viewer')),
+    _=Depends(require_factory_access()),
     robot_id: str | None = Query(None, description='Filter by robot ID'),
     action: str | None = Query(None, description='Filter by action'),
     from_date: str | None = Query(None, alias='from_date',
@@ -30,6 +31,7 @@ async def list_audit_logs(
     role: str | None = Query(None, description='Filter by user role'),
     page: int = Query(1, ge=1, description='Page number'),
     per_page: int = Query(50, ge=1, le=100, description='Items per page'),
+    factory_id: int | None = Query(None, description='Filter/set factory context'),
 ):
     """
     Returns paginated audit log entries with optional filters.
@@ -45,7 +47,7 @@ async def list_audit_logs(
     @return response: Dict with entries, total, page, per_page.
     """
 
-    entries, total = get_audit_log(
+    entries, total = await get_audit_log(
         robot_id=robot_id,
         action=action,
         from_date=from_date,
@@ -65,7 +67,8 @@ async def list_audit_logs(
 
 @router.get('/export')
 async def export_audit(
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_role('viewer')),
+    _=Depends(require_factory_access()),
     robot_id: str | None = Query(None, description='Filter by robot ID'),
     action: str | None = Query(None, description='Filter by action'),
     from_date: str | None = Query(None, alias='from_date',
@@ -73,6 +76,7 @@ async def export_audit(
     to_date: str | None = Query(None, alias='to_date',
                                  description='Filter to ISO timestamp'),
     role: str | None = Query(None, description='Filter by user role'),
+    factory_id: int | None = Query(None, description='Filter/set factory context'),
 ):
     """
     Exports filtered audit log as a CSV file download.
@@ -80,7 +84,7 @@ async def export_audit(
     @return response: CSV plain-text response with Content-Disposition header.
     """
 
-    csv_content = export_audit_csv(
+    csv_content = await export_audit_csv(
         robot_id=robot_id,
         action=action,
         from_date=from_date,

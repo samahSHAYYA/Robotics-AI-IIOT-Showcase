@@ -11,9 +11,9 @@ import os
 from typing import Any
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
-from app.deps import get_current_user, require_role
+from app.deps import get_current_user, require_factory_access, require_role
 from app.db import User
 
 logger: logging.Logger = logging.getLogger(__name__)
@@ -82,8 +82,12 @@ async def get_sensor(sensor_id: str,
 
 
 @router.post("/sensors/{sensor_id}/fail")
-async def trigger_failure(sensor_id: str, mode: str = "drift",
-                          user: User = Depends(require_role('admin', 'operator'))) -> dict[str, Any]:
+async def trigger_failure(
+    sensor_id: str, mode: str = "drift",
+    user: User = Depends(require_role('operator')),
+    _=Depends(require_factory_access()),
+    factory_id: int | None = Query(None, description='Factory context'),
+) -> dict[str, Any]:
     """
     Proxy: trigger a failure mode on a sensor.
 
@@ -117,8 +121,12 @@ async def trigger_failure(sensor_id: str, mode: str = "drift",
 
 
 @router.post("/sensors/{sensor_id}/reset")
-async def reset_sensor(sensor_id: str,
-                       user: User = Depends(require_role('admin', 'operator'))) -> dict[str, Any]:
+async def reset_sensor(
+    sensor_id: str,
+    user: User = Depends(require_role('operator')),
+    _=Depends(require_factory_access()),
+    factory_id: int | None = Query(None, description='Factory context'),
+) -> dict[str, Any]:
     """
     Proxy: reset a sensor to normal operation.
 

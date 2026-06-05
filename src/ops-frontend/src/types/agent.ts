@@ -28,7 +28,8 @@ export interface InlineChartData {
 export interface ChatMessage {
   role: 'user' | 'agent'
   text: string
-  ts?: number
+  ts: number
   chart?: ChartConfig
   inlineChart?: InlineChartData
+  id: string
 }

@@ -3,6 +3,8 @@ import { useAuth } from '../contexts/AuthContext'
 import { useTelemetry } from '../contexts/TelemetryContext'
 import { useI18n } from '../contexts/I18nContext'
 import { useTheme } from '../contexts/ThemeContext'
+import { ROLE_PERMISSIONS } from '../types/auth'
+import { authFetch } from '../utils/auth-fetch'
 import KpiBoard from '../components/KpiBoard'
 import AlertBoard from '../components/AlertBoard'
 import RobotFleet from '../components/RobotFleet'
@@ -23,24 +25,55 @@ import ShiftScheduler from '../components/ShiftScheduler'
 import WorkerSafetyZone from '../components/WorkerSafetyZone'
 import AnnotationPanel from '../components/AnnotationPanel'
 import ServiceHealth from '../components/ServiceHealth'
-import AuditLog from '../components/AuditLog'
+import AuditLogPanel from '../components/AuditLogPanel'
 import WebhookManager from '../components/WebhookManager'
 import EnergyOptimizer from '../components/EnergyOptimizer'
 import PredictiveQuality from '../components/PredictiveQuality'
 import FederatedLearning from '../components/FederatedLearning'
 import SupplyChain from '../components/SupplyChain'
 import AnalyticsWidget from '../components/AnalyticsWidget'
+import ShiftsKPIWidget from '../components/ShiftsKPIWidget'
+import InventoryKPIWidget from '../components/InventoryKPIWidget'
+import IntegrationsKPIWidget from '../components/IntegrationsKPIWidget'
 import SensorGrid from '../components/SensorGrid'
 import RobotFleetPanel from '../components/RobotFleetPanel'
 import ReconcilePanel from '../components/ReconcilePanel'
 import SiteManagerPanel from '../components/SiteManagerPanel'
+import IntegrationsPanel from '../components/IntegrationsPanel'
+import ShiftPanel from '../components/ShiftPanel'
+import InventoryPanel from '../components/InventoryPanel'
 import LoginPage from '../components/LoginPage'
 import LayoutSettingsPanel, { loadLayout, saveLayout } from '../components/LayoutSettingsPanel'
 import useAlertNotifications from '../hooks/useAlertNotifications'
 
+interface FactoryItem {
+  id: number
+  name: string
+  location: string
+  timezone: string
+}
+
+const ROLE_LABELS: Record<string, string> = {
+  super_admin: 'Super Admin',
+  tenant_admin: 'Org Admin',
+  factory_admin: 'Factory Admin',
+  operator: 'Operator',
+  viewer: 'Viewer',
+  integrator: 'Integrator',
+}
+
+const ROLE_ICONS: Record<string, string> = {
+  super_admin: '\u265B',   // Crown
+  tenant_admin: '\u2302',  // House/building
+  factory_admin: '\u2699', // Gear
+  operator: '\u25B6',      // Play
+  viewer: '\u25C9',        // Eye/dot
+  integrator: '\u29D6',    // Integration symbol
+}
+
 export default function DashboardLayout() {
-  const { t, lang, setLang } = useI18n()
-  const { authed, role, login, logout, kioskMode } = useAuth()
+  const { t, lang, setLang, availableLanguages } = useI18n()
+  const { authed, role, tenantName, factoryId, factoryName, login, logout, kioskMode, switchFactory } = useAuth()
   const {
     telemetry, robots, workers, alerts, events, error, wsStatus, kpiDiffs,
     handleRobotStart, handleRobotStop, handleAssignTask, handleWorkerToggle,
@@ -59,18 +92,75 @@ export default function DashboardLayout() {
   const voiceTimeoutRef = useRef<number>(0)
   const { notifEnabled, setNotifEnabled, minSeverity, cycleSeverity } = useAlertNotifications(alerts)
 
+  // AI Insights state — dynamically populated from agent responses
+  const [aiInsights, setAiInsights] = useState<React.ReactNode[]>([])
+
+  // Factory list for switcher
+  const [factories, setFactories] = useState<FactoryItem[]>([])
   const [kioskView, setKioskView] = useState<'map' | 'kpi'>('map')
 
-  const TABS = [
-    { key: 'factory', label: `🏭 ${t('tab.factory')}`, panels: ['map', 'fleet', 'alerts', 'console', 'annotations'] },
-    { key: 'analytics', label: `📊 ${t('tab.analytics')}`, panels: ['analytics', 'oee', 'production', 'energy', 'supply', 'quality', 'energyopt'] },
-    { key: 'maintenance', label: `🔧 ${t('tab.maintenance')}`, panels: ['predictive', 'sensors', 'health', 'shift', 'federated'] },
-    { key: 'admin', label: `⚙️ ${t('tab.admin')}`, panels: ['audit', 'webhooks', 'robots', 'reconcile', 'sites'] },
-    { key: 'camera', label: `📷 ${t('tab.camera')}`, panels: ['camera'] },
-    { key: 'ai', label: `💬 ${t('tab.ai')}`, panels: ['chat'] },
-  ] as const
+  // Derive allowed panels from role
+  const allowedPanels = role ? ROLE_PERMISSIONS[role] : []
+
+  const canAccess = useCallback((panel: string) => {
+    return allowedPanels.includes(panel)
+  }, [allowedPanels])
+
+  const canAdmin = role === 'super_admin' || role === 'tenant_admin'
+  const canControl = role !== 'viewer' && role !== 'integrator'
+
+  // Build tabs based on role permissions
+  const TABS = (() => {
+    const tabs: Array<{ key: string; label: string; panels: string[] }> = []
+
+    if (canAccess('map') || canAccess('fleet') || canAccess('alerts')) {
+      tabs.push({ key: 'factory', label: `🏭 ${t('tab.factory')}`, panels: ['map', 'fleet', 'alerts', 'console', 'annotations'] })
+    }
+    if (canAccess('analytics') || canAccess('oee') || canAccess('energy')) {
+      tabs.push({ key: 'analytics', label: `📊 ${t('tab.analytics')}`, panels: ['analytics', 'oee', 'production', 'energy', 'supply', 'quality', 'energyopt'] })
+    }
+    if (canAccess('predictive') || canAccess('shift-scheduler')) {
+      tabs.push({ key: 'maintenance', label: `🔧 ${t('tab.maintenance')}`, panels: ['predictive', 'sensors', 'health', 'shift', 'federated'] })
+    }
+    if (canAdmin) {
+      tabs.push({ key: 'admin', label: `⚙️ ${t('tab.admin')}`, panels: ['audit-log', 'webhooks', 'integrations', 'robots', 'reconcile', 'sites', 'shifts', 'inventory'] })
+    }
+    if (canAccess('camera')) {
+      tabs.push({ key: 'camera', label: `📷 ${t('tab.camera')}`, panels: ['camera'] })
+    }
+    if (canAccess('chat')) {
+      tabs.push({ key: 'ai', label: `💬 ${t('tab.ai')}`, panels: ['chat'] })
+    }
+    return tabs
+  })()
 
   const activePanels: readonly string[] = TABS.find(t => t.key === activeTab)?.panels ?? []
+
+  // Fetch factories for switcher
+  const fetchFactories = useCallback(async () => {
+    try {
+      const res = await authFetch('/api/v1/sites')
+      if (res.ok) {
+        const data = await res.json()
+        const list = Array.isArray(data) ? data : (data.sites ?? data.factories ?? [])
+        setFactories(list.map((f: Record<string, unknown>) => ({
+          id: typeof f.id === 'number' ? f.id : Number(f.id),
+          name: String(f.name ?? ''),
+          location: String(f.location ?? ''),
+          timezone: String(f.timezone ?? ''),
+        })))
+      }
+    } catch {
+      // Silently fail — factory switcher just won't populate
+    }
+  }, [])
+
+  useEffect(() => {
+    if (canAdmin || role === 'factory_admin') {
+      fetchFactories()
+    }
+  }, [fetchFactories, canAdmin, role])
+
   const showPanelForTab = (key: string) => activePanels.includes(key) && (panelVisibility[key] ?? true)
 
   // Persist panel layout
@@ -196,6 +286,129 @@ export default function DashboardLayout() {
     }
   }, [handleRobotStart, handleRobotStop])
 
+  // AI Insights: listen for agent responses and parse them
+  useEffect(() => {
+    const handler = ((e: globalThis.Event) => {
+      const detail = (e as CustomEvent).detail as string
+      if (!detail) return
+      const lower = detail.toLowerCase()
+      const cards: React.ReactNode[] = []
+
+      // Alert insight
+      if (lower.includes('alert') || lower.includes('warning') || lower.includes('critical') || lower.includes('error')) {
+        const hasCritical = lower.includes('critical')
+        const hasWarning = lower.includes('warning')
+        cards.push(
+          <div key="alerts" className="ai-insight-card">
+            <div className="ai-insight-card-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+              <h4>Alerts</h4>
+            </div>
+            <p>{detail}</p>
+            <span className={`ai-insight-tag ai-insight-tag--${hasCritical ? 'warning' : hasWarning ? 'warning' : 'info'}`}>
+              {hasCritical ? 'Critical' : hasWarning ? 'Warning' : 'Info'}
+            </span>
+          </div>
+        )
+      }
+
+      // Robot insight
+      if (lower.includes('robot') || lower.includes('fleet') || lower.includes('active')) {
+        const robotMatch = detail.match(/(\d+)\s*robot/i)
+        const robotCount = robotMatch ? robotMatch[1] : '—'
+        const statusMatch = lower.includes('online') ? 'Online' : lower.includes('idle') ? 'Idle' : 'Active'
+        cards.push(
+          <div key="robots" className="ai-insight-card">
+            <div className="ai-insight-card-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="10" rx="2" />
+                <circle cx="12" cy="5" r="2" />
+                <path d="M12 7v4" />
+                <line x1="8" y1="16" x2="8" y2="16" />
+                <line x1="16" y1="16" x2="16" y2="16" />
+              </svg>
+              <h4>Robots</h4>
+            </div>
+            <div className="ai-insight-card-metric">
+              <span className="ai-insight-card-value">{robotCount}</span>
+              <span className="ai-insight-card-unit">robots</span>
+            </div>
+            <span className={`ai-insight-tag ai-insight-tag--${statusMatch === 'Online' ? 'ok' : 'info'}`}>
+              {statusMatch}
+            </span>
+          </div>
+        )
+      }
+
+      // Temperature / metrics insight
+      if (lower.includes('temperature') || lower.includes('temp') || lower.includes('celsius') || lower.includes('°c')) {
+        const tempMatch = detail.match(/(\d+[.-]\d+|\d+)\s*°?C/i)
+        const tempValue = tempMatch ? tempMatch[1] : '—'
+        cards.push(
+          <div key="temperature" className="ai-insight-card">
+            <div className="ai-insight-card-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z" />
+              </svg>
+              <h4>Temperature</h4>
+            </div>
+            <div className="ai-insight-card-metric">
+              <span className="ai-insight-card-value">{tempValue}</span>
+              <span className="ai-insight-card-unit">°C</span>
+            </div>
+            <p>{detail}</p>
+          </div>
+        )
+      }
+
+      // Battery insight
+      if (lower.includes('battery') || lower.includes('charge')) {
+        const battMatch = detail.match(/(\d+)\s*%/i)
+        const battValue = battMatch ? battMatch[1] : '—'
+        cards.push(
+          <div key="battery" className="ai-insight-card">
+            <div className="ai-insight-card-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="1" y="6" width="18" height="12" rx="2" />
+                <line x1="23" y1="10" x2="23" y2="14" />
+                <line x1="7" y1="10" x2="7" y2="14" />
+              </svg>
+              <h4>Battery</h4>
+            </div>
+            <div className="ai-insight-card-metric">
+              <span className="ai-insight-card-value">{battValue}</span>
+              <span className="ai-insight-card-unit">%</span>
+            </div>
+            <p>{detail}</p>
+          </div>
+        )
+      }
+
+      // Fallback: if no specific insight matched, show a general summary card
+      if (cards.length === 0) {
+        cards.push(
+          <div key="summary" className="ai-insight-card">
+            <div className="ai-insight-card-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              <h4>Response Summary</h4>
+            </div>
+            <p>{detail.length > 200 ? detail.slice(0, 200) + '…' : detail}</p>
+          </div>
+        )
+      }
+
+      setAiInsights(cards)
+    }) as unknown as EventListener
+    window.addEventListener('chat-agent-response', handler)
+    return () => window.removeEventListener('chat-agent-response', handler)
+  }, [])
+
   const togglePanel = useCallback((key: string) => {
     setPanelVisibility((prev) => ({ ...prev, [key]: !(prev[key] ?? true) }))
   }, [])
@@ -214,6 +427,9 @@ export default function DashboardLayout() {
         ? t('reconnect.connecting')
         : null
 
+  const roleIcon = role ? ROLE_ICONS[role] ?? '' : ''
+  const roleLabel = role ? ROLE_LABELS[role] ?? role : ''
+
   if (!authed) return <LoginPage onLogin={login} />
 
   return (
@@ -231,6 +447,47 @@ export default function DashboardLayout() {
             <span className="app-subtitle">{t('app.subtitle')}</span>
           </div>
           <div className="header-right">
+            {/* Organization badge */}
+            {tenantName && (
+              <span className="org-badge" title={tenantName}>
+                {tenantName}
+              </span>
+            )}
+
+            {/* Factory switcher for super_admin and tenant_admin */}
+            {canAdmin && factories.length > 1 && (
+              <div className="factory-switcher-wrapper">
+                <select
+                  className="factory-switcher"
+                  value={factoryId ?? undefined}
+                  onChange={(e) => {
+                    const idx = e.target.selectedIndex
+                    const name = e.target.options[idx]?.text ?? ''
+                    switchFactory(Number(e.target.value), name)
+                  }}
+                >
+                  {factories.map(f => (
+                    <option key={f.id} value={f.id}>{f.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Factory name text for non-admin roles */}
+            {!canAdmin && factoryName && (
+              <span className="org-badge factory-name-badge" title={factoryName}>
+                🏭 {factoryName}
+              </span>
+            )}
+
+            {/* Live data source indicator */}
+            {telemetry?.data_source && (
+              <span className={`data-source-badge data-source-badge--${telemetry.data_source}`}>
+                <span className="data-source-dot" />
+                {telemetry.data_source === 'ros2' ? 'Live' : 'Simulated'}
+              </span>
+            )}
+
             <VoiceCommand />
             <AmbientAudio robots={robots} />
             <div className="notif-group">
@@ -267,14 +524,23 @@ export default function DashboardLayout() {
             >
               {theme === 'dark' ? '\u2600\uFE0F' : '\uD83C\uDF19'}
             </button>
-            <button
-              className="layout-settings-btn"
-              onClick={() => setLang(lang === 'en' ? 'fr' : 'en')}
+            {/* Language switcher — dynamic from availableLanguages */}
+            <select
+              className="lang-switcher"
+              value={lang}
+              onChange={(e) => setLang(e.target.value)}
+              title={t('lang.switch')}
             >
-              {lang === 'en' ? 'FR' : 'EN'}
-            </button>
-            <span className={`role-badge role-badge--${role}`}>{role}</span>
-            {role === 'admin' && <button className="layout-settings-btn" onClick={() => setShowLayoutSettings(true)}>{t('app.layout')}</button>}
+              {availableLanguages.map(langPack => (
+                <option key={langPack.code} value={langPack.code}>
+                  {langPack.nativeName}
+                </option>
+              ))}
+            </select>
+            <span className={`role-badge role-badge--${role}`} title={roleLabel}>
+              {roleIcon} {roleLabel}
+            </span>
+            {canAdmin && <button className="layout-settings-btn" onClick={() => setShowLayoutSettings(true)}>{t('app.layout')}</button>}
             <button className="layout-settings-btn" onClick={() => setShowShortcuts((p) => !p)}>?</button>
             <span className="header-clock">{clock.toLocaleTimeString()}</span>
             <button className="logout-btn" onClick={logout}>{t('app.logout')}</button>
@@ -289,7 +555,7 @@ export default function DashboardLayout() {
                 <DigitalTwinMap
                   robots={robots}
                   error={error}
-                  role={role}
+                  role={role ?? undefined}
                   selectedRobotId={selectedRobotId}
                   onRobotStart={handleRobotStart}
                   onRobotStop={handleRobotStop}
@@ -313,6 +579,13 @@ export default function DashboardLayout() {
             {panelVisibility.analytics !== false && (
               <section className="grid-analytics">
                 <AnalyticsWidget />
+              </section>
+            )}
+            {panelVisibility.kpiWidgets !== false && (
+              <section className="kpi-widgets-row">
+                <ShiftsKPIWidget />
+                <InventoryKPIWidget />
+                <IntegrationsKPIWidget />
               </section>
             )}
             <nav className="tab-bar">
@@ -344,7 +617,7 @@ export default function DashboardLayout() {
                           robots={robots}
                           workers={workers}
                           error={error}
-                          role={role}
+                          role={role ?? undefined}
                           selectedRobotId={selectedRobotId}
                           onRobotStart={handleRobotStart}
                           onRobotStop={handleRobotStop}
@@ -355,25 +628,27 @@ export default function DashboardLayout() {
                   )}
                   <div className="factory-sidebar">
                     <nav className="factory-sub-tabs">
-                      {['alerts', 'console', 'fleet', 'safety', 'annotations'].map(key => (
-                        <button
-                          key={key}
-                          className={`factory-sub-tab${factorySubTab === key ? ' factory-sub-tab--active' : ''}`}
-                          onClick={() => setFactorySubTab(key)}
-                        >
-                          {t(`factory.${key}`)}
-                        </button>
-                      ))}
+                      {['alerts', 'console', 'fleet', 'safety', 'annotations']
+                        .filter(k => canAccess(k === 'console' && !canControl ? '__hidden__' : k))
+                        .map(key => (
+                          <button
+                            key={key}
+                            className={`factory-sub-tab${factorySubTab === key ? ' factory-sub-tab--active' : ''}`}
+                            onClick={() => setFactorySubTab(key)}
+                          >
+                            {t(`factory.${key}`)}
+                          </button>
+                        ))}
                     </nav>
                     {showPanelForTab(factorySubTab) && factorySubTab === 'alerts' && (
                       <div className="panel panel-alerts">
                         <AlertBoard alerts={alerts} events={events} error={error} />
                       </div>
                     )}
-                    {showPanelForTab(factorySubTab) && factorySubTab === 'console' && (
+                    {showPanelForTab(factorySubTab) && factorySubTab === 'console' && canControl && (
                       <div className="panel panel-console">
                         <CommandConsole
-                          role={role}
+                          role={role ?? undefined}
                           robots={robots}
                           onStartRobot={handleRobotStart}
                           onStopRobot={handleRobotStop}
@@ -451,7 +726,7 @@ export default function DashboardLayout() {
                   {showPanelForTab('health') && (
                     <div className="panel panel-health"><ServiceHealth /></div>
                   )}
-                  {showPanelForTab('shift') && (
+                  {showPanelForTab('shift') && canAccess('shift-scheduler') && (
                     <div className="panel panel-shift"><ShiftScheduler robots={robots} onAssignTask={handleAssignTask} /></div>
                   )}
                   {showPanelForTab('federated') && (
@@ -459,14 +734,17 @@ export default function DashboardLayout() {
                   )}
                 </>
               )}
-              {/* Admin tab */}
-              {activeTab === 'admin' && (
+              {/* Admin tab — only for super_admin and tenant_admin */}
+              {activeTab === 'admin' && canAdmin && (
                 <>
-                  {showPanelForTab('audit') && (
-                    <div className="panel panel-audit"><AuditLog /></div>
+                  {showPanelForTab('audit-log') && (
+                    <div className="panel panel-audit"><AuditLogPanel /></div>
                   )}
                   {showPanelForTab('webhooks') && (
                     <div className="panel panel-webhooks"><WebhookManager /></div>
+                  )}
+                  {showPanelForTab('integrations') && (
+                    <div className="panel panel-integrations"><IntegrationsPanel /></div>
                   )}
                   {showPanelForTab('robots') && (
                     <div className="panel panel-robots"><RobotFleetPanel /></div>
@@ -476,6 +754,12 @@ export default function DashboardLayout() {
                   )}
                   {showPanelForTab('sites') && (
                     <div className="panel panel-sites"><SiteManagerPanel /></div>
+                  )}
+                  {showPanelForTab('shifts') && (
+                    <div className="panel panel-shifts"><ShiftPanel /></div>
+                  )}
+                  {showPanelForTab('inventory') && (
+                    <div className="panel panel-inventory"><InventoryPanel /></div>
                   )}
                 </>
               )}
@@ -494,13 +778,26 @@ export default function DashboardLayout() {
                 <>
                   {showPanelForTab('chat') && (
                     <div className="ai-tab-layout">
-                      <div className="panel ai-tab-chat">
+                      <div className="ai-tab-chat">
                         <ChatPanel />
                       </div>
-                      <div className="panel ai-tab-render">
+                      <div className="ai-tab-render">
                         <h3>AI Insights</h3>
-                        <div className="ai-render-content" id="ai-render-content">
-                          <div className="ai-render-empty">Ask the AI agent a question — responses with charts and analysis appear here.</div>
+                        <div className="ai-render-content">
+                          {aiInsights.length > 0 ? (
+                            aiInsights
+                          ) : (
+                            <div className="ai-render-empty">
+                              <div className="ai-render-empty-icon">
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                                  <path d="M2 17l10 5 10-5" />
+                                  <path d="M2 12l10 5 10-5" />
+                                </svg>
+                              </div>
+                              Ask the AI agent a question — responses with charts and analysis appear here.
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>

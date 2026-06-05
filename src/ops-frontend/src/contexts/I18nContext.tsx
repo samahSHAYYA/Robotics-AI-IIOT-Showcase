@@ -1,36 +1,42 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
-import en from '../i18n/en.json'
-import fr from '../i18n/fr.json'
-
-const translations: Record<string, Record<string, string>> = { en, fr }
-
-type Lang = 'en' | 'fr'
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react'
+import { getAvailableLanguages, detectBrowserLanguage, translate as coreTranslate } from '../i18n'
+import type { LanguagePack } from '../i18n'
 
 interface I18nContextType {
-  lang: Lang
-  setLang: (lang: Lang) => void
+  lang: string
+  availableLanguages: LanguagePack[]
+  setLang: (lang: string) => void
   t: (key: string) => string
 }
 
 const I18nContext = createContext<I18nContextType | null>(null)
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<Lang>(() => {
-    return (localStorage.getItem('lang') as Lang) || 'en'
+  const [lang, setLangState] = useState<string>(() => {
+    return localStorage.getItem('sf_lang') || detectBrowserLanguage()
   })
+  const [availableLanguages] = useState<LanguagePack[]>(() => getAvailableLanguages())
 
   const t = useCallback((key: string): string => {
-    const dict = translations[lang]
-    return dict?.[key] ?? key
+    return coreTranslate(key, lang)
   }, [lang])
 
-  const handleSetLang = useCallback((newLang: Lang) => {
-    setLang(newLang)
-    localStorage.setItem('lang', newLang)
+  const setLang = useCallback((newLang: string) => {
+    setLangState(newLang)
+    localStorage.setItem('sf_lang', newLang)
   }, [])
 
+  // Persist lang attribute on <html> for potential CSS dir support
+  useEffect(() => {
+    const pack = availableLanguages.find(l => l.code === lang)
+    if (pack) {
+      document.documentElement.setAttribute('lang', pack.code)
+      document.documentElement.setAttribute('dir', pack.dir)
+    }
+  }, [lang, availableLanguages])
+
   return (
-    <I18nContext.Provider value={{ lang, setLang: handleSetLang, t }}>
+    <I18nContext.Provider value={{ lang, availableLanguages, setLang, t }}>
       {children}
     </I18nContext.Provider>
   )

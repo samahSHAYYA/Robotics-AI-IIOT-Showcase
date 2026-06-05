@@ -6,6 +6,10 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
+      '/api/v1/agent': {
+        target: 'http://ai-agent:8004',
+        changeOrigin: true,
+      },
       '/api': 'http://ops-api:8003',
       '/ws': {
         target: 'ws://ops-api:8003',

@@ -7,9 +7,9 @@
 
 import uuid
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
-from app.deps import get_current_user
+from app.deps import require_factory_access, require_role
 from app.db import User
 from app.store import store
 
@@ -17,7 +17,11 @@ router: APIRouter = APIRouter(prefix = '/api/v1')
 
 
 @router.get('/telemetry')
-async def get_telemetry(user: User = Depends(get_current_user)):
+async def get_telemetry(
+    user: User = Depends(require_role('viewer')),
+    _=Depends(require_factory_access()),
+    factory_id: int | None = Query(None, description='Factory context'),
+):
     """
     Returns the latest telemetry snapshot.
 
@@ -29,7 +33,11 @@ async def get_telemetry(user: User = Depends(get_current_user)):
 
 
 @router.get('/robot/status')
-async def get_robot_status(user: User = Depends(get_current_user)):
+async def get_robot_status(
+    user: User = Depends(require_role('viewer')),
+    _=Depends(require_factory_access()),
+    factory_id: int | None = Query(None, description='Factory context'),
+):
     """
     Returns the current fleet status.
 

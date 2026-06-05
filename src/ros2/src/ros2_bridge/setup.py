@@ -19,7 +19,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'bridge_node = ros2_bridge.bridge_node:main',
+            'ros2_bridge = ros2_bridge.bridge_node:main',
         ],
     },
 )

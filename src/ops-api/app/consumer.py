@@ -45,8 +45,13 @@ async def process_message(msg_data: dict[str, str]):
     """
 
     event_type: str = msg_data.get('event_type', '')
+    source: str = msg_data.get('source', '')
 
-    if event_type.startswith('sensor.') or event_type.startswith('camera.') or event_type.startswith('safety.'):
+    # Handle ROS2 bridge telemetry snapshots
+    if source == 'ros2' or event_type == 'telemetry.snapshot':
+        store.update_from_ros2_snapshot(msg_data)
+        logger.debug('Processed ROS2 telemetry snapshot')
+    elif event_type.startswith('sensor.') or event_type.startswith('camera.') or event_type.startswith('safety.'):
         store.update_from_sensor_event(msg_data)
         logger.debug('Stored sensor event: %s', event_type)
     elif event_type.startswith('ml.'):
