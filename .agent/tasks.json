@@ -1002,7 +1002,7 @@
       "id": 86,
       "title": "Refactor App.tsx into maintainable modules",
       "status": "completed",
-      "committed": false,
+      "committed": true,
       "acceptance": [
         "App.tsx is split into at least 3 separate modules: AppRouter (tab routing), AppLayout (panel layout/state), TelemetryProvider (WebSocket data context)",
         "Auth state management extracted into AuthProvider context",

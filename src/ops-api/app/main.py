@@ -276,9 +276,12 @@ async def _seed_data():
             )
             existing = u_result.scalar_one_or_none()
             if existing is None:
-                password_hash = None
                 if su['password']:
                     password_hash = hash_password(su['password'])
+                else:
+                    # Integrator uses API key auth; store a placeholder hash since
+                    # password_hash is NOT NULL in the schema.
+                    password_hash = hash_password('')
                 user = User(
                     username=su['username'],
                     password_hash=password_hash,
