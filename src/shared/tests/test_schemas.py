@@ -4,6 +4,7 @@
 """
 
 import json
+
 from schemas.events import (
     SensorEvent, SensorReading, SafetyEvent, CameraEvent, MLPrediction, CommandEvent,
 )

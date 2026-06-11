@@ -5,6 +5,7 @@
 
 import asyncio
 import json
+
 from app.consumer import process_message
 from app.inference import run_mock_inference
 

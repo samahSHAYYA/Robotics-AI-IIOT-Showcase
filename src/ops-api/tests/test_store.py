@@ -4,6 +4,7 @@
 """
 
 import json
+
 from app.store import TelemetryStore
 
 

@@ -14,6 +14,7 @@ import argparse
 import json
 import sys
 import time
+
 from statistics import mean, median, stdev
 
 try:
