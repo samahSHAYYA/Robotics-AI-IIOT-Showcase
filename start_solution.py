@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 @author: AI Orchestrator
-@date: 04-Jun-2026
+@date: 12-Jun-2026
 
 @description: Smart Factory Supervisor — one-command launcher.
 
@@ -16,15 +16,24 @@ Usage:
 """
 
 import argparse
+import json
 import os
 import platform
 import shutil
 import subprocess
 import sys
 import time
+
 from pathlib import Path
 
-# ── Paths ─────────────────────────────────────────────────────────────────────
+# Force UTF-8 output for Unicode box-drawing characters on Windows
+if sys.stdout.encoding.lower() not in ('utf-8', 'utf8'):
+    try:
+        sys.stdout.reconfigure(encoding = 'utf-8')
+    except AttributeError:
+        pass  # Python < 3.7 — fall back to PYTHONIOENCODING
+
+# -- Paths ----------------------------------------------------------------
 
 REPO_ROOT = Path(__file__).resolve().parent
 DOCKER_COMPOSE_FILE = REPO_ROOT / 'src' / 'docker-compose.yaml'
@@ -32,7 +41,7 @@ ENV_TEMPLATE = REPO_ROOT / 'src' / '.env.template'
 ENV_FILE = REPO_ROOT / 'src' / '.env'
 ALEMBIC_DIR = REPO_ROOT / 'src' / 'ops-api' / 'alembic'
 
-# ── Utils ─────────────────────────────────────────────────────────────────────
+# -- Utils -----------------------------------------------------------------
 
 CYAN = '\033[96m'
 GREEN = '\033[92m'
@@ -99,12 +108,12 @@ def detect_os() -> str:
     return 'linux'
 
 
-# ── Steps ────────────────────────────────────────────────────────────────────
+# -- Steps -----------------------------------------------------------------
 
 def banner():
     print(f'''
 {BOLD}{CYAN}\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557
-\u2551     Smart Factory Supervisor — Launcher         \u2551
+\u2551     Smart Factory Supervisor -- Launcher         \u2551
 \u2551     Industrial Humanoid Robotics IIoT Suite     \u2551
 \u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255d{RESET}
 ''')
@@ -124,19 +133,16 @@ def check_prerequisites() -> bool:
         ok('Docker found')
 
     # Docker Compose (modern plugin)
-    if not is_command_available('docker'):
-        all_ok = False
+    res = run(['docker', 'compose', 'version'], capture=True)
+    if res.returncode == 0:
+        ok(f'Docker Compose: {res.stdout.strip()}')
     else:
-        res = run(['docker', 'compose', 'version'], capture=True)
-        if res.returncode == 0:
-            ok(f'Docker Compose: {res.stdout.strip()}')
+        warn('docker compose plugin not found -- trying docker-compose')
+        if not is_command_available('docker-compose'):
+            fail('Neither docker compose nor docker-compose is available.')
+            all_ok = False
         else:
-            warn('docker compose plugin not found — trying docker-compose')
-            if not is_command_available('docker-compose'):
-                fail('Neither docker compose nor docker-compose is available.')
-                all_ok = False
-            else:
-                ok('docker-compose found (legacy)')
+            ok('docker-compose found (legacy)')
 
     # Docker daemon running
     if all_ok and not is_docker_running():
@@ -198,11 +204,11 @@ def select_profile(auto: bool = False,
         return profiles
 
     if auto:
-        info('Auto mode — using default profiles (no ROS2)')
+        info('Auto mode -- using default profiles (no ROS2)')
         return profiles
 
     print('Available profiles:')
-    print('  (none)  — Core services only (Redis, Postgres, ops-api, etc.)')
+    print('  (none)  -- Core services only (Redis, Postgres, ops-api, etc.)')
     print('  ros2    + ROS2/Gazebo simulation (Gazebo + bridge)')
     print()
 
@@ -223,7 +229,7 @@ def run_migrations() -> bool:
     heading('Database migrations')
 
     if not ALEMBIC_DIR.exists():
-        warn('No Alembic directory found — skipping migrations')
+        warn('No Alembic directory found -- skipping migrations')
         return True
 
     info('Applying database migrations...')
@@ -273,8 +279,107 @@ def start_services(profiles: list[str], rebuild: bool = False) -> bool:
     return True
 
 
+# -- Health-check helpers (docker compose ps JSON parsing) -----------------
+
+
+def _parse_compose_ps(raw: str) -> list[dict]:
+    """Parse ``docker compose ps --format json`` output.
+
+    Docker Compose v2+ (including v5) outputs a **JSON array**:
+        ``[{"ID":..., "State":..., "Health":...}, ...]``
+
+    Some transitional versions (v2.21.x) used **JSON Lines** (one object per
+    line).  This function handles both formats transparently.
+    """
+    raw = raw.strip()
+    if not raw:
+        return []
+
+    # Try JSON array first (Compose v2.23+ and v5)
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        data = None
+
+    if isinstance(data, list):
+        return data
+
+    if isinstance(data, dict):
+        return [data]
+
+    # Fall back to JSON Lines (one object per line)
+    entries: list[dict] = []
+    for line in raw.split('\n'):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            obj = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(obj, dict):
+            entries.append(obj)
+        elif isinstance(obj, list):
+            entries.extend(obj)
+
+    return entries
+
+
+def _container_healthy(entry: dict) -> bool:
+    """Determine whether a single container entry is healthy.
+
+    The JSON output from ``docker compose ps --format json`` uses *two*
+    separate fields:
+
+      ``State``
+          One of ``running``, ``exited``, ``created``, ``dead``,
+          ``paused``, ``restarting``, ``removing``.
+      ``Health``
+          Empty string (no healthcheck), ``healthy``, ``unhealthy``,
+          or ``starting``.
+
+    For backward compatibility with older Docker Compose versions we also
+    accept a combined ``Status`` string (e.g. ``"Up 5 minutes (healthy)"``).
+    """
+    # --- Prefer the structured State / Health fields ---
+    state = entry.get('State', '')
+    health = entry.get('Health', '')
+
+    if state:
+        if state == 'exited':
+            return False
+        if state != 'running':
+            # created, dead, paused, restarting, removing -> not healthy
+            return False
+        # state is 'running'
+        if health and health not in ('healthy', ''):
+            # "unhealthy" or "starting"
+            return False
+        return True
+
+    # --- Fallback to Status string (older Compose / docker ps format) ---
+    status = entry.get('Status', '')
+    if not status:
+        # No State, no Status - can't determine health
+        return False
+
+    if '(unhealthy)' in status or status.startswith('exited'):
+        return False
+    if 'healthy' in status:
+        return True
+    if status.startswith('Up') or status.startswith('running'):
+        return True
+    return False
+
+
 def wait_for_healthy(timeout_s: int = 60) -> bool:
-    """Poll docker compose ps until all services are healthy or timeout."""
+    """Poll ``docker compose ps`` until all services are healthy or timeout.
+
+    *Healthy* means:
+      - Container ``State`` is ``running``, **and**
+      - If a health check is defined, ``Health`` is ``healthy`` (or empty
+        for services without a health check).
+    """
     heading('Waiting for services to be healthy')
 
     for i in range(timeout_s):
@@ -286,14 +391,17 @@ def wait_for_healthy(timeout_s: int = 60) -> bool:
             time.sleep(1)
             continue
 
-        lines = [l for l in res.stdout.strip().split('\n') if l]
+        entries = _parse_compose_ps(res.stdout)
+        if not entries:
+            time.sleep(2)
+            continue
+
         all_healthy = True
         running_count = 0
-        for line in lines:
-            if '"Status"' in line:
-                running_count += 1
-                if 'healthy' not in line and '(unhealthy)' not in line:
-                    all_healthy = False
+        for entry in entries:
+            if not _container_healthy(entry):
+                all_healthy = False
+            running_count += 1
 
         if running_count == 0:
             time.sleep(2)
@@ -314,6 +422,8 @@ def wait_for_healthy(timeout_s: int = 60) -> bool:
     return False
 
 
+# -- Dashboard -------------------------------------------------------------
+
 def show_dashboard():
     """Print access URLs and useful commands."""
     heading('Dashboard & Access')
@@ -329,12 +439,14 @@ def show_dashboard():
   {BOLD}PostgreSQL:{RESET}     postgresql://showcase:showcase_secret@localhost:5432/showcase
 
   {BOLD}Login:{RESET}
-    super_admin:   admin / admin
-    tenant_admin:  tenant_admin / admin
-    factory_admin: factory_admin / admin
-    operator:      operator / operator
-    viewer:        viewer / viewer
-    integrator:    (API key — see ops-api logs on first startup)
+    super_admin:           super_admin / admin
+    tenant_admin:          tenant_admin / admin
+    factory_admin:         factory_admin / admin
+    branch_factory_admin:  branch_factory_admin / admin
+    operator:              operator / operator
+    branch_operator:       branch_operator / operator
+    viewer:                viewer / viewer
+    integrator:            (API key -- see ops-api logs on first startup)
 ''')
 
     print(f'{BOLD}Useful commands:{RESET}')
@@ -354,11 +466,11 @@ def show_status():
     print()
 
 
-# ── Main ─────────────────────────────────────────────────────────────────────
+# -- Main ------------------------------------------------------------------
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description='Smart Factory Supervisor — one-command launcher',
+        description='Smart Factory Supervisor -- one-command launcher',
     )
     parser.add_argument(
         '--auto', action='store_true',
@@ -373,8 +485,8 @@ def parse_args():
         help='Rebuild images before starting',
     )
     parser.add_argument(
-        '--migrations', action='store_true', default=True,
-        help='Run DB migrations on startup (default: true)',
+        '--migrations', action=argparse.BooleanOptionalAction, default=True,
+        help='Run DB migrations on startup (default: true). Pass --no-migrations to skip.',
     )
     return parser.parse_args()
 
@@ -415,3 +527,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+

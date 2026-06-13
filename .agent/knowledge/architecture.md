@@ -40,6 +40,56 @@ reads only through the REST API — it has no direct stream access.
 | `edge-sim` | Python 3.12 | Stub | IoT sensor grid, failure mode simulation |
 | `integration-service` | Python 3.14 | Stub | External system integration, sync engine, webhook v2 |
 
+## Auth & WebSocket architecture
+
+### Authentication flow
+
+1. **Login**: `POST /api/v1/auth/login` returns JWT + user profile. The frontend
+   stores the JWT in `localStorage` key `sf_session` and sets `authed = true` in
+   `AuthContext`.
+
+2. **API auth**: `authFetch()` utility (in `utils/auth-fetch.ts`) wraps `fetch()`
+   and automatically attaches `Authorization: Bearer <token>`. On 401 responses,
+   it removes only `sf_*` keys from localStorage (targeted, not `clear()`) and
+   dispatches a `CustomEvent('auth:expired')`.
+
+3. **Session expiry handling**: `AuthProvider` listens for `auth:expired` events
+   and calls `logout()`, which sets `authed = false` and clears all auth state.
+   This breaks the previous infinite loop where `localStorage.clear()` didn't
+   update React state, causing panels to keep making unauthenticated requests.
+
+### WebSocket connection
+
+1. **URL construction**: `TelemetryContext` builds the WS URL via
+   `buildWsUrl({ baseUrl, factoryId, authed })`. If a JWT exists
+   (`getToken()`), it appends `?token=<encoded_jwt>`. The `authed` parameter
+   forces URL reference changes on login/logout even when `factoryId` doesn't
+   change (e.g., super_admin).
+
+2. **Reconnection**: `useWebSocket` hook (in `hooks/useWebSocket.ts`) manages
+   the connection lifecycle. On URL changes (from auth state flip), it closes
+   the old connection and opens a new one with the fresh token. Retry logic:
+   5 attempts with 3s delay, then `failed` status.
+
+3. **Nginx proxy**: The `/ws` location in `nginx.conf` passes `Upgrade` and
+   `Connection` headers for WebSocket protocol upgrade, proxying to
+   `ops-api:8003`.
+
+### Role hierarchy
+
+```
+super_admin  (100)  — global access
+tenant_admin  (80)  — tenant-level admin
+factory_admin (60)  — per-factory management
+integrator    (50)  — API key access
+operator      (40)  — robot control
+viewer        (20)  — read-only
+```
+
+Each endpoint uses `require_role(minimum)` hierarchy check or
+`get_current_user` for token validation only. `require_factory_access()` and
+`require_tenant_access()` add data-scoping layers.
+
 ## Redis Stream topology
 
 Each service owns exactly one stream (`events:<service>`). Producers `XADD` to

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react'
 import type { Role, LoginResponse } from '../types/auth'
 
 interface AuthContextType {
@@ -111,6 +111,12 @@ export function AuthProvider({ kioskMode, children }: { kioskMode: boolean; chil
     if (!token) return {}
     return { Authorization: `Bearer ${token}` }
   }, [])
+
+  useEffect(() => {
+    const handleExpired = () => logout()
+    window.addEventListener('auth:expired', handleExpired)
+    return () => window.removeEventListener('auth:expired', handleExpired)
+  }, [logout])
 
   return (
     <AuthContext.Provider

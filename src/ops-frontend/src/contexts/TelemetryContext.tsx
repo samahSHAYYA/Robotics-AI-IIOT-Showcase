@@ -29,9 +29,10 @@ const TelemetryContext = createContext<TelemetryContextType | null>(null)
 interface FactoryAwareWsUrlProps {
   baseUrl: string
   factoryId: number | null
+  authed: boolean
 }
 
-function buildWsUrl({ baseUrl, factoryId }: FactoryAwareWsUrlProps): string {
+function buildWsUrl({ baseUrl, factoryId, authed: _authed }: FactoryAwareWsUrlProps): string {
   const token = getToken()
   let url = baseUrl
   const params: string[] = []
@@ -48,7 +49,7 @@ function buildWsUrl({ baseUrl, factoryId }: FactoryAwareWsUrlProps): string {
 }
 
 export function TelemetryProvider({ children }: { children: ReactNode }) {
-  const { factoryId } = useAuth()
+  const { factoryId, authed } = useAuth()
   const [telemetry, setTelemetry] = useState<TelemetrySnapshot | undefined>()
   const [robots, setRobots] = useState<RobotStatus[]>([])
   const [workers, setWorkers] = useState<WorkerStatus[]>([])
@@ -94,7 +95,7 @@ export function TelemetryProvider({ children }: { children: ReactNode }) {
   }, [])
 
   // Build WS URL with factory context
-  const wsUrl = buildWsUrl({ baseUrl: WS_URL, factoryId })
+  const wsUrl = buildWsUrl({ baseUrl: WS_URL, factoryId, authed })
   const { status: wsStatus } = useWebSocket(wsUrl, handleMessage, handleWsError)
 
   useEffect(() => {

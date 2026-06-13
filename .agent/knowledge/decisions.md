@@ -147,3 +147,66 @@ This file records significant decisions. Each entry answers:
   synchronous method chain on an AsyncMock result breaks. The fix is to
   use `MagicMock` for synchronous mock chains and avoid `spec` on
   `AsyncMock` instances used as async context managers.
+
+---
+
+## ADR-009: Custom event for auth session expiry
+
+- **Context:** The `authFetch` utility cleared all localStorage on 401 responses
+  via `localStorage.clear()`. This wiped the JWT token without notifying React's
+  `AuthProvider`, so `authed` stayed `true` while subsequent API calls had no
+  token — creating an infinite loop of 401s → clear → redirect → reload.
+
+- **Decision:**
+  1. `authFetch` now removes only `sf_*` keys (`sf_session`, `sf_role`,
+     `sf_tenant_id`, `sf_tenant_name`, `sf_factory_id`, `sf_factory_name`)
+     instead of calling `localStorage.clear()`.
+  2. After removal, it dispatches `window.dispatchEvent(new
+     CustomEvent('auth:expired'))`.
+  3. `AuthProvider` listens for `auth:expired` via a `useEffect` and calls
+     `logout()`, which sets `authed = false` and clears all auth state.
+
+- **Rationale:** Direct communication between `authFetch` (a utility function)
+  and `AuthProvider` (a React component) without introducing circular imports or
+  requiring `AuthProvider` to be a global singleton. The CustomEvent pattern is
+  standard DOM API, requires no dependencies, and works across React component
+  boundaries.
+
+---
+
+## ADR-010: Explicit WebSocket reconnection on auth state change
+
+- **Context:** The `TelemetryProvider` computed the WebSocket URL from
+  `buildWsUrl({ baseUrl, factoryId })`. For super_admin users, `factoryId` is
+  always null — it never changes between authenticated and unauthenticated
+  states. The `buildWsUrl` function reads the JWT from localStorage via
+  `getToken()`, which does return different values, but React's rendering
+  pipeline had no explicit dependency on auth state.
+
+- **Decision:**
+  1. Added `authed` to the `FactoryAwareWsUrlProps` interface.
+  2. `TelemetryProvider` now destructures `authed` from `useAuth()` and passes
+     it to `buildWsUrl()`.
+  3. The parameter is prefixed `_authed` (unused) — its sole purpose is to
+     force a new URL reference when auth state flips, triggering `useWebSocket`
+     to close the old connection and open a new one with the fresh token.
+
+- **Rationale:** Guarantees WebSocket reconnection on login/logout regardless
+  of whether `factoryId` changes. Without this, a race condition could leave
+  the WebSocket using a stale or missing token after auth state transitions.
+
+---
+
+## ADR-011: Targeted auth key removal over localStorage.clear()
+
+- **Context:** `authFetch` used `localStorage.clear()` on 401, which destroyed
+  ALL localStorage entries — including non-auth app state, cached preferences,
+  and layout settings that persist across sessions.
+
+- **Decision:** Replace `localStorage.clear()` with `clearAuthSession()`, a
+  helper that calls `removeItem()` on each of the six `sf_*` keys individually.
+
+- **Rationale:** Preserves any non-auth data stored in localStorage. The six
+  keys are well-known and version-controlled in `AuthContext.login()` and
+  `AuthContext.logout()`, so maintenance is straightforward. This avoids
+  data loss and user frustration from wiped preferences.

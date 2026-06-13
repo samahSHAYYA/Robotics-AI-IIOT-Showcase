@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { useI18n } from '../contexts/I18nContext'
 import { useIntegrations } from '../hooks/useIntegrations'
+import { authFetch } from '../utils/auth-fetch'
 import type { Integration, SyncLogEntry } from '../types/integration'
 
 type PanelView = 'list' | 'form' | 'log'
@@ -376,7 +377,7 @@ export default function IntegrationsPanel() {
                   onClick={async () => {
                     // Call the rotate-key endpoint
                     try {
-                      const response = await fetch(`/api/v1/integrations/${editingId}/rotate-key`, {
+                      const response = await authFetch(`/api/v1/integrations/${editingId}/rotate-key`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                       })
